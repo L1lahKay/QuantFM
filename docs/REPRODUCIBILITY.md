@@ -1,6 +1,6 @@
-# QuantFM 审阅指南
+# QuantFM 复现与验证指南
 
-本文面向代码 Reviewer，用最短路径说明如何理解、复现和验收项目。
+本文汇总项目的推荐阅读路径、复现命令和实验验证边界。
 
 ## 10 分钟阅读路径
 
@@ -22,7 +22,7 @@
 cd QuantFM
 uv sync --extra fm --group dev
 uv run python -m pytest -q
-uv run python -m quant_fm.scripts.smoke --workdir /tmp/quantfm-review
+uv run python -m quant_fm.scripts.smoke --workdir /tmp/quantfm-smoke
 ```
 
 预期：
@@ -32,9 +32,9 @@ uv run python -m quant_fm.scripts.smoke --workdir /tmp/quantfm-review
 - 生成 embedding；
 - 日志最终出现 `SMOKE OK: all stages passed`。
 
-Smoke 使用合成数据和微型 CPU 模型，只验收工程链路，不代表真实投资收益。
+Smoke 使用合成数据和微型 CPU 模型，只验证工程链路，不代表真实投资收益。
 
-## 真实数据验收
+## 真实数据验证
 
 ```bash
 source ~/.minio_fm_env.sh
@@ -67,7 +67,7 @@ make train-8gpu
 - per-field CE 是否均优于随机基线；
 - 后期 train/val gap 是否显示过拟合。
 
-## 设计审阅重点
+## 设计验证要点
 
 ### 数据正确性
 
@@ -93,7 +93,7 @@ make train-8gpu
 ### 研究有效性
 
 - 预训练 loss 仅是过程指标；
-- embedding 必须通过严格时间切分的下游任务验收；
+- embedding 必须通过严格时间切分的下游任务验证；
 - 回测包含交易成本；
 - RankIC、CPCV 和 DSR 共同用于降低偶然性。
 

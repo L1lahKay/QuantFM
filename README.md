@@ -154,7 +154,7 @@ quant_fm/runs/<experiment>/run/
 
 - [项目与阅读指南](docs/QuantFM.md)
 - [Pipeline 逐阶段文档](docs/pipeline/README.md)
-- [老板/Reviewer 审阅指南](docs/REVIEW.md)
+- [复现与验证指南](docs/REPRODUCIBILITY.md)
 - [MinIO 读写配置](docs/minio_setup.md)
 - [文档总索引](docs/README.md)
 - [OrderFlow FM 包说明](quant_fm/README.md)

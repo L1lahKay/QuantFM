@@ -1,6 +1,6 @@
 # QuantFM 
 
-> 完整工程步骤见 [Pipeline 逐阶段文档](pipeline/README.md)；代码审阅与复现见 [REVIEW.md](REVIEW.md)。
+> 完整工程步骤见 [Pipeline 逐阶段文档](pipeline/README.md)；复现方法与验证边界见 [复现与验证指南](REPRODUCIBILITY.md)。
 
 ---
 
