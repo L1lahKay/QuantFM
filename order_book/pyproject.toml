@@ -1,0 +1,23 @@
+[project]
+name = "pylob"
+description = "A-share limit order book matching and replay engine"
+readme = "README.md"
+authors = [{ name = "Mirac-Le", email = "iwnlgre@outlook.com" }]
+version = "0.1.0"
+requires-python = ">=3.12"
+
+dependencies = [
+    "minio>=7.2.20",
+    "numpy>=2.3.4",
+    "pandas>=2.3.3",
+    "polars>=1.35.1",
+    "pyarrow>=23.0.0",
+    "sortedcontainers>=2.4.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.24,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""

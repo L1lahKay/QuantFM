@@ -1,0 +1,46 @@
+# OrderFlow FM 中等规模预训练（8 卡 FSDP）。
+# 数据：quant_fm/runs/medium（60 交易日 × 全市场，≈ 总事件量 1/10）。
+# 模型：~19B 事件（60日×全市场≈总数据1/10）→ xlarge 档 768×12 ≈ 114M
+#
+# 启动：
+#   bash quant_fm/scripts/train_medium_8gpu.sh
+
+seed: 42
+
+data:
+  manifest: quant_fm/runs/medium/data/manifest.json
+  vocab: quant_fm/runs/medium/data/vocab.json
+  context: 2048
+  stride: 2048
+  min_len: 16
+  cache_size: 16
+  num_workers: 4
+
+model:
+  d_model: 768
+  n_layers: 12
+  n_heads: 12
+  ffn_mult: 4.0
+  dropout: 0.1
+  max_seq_len: 4096
+  rope_theta: 10000.0
+
+optim:
+  lr: 3.0e-4
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+  grad_clip: 1.0
+  warmup_steps: 3000
+  max_steps: 150000
+  batch_size: 8
+  grad_accum: 2
+  precision: bf16
+
+runtime:
+  out_dir: quant_fm/runs/medium/run
+  log_every: 50
+  eval_every: 2000
+  save_best: true
+  ckpt_every: 5000
+  fsdp: true
+  device: cuda
