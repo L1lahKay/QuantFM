@@ -20,8 +20,11 @@ canonicalize_clean_dir(
     date=date,
     markets=("SZ", "SH"),
     symbols=symbols,
+    skip_existing=resume,  # 已有 <date>.parquet 则跳过该标的
 )
 ```
+
+`--resume` 时开启 `skip_existing`，避免中断后重写已规范化的股日分片。
 
 ## 统一事件
 

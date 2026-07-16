@@ -153,11 +153,16 @@ make pilot
 make minio-pipeline
 make minio-pipeline-full
 
+# 300M：22 日全市场 + 并行清洗 + 断点续跑
+CLEAN_WORKERS=16 SKIP_UPLOAD=1 bash quant_fm/scripts/run_minio_300m_pipeline.sh
+
 # 底层命令
-python -m quant_fm.scripts.run_medium \
+CLEAN_WORKERS=16 python -m quant_fm.scripts.run_medium \
   --workdir quant_fm/runs/medium \
   --drop-clean --drop-events --resume
 ```
+
+`--resume` 会跳过已完成日期，并跳过已有 `events.parquet` 的标的；`CLEAN_WORKERS` 控制并行洗股进程数。
 
 读操作**不会**修改 `zeus-cn-quote` 内任何对象。
 

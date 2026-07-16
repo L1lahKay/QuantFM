@@ -55,7 +55,21 @@ build_clean_dataset(load_read_config(), pipeline_config)
 make pilot
 # 或
 uv run python -m quant_fm.scripts.run_medium ...
+# 300M 正式流水线（含并行清洗）
+CLEAN_WORKERS=16 bash quant_fm/scripts/run_minio_300m_pipeline.sh
 ```
+
+## 加速与断点续跑
+
+`order_book/pylob/pipeline/workflow.py` 现支持：
+
+| 能力 | 说明 |
+|------|------|
+| `skip_existing` | 若 `<market>/<symbol>/events.parquet` 已存在则跳过该标的 |
+| `n_workers` / `CLEAN_WORKERS` | 按标的切分后多进程并行撮合（默认 `min(32, CPU/2)`） |
+| `write_debug_artifacts=False` | medium/300M 流水线只写 `events.parquet`，不写 `market_rows`/`tokens`（PyLOB 内置 token 不被 quant_fm 使用） |
+
+并行路径：父进程一次性读入并标准化当日全市场 trade/order → `partition_by(symbol)` → `ProcessPoolExecutor(spawn)` 并行回放。重启任务时配合 `--resume`，已洗标的不会重做。
 
 ## 输入与输出
 
@@ -65,7 +79,13 @@ uv run python -m quant_fm.scripts.run_medium ...
 - `market`、`symbols`、`date`；
 - 输出目录。
 
-输出目录以具体 `PipelineConfig` 为准，供下一阶段读取，包含标准化事件和必要的回放中间结果。
+输出目录以具体 `PipelineConfig` 为准。medium/300M 默认产物为：
+
+```text
+clean/<date>/<market>/<symbol>/events.parquet
+```
+
+若开启 `write_debug_artifacts=True`（默认，兼容 pilot/调试），还会写出 `market_rows.parquet` 与 `tokens.parquet`。
 
 ## 正确性验证
 

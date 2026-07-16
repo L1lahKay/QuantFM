@@ -19,7 +19,7 @@
 | 3 | [事件规范化](pipeline/03_canonical_events.md) | `cn_l2_v1` schema 与股日分片 |
 | 4 | [Tokenizer 与词表](pipeline/04_tokenizer_vocab.md) | 因果特征、分位数分箱、防泄漏 |
 | 5 | [Manifest 与时间切分](pipeline/05_manifest_splits.md) | 分片哈希、train/val/test |
-| 6 | [OrderFlow FM 预训练](pipeline/06_pretraining.md) | 模型、FSDP、checkpoint 与监控 |
+| 6 | [OrderFlow FM 预训练](pipeline/06_pretraining.md) | 模型、FSDP、checkpoint 续训与监控 |
 | 7 | [股日 Embedding](pipeline/07_embeddings.md) | 冻结模型、分块编码与池化 |
 | 8 | [下游验收](pipeline/08_downstream_evaluation.md) | Ranker、RankIC、CPCV、DSR、回测 |
 

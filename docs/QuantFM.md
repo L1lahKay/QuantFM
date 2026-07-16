@@ -109,11 +109,12 @@ python -m quant_fm.scripts.smoke --workdir quant_fm/runs/my_smoke
 | `quant_fm/scripts/run_pilot.py`               | 真实 MinIO 数据试点（读 :9000）           |
 | `quant_fm/scripts/run_minio_data_pipeline.sh` | **MinIO 读→写**（无训练）               |
 | `quant_fm/scripts/run_minio_full_pipeline.sh` | **MinIO 读→tokens→写→8卡训练**（完整流水线） |
+| `quant_fm/scripts/run_minio_300m_pipeline.sh` | **~302M**：22 日全市场 + 并行清洗 + 断点续跑 + `--resume auto` |
 | `quant_fm/scripts/download_from_minio.py`     | 从 model-cache 拉回 tokens          |
 | `quant_fm/scripts/minio_config.py`            | 读写 endpoint / bucket 默认值         |
 | `quant_fm/scripts/upload_to_minio.py`         | 上传 tokens 到 model-cache（写 :9100） |
 | `docs/minio_setup.md`                         | **MinIO 读写完整文档**                 |
-| `quant_fm/pretrain/train.py`                  | 只负责预训练                           |
+| `quant_fm/pretrain/train.py`                  | 预训练（含 FSDP、checkpoint 续训）        |
 | `examples/run_zeus_clean.py`                  | 只负责 pylob 清洗                     |
 
 
@@ -141,8 +142,9 @@ python -m quant_fm.scripts.smoke --workdir quant_fm/runs/my_smoke
 | `quant_fm/pretrain/dataset.py`  | 把一天的事件切成 2048 长度窗口 |
 | `quant_fm/pretrain/model.py`    | Transformer 本体     |
 | `quant_fm/pretrain/heads.py`    | 损失函数（预测下一事件）       |
-| `quant_fm/pretrain/train.py`    | 训练循环（优化器、存盘）       |
+| `quant_fm/pretrain/train.py`    | 训练循环（优化器、存盘、`--resume`） |
 | `quant_fm/pretrain/config.yaml` | 超参数配置              |
+| `quant_fm/pretrain/config_medium_300m_8gpu.yaml` | ~302M 正式 8 卡配置 |
 
 
 
@@ -204,11 +206,11 @@ tok_price_bin=15  # 价格在第 15 个箱子里
 2. `Manifest.load` → 知道读哪些 parquet
 3. `Vocab.load` → 知道每个字段有多少个 id
 4. `EventWindowDataset` + `DataLoader` → 按批取数据
-5. `OrderFlowFM` → 建模型
+5. `OrderFlowFM` → 建模型；若 `--resume`/`auto` 则加载权重与优化器状态
 6. 循环：`logits = model(batch)` → `loss = next_event_loss(...)` → `backward` → `optimizer.step`
-7. 定期 `evaluate`，保存 `best.pt` / `final.pt`
+7. 定期 `evaluate`，保存 `best.pt` / `step*.pt` / `final.pt`（含 optimizer/scaler/step）
 
-**有效 batch 大小** = `batch_size × grad_accum`（在 config.yaml 里）。
+**有效 batch 大小** = `batch_size × grad_accum × world_size`（多卡时）。
 
 ---
 

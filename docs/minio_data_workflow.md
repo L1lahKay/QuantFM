@@ -68,6 +68,9 @@ make minio-full-pipeline
 # 「全量」约定：60 个均匀交易日 × 沪深全市场（≈ 总事件 1/10）+ 训练
 make minio-full-pipeline-full
 
+# ~302M 正式：22 日全市场（Chinchilla）+ 并行清洗 + 断点续跑
+CLEAN_WORKERS=16 SKIP_UPLOAD=1 bash quant_fm/scripts/run_minio_300m_pipeline.sh
+
 # 只要数据不要训练
 SKIP_TRAIN=1 MODE=full bash quant_fm/scripts/run_minio_full_pipeline.sh
 
@@ -76,7 +79,11 @@ make download-medium
 make train-medium-8gpu
 ```
 
-规模说明：仓库默认「全量」是 **medium = 60 日 × 全市场**，不是 MinIO 上全部 ~400–600 个交易日。若要更大日历跨度，扩展 `quant_fm/data/medium_60_dates.txt` 后仍用 `MODE=full` 路径即可。
+规模说明：
+
+- 仓库默认「全量」是 **medium = 60 日 × 全市场**，不是 MinIO 上全部 ~400–600 个交易日；
+- **300M** 使用 `medium_300m_22_dates.txt`（约 22 日全市场，匹配 ~6B 训练事件）；
+- 数据阶段支持日期/标的级续跑；训练阶段支持 `--resume auto`。
 
 远程目录：
 

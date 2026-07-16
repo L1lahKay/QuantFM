@@ -41,15 +41,27 @@ make train-8gpu
 source ~/.minio_fm_env.sh
 make minio-full-pipeline       # try
 make minio-full-pipeline-full  # 60 日 × 全市场
+
+# ~302M 正式：22 日全市场（Chinchilla）+ 断点续跑 + 并行清洗 + 自动续训
+CLEAN_WORKERS=16 SKIP_UPLOAD=1 bash quant_fm/scripts/run_minio_300m_pipeline.sh
 ```
 
-由 `quant_fm/scripts/run_minio_full_pipeline.sh` 统一编排：
+由 `quant_fm/scripts/run_minio_full_pipeline.sh` / `run_minio_300m_pipeline.sh` 统一编排：
 
 1. 检查 MinIO；
-2. 生成或恢复 tokens；
-3. 上传并校验远端副本；
-4. 启动 8 卡训练；
+2. 生成或恢复 tokens（按日 / 按标的断点续跑）；
+3. 可选上传并校验远端副本；
+4. 启动 8 卡训练（`--resume auto`）；
 5. 可选删除本地 tokens。
+
+常用环境变量：
+
+| 变量 | 含义 |
+|------|------|
+| `CLEAN_WORKERS` | 并行洗股进程数（默认 `min(32, CPU/2)`） |
+| `SKIP_DATA=1` | 本地 tokens/manifest 已就绪，直接训练 |
+| `SKIP_TRAIN=1` | 只做数据 |
+| `SKIP_UPLOAD=1` | 不上传 model-cache |
 
 ## 默认目录约定
 
@@ -61,13 +73,14 @@ quant_fm/runs/<experiment>/
 ├── data/
 │   ├── vocab.json
 │   ├── manifest.json
-│   └── .done/      # medium 按日恢复标记
+│   ├── .done/        # 日期级：canonicalize 完成
+│   └── .clean_done/  # 日期级：当日 clean 完成（可复用）
 ├── run/            # checkpoint + TensorBoard
 ├── embeddings*.parquet
 └── downstream/     # 下游裁判报告
 ```
 
-该目录属于生成产物，已被 `.gitignore` 排除。
+该目录属于生成产物，已被 `.gitignore` 排除。断点续跑层级：日期 `.done` → clean 标的 `events.parquet` → events 股日 parquet → tokens 文件。
 
 ## 关键验证闸门
 

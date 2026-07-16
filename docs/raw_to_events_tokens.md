@@ -351,15 +351,34 @@ make medium
 默认 60 交易日列表：`quant_fm/data/medium_60_dates.txt`  
 默认标的列表：`quant_fm/data/medium_symbols_{sz,sh}.txt`
 
-增量选项（省磁盘）：
+增量选项（省磁盘 / 加速）：
 
 ```bash
-python -m quant_fm.scripts.run_medium \
+CLEAN_WORKERS=16 python -m quant_fm.scripts.run_medium \
   --workdir quant_fm/runs/medium \
   --drop-clean \      # canonicalize 后删 clean/
   --drop-events \     # tokenize 后删 events/
-  --resume            # 跳过已完成的日期
+  --resume            # 日期级跳过 + 标的级跳过已有 events/tokens
 ```
+
+`--resume` 行为：
+
+- 已有 `data/.done/<date>`：整日跳过；
+- 已有 `data/.clean_done/<date>`：复用当日 clean；
+- clean 阶段：`skip_existing` 跳过已有 `events.parquet` 的标的；
+- canonicalize / tokenize：跳过已写出的 parquet。
+
+`CLEAN_WORKERS`（或 `PipelineConfig.n_workers`）控制订单簿重建并行度。
+
+### 300M 正式流水线
+
+```bash
+source ~/.minio_fm_env.sh
+CLEAN_WORKERS=16 SKIP_UPLOAD=1 bash quant_fm/scripts/run_minio_300m_pipeline.sh
+```
+
+日期列表：`quant_fm/data/medium_300m_22_dates.txt`  
+训练配置：`quant_fm/pretrain/config_medium_300m_8gpu.yaml`（数据就绪后自动 `--resume auto` 开训）
 
 ---
 
@@ -411,11 +430,12 @@ python -m quant_fm.scripts.upload_to_minio \
 | 一键编排 | `quant_fm/scripts/run_pilot.py` | `run()` |
 | 中等规模 | `quant_fm/scripts/run_medium.py` | `run()` + `--upload-minio` |
 | **MinIO 读→写** | `quant_fm/scripts/run_minio_data_pipeline.sh` | 无训练全流程 |
+| **300M 正式** | `quant_fm/scripts/run_minio_300m_pipeline.sh` | 并行清洗 + 续跑 + 8 卡训 |
 | **读配置** | `quant_fm/scripts/minio_config.py` | `load_read_config()` |
 | **写/upload** | `quant_fm/scripts/upload_to_minio.py` | `upload_workdir()` |
 | **读写自检** | `quant_fm/scripts/check_minio.py` | 连通性 + 默认端口 |
 | Step 1 清洗 | `examples/run_zeus_clean.py` | `build_clean_dataset()` |
-| Step 1 核心 | `order_book/pylob/pipeline/workflow.py` | `build_clean_dataset()` |
+| Step 1 核心 | `order_book/pylob/pipeline/workflow.py` | `build_clean_dataset()`（`skip_existing` / `n_workers`） |
 | Step 1 事件流 | `order_book/pylob/pipeline/events.py` | `build_event_stream()` |
 | Step 2 规范化 | `quant_fm/lob_rebuild/export_events.py` | `canonicalize_clean_dir()` |
 | Step 2 schema | `quant_fm/schema/cn_l2_v1.py` | `events_to_canonical()` |

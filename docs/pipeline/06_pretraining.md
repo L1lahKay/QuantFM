@@ -43,7 +43,8 @@ evt_type / side / session / price_bin / volume_bin / delta_t_bin
 - 单卡和 FSDP；
 - 定期验证、step checkpoint、`best.pt`、`final.pt`；
 - TensorBoard；
-- seed 与配置快照。
+- seed 与配置快照；
+- **断点续训**：checkpoint 同时保存模型权重、AdamW 优化器状态（含 FSDP full/scatter optim state）、GradScaler、以及 `train_state`（step / best_val / best_step）。
 
 ## 配置
 
@@ -54,6 +55,8 @@ evt_type / side / session / price_bin / volume_bin / delta_t_bin
 | `config_medium_try_8gpu.yaml` | 5 日小规模真实试跑 |
 | `config_medium_smoke_8gpu.yaml` | 60 日 × 少量股票 |
 | `config_medium_8gpu.yaml` | 60 日 × 全市场 |
+| `config_medium_try_300m_8gpu.yaml` | ~302M 小数据试跑 |
+| `config_medium_300m_8gpu.yaml` | ~302M 正式（22 日全市场，Chinchilla 预算） |
 
 关键字段：
 
@@ -83,7 +86,21 @@ runtime:
 make train-pilot   # 单卡
 make train-8gpu    # Pilot 8 卡
 make train-medium-8gpu
+
+# 300M：数据就绪后自动训练；也可单独续训
+uv run python -m torch.distributed.run --standalone --nproc_per_node=8 \
+  --master_port=29521 -m quant_fm.pretrain.train \
+  --config quant_fm/pretrain/config_medium_300m_8gpu.yaml \
+  --resume auto
 ```
+
+`--resume` 取值：
+
+| 值 | 行为 |
+|----|------|
+| 省略 | 从头训练 |
+| 具体 `.pt` 路径 | 从该 checkpoint 恢复权重与优化器状态 |
+| `auto` | 自动选 `out_dir` 下最新 `step*.pt`，否则 `final.pt` / `best.pt` |
 
 ## 输出
 
@@ -111,4 +128,6 @@ TensorBoard 指标：
 
 ## 当前限制
 
-checkpoint 重点保存模型权重和模型配置。若要可靠支持中断后精确续训，还需同时持久化 optimizer、scaler、当前 step、随机数状态和 sampler epoch。
+- checkpoint 已覆盖模型 / optimizer / scaler / step，可支持训练中断后续训；
+- 尚未持久化 DataLoader sampler 精确位置与全部 RNG 状态，因此续训后的 batch 顺序与「从未中断」不完全字节级一致，但不影响工程级恢复；
+- 300M 配置约 `d_model=1024 × n_layers=18`，需匹配约 6B 训练事件（约 22 个全市场交易日）。
