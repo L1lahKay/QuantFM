@@ -15,6 +15,10 @@ events.out.tfevents*
 .minio_fm_env.sh
 minio_fm_env.sh
 credentials.json
+
+# Local career notes (do not publish)
+/项目总结与简历材料.md
+/面试问答-预训练与AI-Infra.md
 # Keep curated symbol/date lists under quant_fm/data/*.txt tracked;
 # only ignore generated subdirs if they appear later.
 quant_fm/data/**

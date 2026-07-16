@@ -66,8 +66,13 @@ def clean_one_day(
     symbols: tuple[str, ...],
     market: str,
     clean_dir: Path,
+    *,
+    skip_existing: bool = False,
+    n_workers: int | None = None,
 ) -> None:
     """单日单市场 PyLOB 清洗。"""
+    from pylob.pipeline.workflow import default_clean_workers
+
     cfg = PipelineConfig(
         bucket=read_bucket(),
         trade_prefix="",
@@ -77,12 +82,20 @@ def clean_one_day(
         market=market,
         layout="zeus_default",
         date=date.replace("-", "."),
+        skip_existing=skip_existing,
+        # medium 流水线只用 events.parquet；跳过 debug 产物加快写盘
+        write_debug_artifacts=False,
+        n_workers=default_clean_workers() if n_workers is None else n_workers,
     )
     build_clean_dataset(load_read_config(), cfg)
 
 
 def _date_done_marker(workdir: Path, date: str) -> Path:
     return workdir / "data" / ".done" / date
+
+
+def _clean_done_marker(workdir: Path, date: str) -> Path:
+    return workdir / "data" / ".clean_done" / date
 
 
 def _is_date_canonicalized(events_dir: Path, date: str) -> bool:
@@ -148,13 +161,22 @@ def run(
             continue
 
         day_clean = clean_dir / date
-        if not skip_clean:
+        clean_marker = _clean_done_marker(workdir, date)
+        if resume and clean_marker.exists():
+            logger.info("resume: reuse completed clean/%s", date)
+        elif not skip_clean:
             if symbols_sz:
                 logger.info("clean %s SZ (%d symbols)", date, len(symbols_sz))
-                clean_one_day(date, symbols_sz, "SZ", day_clean)
+                clean_one_day(
+                    date, symbols_sz, "SZ", day_clean, skip_existing=resume
+                )
             if symbols_sh:
                 logger.info("clean %s SH (%d symbols)", date, len(symbols_sh))
-                clean_one_day(date, symbols_sh, "SH", day_clean)
+                clean_one_day(
+                    date, symbols_sh, "SH", day_clean, skip_existing=resume
+                )
+            clean_marker.parent.mkdir(parents=True, exist_ok=True)
+            clean_marker.write_text("cleaned\n")
 
         canonicalize_clean_dir(
             day_clean,
@@ -162,11 +184,14 @@ def run(
             date=date,
             markets=("SZ", "SH"),
             symbols=symbols_sz + symbols_sh,
+            skip_existing=resume,
         )
 
         if drop_clean and day_clean.exists():
             shutil.rmtree(day_clean)
             logger.info("dropped clean/%s", date)
+        if drop_clean:
+            clean_marker.unlink(missing_ok=True)
 
         marker.parent.mkdir(parents=True, exist_ok=True)
         marker.write_text("canonicalized\n")

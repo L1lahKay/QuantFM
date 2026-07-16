@@ -42,6 +42,7 @@ def canonicalize_clean_dir(
     date: str,
     markets: tuple[str, ...] = ("SH", "SZ"),
     symbols: tuple[str, ...] | None = None,
+    skip_existing: bool = False,
 ) -> list[Path]:
     """
     规范化 ``clean_dir`` 下所有 ``events.parquet``。
@@ -83,6 +84,11 @@ def canonicalize_clean_dir(
                 logger.warning("missing %s, skipping", events_path)
                 continue
 
+            dst_dir = out_dir / market / symbol
+            dst = dst_dir / f"{date}.parquet"
+            if skip_existing and dst.exists():
+                continue
+
             events = pl.read_parquet(events_path)
             if events.is_empty():
                 logger.warning("empty %s, skipping", events_path)
@@ -90,9 +96,7 @@ def canonicalize_clean_dir(
 
             canonical = events_frame_to_canonical(events, date=date, market=market)
 
-            dst_dir = out_dir / market / symbol
             dst_dir.mkdir(parents=True, exist_ok=True)
-            dst = dst_dir / f"{date}.parquet"
             canonical.write_parquet(dst)
             written.append(dst)
             logger.info("wrote %s (%d events)", dst, canonical.height)

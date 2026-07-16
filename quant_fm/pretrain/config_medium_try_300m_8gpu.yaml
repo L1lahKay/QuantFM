@@ -1,0 +1,47 @@
+# ~300M OrderFlow FM：d_model=1024 × n_layers=18 ≈ 302.3M
+# 数据：复用 medium_try（5 日 × 60 股）；产物写入 medium_try_300m/
+#
+# 启动：
+#   CONFIG=quant_fm/pretrain/config_medium_try_300m_8gpu.yaml \
+#   MEDIUM_WORKDIR=quant_fm/runs/medium_try \
+#   bash quant_fm/scripts/train_medium_8gpu.sh
+
+seed: 42
+
+data:
+  manifest: quant_fm/runs/medium_try/data/manifest.json
+  vocab: quant_fm/runs/medium_try/data/vocab.json
+  context: 2048
+  stride: 2048
+  min_len: 16
+  cache_size: 8
+  num_workers: 2
+
+model:
+  d_model: 1024
+  n_layers: 18
+  n_heads: 16
+  ffn_mult: 4.0
+  dropout: 0.1
+  max_seq_len: 4096
+  rope_theta: 10000.0
+
+optim:
+  lr: 2.0e-4
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+  grad_clip: 1.0
+  warmup_steps: 500
+  max_steps: 10000
+  batch_size: 2
+  grad_accum: 4
+  precision: bf16
+
+runtime:
+  out_dir: quant_fm/runs/medium_try_300m/run
+  log_every: 20
+  eval_every: 500
+  save_best: true
+  ckpt_every: 2000
+  fsdp: true
+  device: cuda

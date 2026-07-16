@@ -59,6 +59,9 @@ class PipelineConfig:
     cut_serial: int | None = None
     file_suffixes: tuple[str, ...] = (".parquet", ".csv")
     field_mapping: dict[str, str] = field(default_factory=dict)
+    skip_existing: bool = False
+    write_debug_artifacts: bool = True
+    n_workers: int = 1
 
     def __post_init__(self) -> None:
         market = self.market.upper()

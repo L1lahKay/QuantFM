@@ -194,7 +194,7 @@ def evaluate(
     return total / max(n, 1.0)
 
 
-def train(config_path: Path) -> None:
+def train(config_path: Path, *, resume: Path | str | None = None) -> None:
     """从 YAML 配置运行预训练。"""
     # [导读] yaml.safe_load 把 config.yaml 读成 Python 字典 cfg
     cfg = yaml.safe_load(Path(config_path).read_text(encoding="utf-8"))
@@ -243,6 +243,14 @@ def train(config_path: Path) -> None:
         rope_theta=mcfg["rope_theta"],
     )
     model = OrderFlowFM(model_cfg).to(device)  # .to(device) 把模型放到 CPU/GPU
+    resume_path = _resolve_resume_path(out_dir, resume)
+    resume_ckpt = None
+    if resume_path is not None:
+        resume_ckpt = torch.load(resume_path, map_location="cpu", weights_only=False)
+        model.load_state_dict(resume_ckpt["model_state"])
+        if is_main_process(rank):
+            logger.info("loaded model checkpoint %s", resume_path)
+
     use_fsdp = cfg["runtime"].get("fsdp") and world_size > 1
     if is_main_process(rank):
         logger.info("model parameters: %.2fM", model.num_parameters() / 1e6)
@@ -265,6 +273,36 @@ def train(config_path: Path) -> None:
     scaler = torch.amp.GradScaler(enabled=opt["precision"] == "fp16")
 
     state = TrainState()
+    if resume_ckpt is not None:
+        optimizer_state = resume_ckpt.get("optimizer_state")
+        if optimizer_state is not None:
+            if use_fsdp:
+                from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+
+                full_state = optimizer_state if is_main_process(rank) else None
+                optimizer_state = FSDP.scatter_full_optim_state_dict(
+                    full_state, model, optim=optimizer
+                )
+            optimizer.load_state_dict(optimizer_state)
+        if "scaler_state" in resume_ckpt:
+            scaler.load_state_dict(resume_ckpt["scaler_state"])
+        saved_state = resume_ckpt.get("train_state", {})
+        state = TrainState(
+            step=int(saved_state.get("step", resume_ckpt.get("step", 0))),
+            best_val=float(
+                saved_state.get("best_val", resume_ckpt.get("val_loss", float("inf")))
+            ),
+            best_step=int(saved_state.get("best_step", -1)),
+        )
+        if is_main_process(rank):
+            logger.info(
+                "resumed training at step %d (best %.4f @ %d)",
+                state.step,
+                state.best_val,
+                state.best_step,
+            )
+        del resume_ckpt
+
     accum = opt["grad_accum"]  # [导读] 梯度累积：每 accum 步才真正 optimizer.step 一次
     model.train()  # 训练模式（启用 dropout 等）
 
@@ -336,6 +374,8 @@ def train(config_path: Path) -> None:
                         model_cfg,
                         out_dir,
                         state,
+                        optimizer=optimizer,
+                        scaler=scaler,
                         val_loss=val_loss,
                         rank=rank,
                         writer=writer,
@@ -346,6 +386,9 @@ def train(config_path: Path) -> None:
                     model,
                     model_cfg,
                     out_dir / f"step{state.step}.pt",
+                    optimizer=optimizer,
+                    scaler=scaler,
+                    train_state=state,
                     rank=rank,
                     step=state.step,
                 )
@@ -371,6 +414,8 @@ def train(config_path: Path) -> None:
             model_cfg,
             out_dir,
             state,
+            optimizer=optimizer,
+            scaler=scaler,
             val_loss=val_loss,
             rank=rank,
             writer=writer,
@@ -380,6 +425,9 @@ def train(config_path: Path) -> None:
         model,
         model_cfg,
         out_dir / "final.pt",
+        optimizer=optimizer,
+        scaler=scaler,
+        train_state=state,
         rank=rank,
         step=state.step,
         val_loss=state.best_val if state.best_step >= 0 else None,
@@ -425,6 +473,8 @@ def _maybe_save_best(
     out_dir: Path,
     state: TrainState,
     *,
+    optimizer: torch.optim.Optimizer | None = None,
+    scaler: torch.amp.GradScaler | None = None,
     val_loss: float,
     rank: int,
     writer=None,
@@ -440,6 +490,9 @@ def _maybe_save_best(
             model,
             model_cfg,
             out_dir / "best.pt",
+            optimizer=optimizer,
+            scaler=scaler,
+            train_state=state,
             rank=rank,
             step=state.step,
             val_loss=val_loss,
@@ -464,6 +517,9 @@ def _save_checkpoint(
     cfg: OrderFlowFMConfig,
     path: Path,
     *,
+    optimizer: torch.optim.Optimizer | None = None,
+    scaler: torch.amp.GradScaler | None = None,
+    train_state: TrainState | None = None,
     rank: int = 0,
     step: int | None = None,
     val_loss: float | None = None,
@@ -475,6 +531,16 @@ def _save_checkpoint(
     FSDP 下所有 rank 都必须进入 state_dict 收集；只有 rank0 写文件。
     """
     state = _model_state_dict(model)
+    optimizer_state = None
+    if optimizer is not None:
+        from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+
+        if isinstance(model, FSDP):
+            optimizer_state = FSDP.full_optim_state_dict(
+                model, optimizer, rank0_only=True
+            )
+        elif is_main_process(rank):
+            optimizer_state = optimizer.state_dict()
     if not is_main_process(rank):
         return
     payload: dict = {
@@ -492,6 +558,16 @@ def _save_checkpoint(
             "rope_theta": cfg.rope_theta,
         },
     }
+    if optimizer_state is not None:
+        payload["optimizer_state"] = optimizer_state
+    if scaler is not None:
+        payload["scaler_state"] = scaler.state_dict()
+    if train_state is not None:
+        payload["train_state"] = {
+            "step": train_state.step,
+            "best_val": train_state.best_val,
+            "best_step": train_state.best_step,
+        }
     if step is not None:
         payload["step"] = step
     if val_loss is not None:
@@ -525,6 +601,30 @@ def load_checkpoint(path: Path, device: torch.device) -> OrderFlowFM:
     return model
 
 
+def _resolve_resume_path(out_dir: Path, resume: Path | str | None) -> Path | None:
+    """解析显式 checkpoint，或在 ``auto`` 模式下选择最新定期 checkpoint。"""
+    if resume is None:
+        return None
+    if str(resume) != "auto":
+        path = Path(resume)
+        if not path.is_file():
+            raise FileNotFoundError(f"resume checkpoint not found: {path}")
+        return path
+
+    periodic = sorted(
+        out_dir.glob("step*.pt"),
+        key=lambda p: int(p.stem.removeprefix("step")),
+    )
+    if periodic:
+        return periodic[-1]
+    for name in ("final.pt", "best.pt"):
+        path = out_dir / name
+        if path.is_file():
+            return path
+    logger.info("resume=auto: no checkpoint found under %s; starting fresh", out_dir)
+    return None
+
+
 def main() -> None:
     """CLI 入口。"""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -534,8 +634,14 @@ def main() -> None:
         type=Path,
         default=Path(__file__).with_name("config.yaml"),
     )
+    parser.add_argument(
+        "--resume",
+        type=str,
+        default=None,
+        help="checkpoint 路径，或 auto（自动选择 out_dir 下最新 checkpoint）",
+    )
     args = parser.parse_args()
-    train(args.config)
+    train(args.config, resume=args.resume)
 
 
 if __name__ == "__main__":
