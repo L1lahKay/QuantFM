@@ -21,10 +21,13 @@ canonicalize_clean_dir(
     markets=("SZ", "SH"),
     symbols=symbols,
     skip_existing=resume,  # 已有 <date>.parquet 则跳过该标的
+    n_workers=None,        # 默认 CANON_WORKERS 或 min(16, CPU/4)
 )
 ```
 
 `--resume` 时开启 `skip_existing`，避免中断后重写已规范化的股日分片。
+
+全市场单日约 5100 股，`canonicalize_clean_dir` 使用多进程并行读 clean parquet、写 canonical 分片。环境变量 `CANON_WORKERS` 控制并行度（与洗股阶段的 `CLEAN_WORKERS` 独立）。
 
 ## 统一事件
 

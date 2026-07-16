@@ -30,14 +30,25 @@ embedding + panel
   → 仅用 train split 训练 Ranker
   → val/test 预测
   → RankIC / ICIR / 分组单调性
-  → Top-K 多头与多空回测
+  → Top-K 多头与多空回测（含成本）
   → Deflated Sharpe Ratio
+  → CPCV（purge + embargo，按时间块重训 Ranker）
   → 持久化 judge report
 ```
 
 ## 运行
 
 ```bash
+# 1) 抽股日 embedding（按 split）
+uv run python -m quant_fm.embedding.extract_hidden \
+  --checkpoint quant_fm/runs/medium_try/run/best.pt \
+  --manifest quant_fm/runs/medium_try/data/manifest.json \
+  --split train \
+  --out quant_fm/runs/medium_try/embeddings/train.parquet \
+  --device cuda:0
+# 对 val / test 重复上述命令
+
+# 2) 下游验收（需 panel/daily_panel.parquet）
 uv run python -m quant_fm.downstream.run_judge \
   --workdir quant_fm/runs/medium_try \
   --checkpoint quant_fm/runs/medium_try/run/best.pt
@@ -49,6 +60,7 @@ Make 入口：
 make judge-medium-try
 ```
 
+300M 训完后只需把 `--checkpoint` / `--workdir` 换成 `medium_300m` 对应路径，并先抽好 `embeddings/{train,val,test}.parquet`。
 ## 输出
 
 ```text

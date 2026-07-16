@@ -43,7 +43,10 @@ make minio-full-pipeline       # try
 make minio-full-pipeline-full  # 60 日 × 全市场
 
 # ~302M 正式：22 日全市场（Chinchilla）+ 断点续跑 + 并行清洗 + 自动续训
-CLEAN_WORKERS=16 SKIP_UPLOAD=1 bash quant_fm/scripts/run_minio_300m_pipeline.sh
+CLEAN_WORKERS=32 CANON_WORKERS=16 SKIP_UPLOAD=1 bash quant_fm/scripts/run_minio_300m_pipeline.sh
+
+# 查询数据阶段进度（完成天数、当日洗股/规范化、ETA）
+uv run python -m quant_fm.scripts.check_pipeline_progress
 ```
 
 由 `quant_fm/scripts/run_minio_full_pipeline.sh` / `run_minio_300m_pipeline.sh` 统一编排：
@@ -59,9 +62,19 @@ CLEAN_WORKERS=16 SKIP_UPLOAD=1 bash quant_fm/scripts/run_minio_300m_pipeline.sh
 | 变量 | 含义 |
 |------|------|
 | `CLEAN_WORKERS` | 并行洗股进程数（默认 `min(32, CPU/2)`） |
+| `CANON_WORKERS` | 并行规范化进程数（默认 `min(16, CPU/4)`） |
 | `SKIP_DATA=1` | 本地 tokens/manifest 已就绪，直接训练 |
 | `SKIP_TRAIN=1` | 只做数据 |
 | `SKIP_UPLOAD=1` | 不上传 model-cache |
+
+进度查询：
+
+```bash
+uv run python -m quant_fm.scripts.check_pipeline_progress
+uv run python -m quant_fm.scripts.check_pipeline_progress --workdir quant_fm/runs/medium_300m
+```
+
+读取 `data/.done/`、当日 `pipeline.log` 与 events/tokens/manifest 状态，输出完成比例与 ETA。
 
 ## 默认目录约定
 

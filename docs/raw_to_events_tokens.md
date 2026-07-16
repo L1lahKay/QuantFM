@@ -368,13 +368,19 @@ CLEAN_WORKERS=16 python -m quant_fm.scripts.run_medium \
 - clean 阶段：`skip_existing` 跳过已有 `events.parquet` 的标的；
 - canonicalize / tokenize：跳过已写出的 parquet。
 
-`CLEAN_WORKERS`（或 `PipelineConfig.n_workers`）控制订单簿重建并行度。
+`CLEAN_WORKERS`（或 `PipelineConfig.n_workers`）控制订单簿重建并行度；`CANON_WORKERS` 控制 `canonicalize_clean_dir` 并行度。
+
+查询进度：
+
+```bash
+uv run python -m quant_fm.scripts.check_pipeline_progress --workdir quant_fm/runs/medium_300m
+```
 
 ### 300M 正式流水线
 
 ```bash
 source ~/.minio_fm_env.sh
-CLEAN_WORKERS=16 SKIP_UPLOAD=1 bash quant_fm/scripts/run_minio_300m_pipeline.sh
+CLEAN_WORKERS=32 CANON_WORKERS=16 SKIP_UPLOAD=1 bash quant_fm/scripts/run_minio_300m_pipeline.sh
 ```
 
 日期列表：`quant_fm/data/medium_300m_22_dates.txt`  
@@ -434,10 +440,11 @@ python -m quant_fm.scripts.upload_to_minio \
 | **读配置** | `quant_fm/scripts/minio_config.py` | `load_read_config()` |
 | **写/upload** | `quant_fm/scripts/upload_to_minio.py` | `upload_workdir()` |
 | **读写自检** | `quant_fm/scripts/check_minio.py` | 连通性 + 默认端口 |
+| **进度查询** | `quant_fm/scripts/check_pipeline_progress.py` | 完成天数、当日阶段、ETA |
 | Step 1 清洗 | `examples/run_zeus_clean.py` | `build_clean_dataset()` |
 | Step 1 核心 | `order_book/pylob/pipeline/workflow.py` | `build_clean_dataset()`（`skip_existing` / `n_workers`） |
 | Step 1 事件流 | `order_book/pylob/pipeline/events.py` | `build_event_stream()` |
-| Step 2 规范化 | `quant_fm/lob_rebuild/export_events.py` | `canonicalize_clean_dir()` |
+| Step 2 规范化 | `quant_fm/lob_rebuild/export_events.py` | `canonicalize_clean_dir()`（`skip_existing` / `CANON_WORKERS`） |
 | Step 2 schema | `quant_fm/schema/cn_l2_v1.py` | `events_to_canonical()` |
 | Step 3 分箱 | `quant_fm/tokenizer/fit_bins.py` | `fit_bins()` |
 | Step 4 分词 | `quant_fm/tokenizer/tokenize_events.py` | `tokenize_path()` |

@@ -30,6 +30,8 @@
 | [MinIO 读写指南](minio_setup.md) | endpoint、bucket、凭据和排错 |
 | [MinIO 数据工作流](minio_data_workflow.md) | 清洗、上传、恢复和磁盘策略 |
 | [原始 L2 到 events/tokens](raw_to_events_tokens.md) | 字段级转换细节 |
+| 进度查询 | `uv run python -m quant_fm.scripts.check_pipeline_progress` |
+| 进度查询 | `uv run python -m quant_fm.scripts.check_pipeline_progress` |
 
 ## 包级说明
 

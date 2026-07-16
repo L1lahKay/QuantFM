@@ -56,7 +56,7 @@ make pilot
 # 或
 uv run python -m quant_fm.scripts.run_medium ...
 # 300M 正式流水线（含并行清洗）
-CLEAN_WORKERS=16 bash quant_fm/scripts/run_minio_300m_pipeline.sh
+CLEAN_WORKERS=32 CANON_WORKERS=16 bash quant_fm/scripts/run_minio_300m_pipeline.sh
 ```
 
 ## 加速与断点续跑

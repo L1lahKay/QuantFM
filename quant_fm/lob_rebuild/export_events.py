@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import polars as pl
@@ -23,6 +25,33 @@ import polars as pl
 from quant_fm.schema.cn_l2_v1 import events_to_canonical
 
 logger = logging.getLogger(__name__)
+
+
+def default_canon_workers() -> int:
+    """Default worker count for parallel canonicalization."""
+    env = os.environ.get("CANON_WORKERS")
+    if env:
+        return max(1, int(env))
+    cpu = os.cpu_count() or 8
+    return max(1, min(16, cpu // 4))
+
+
+def _canonicalize_one(payload: dict) -> tuple[str, str, int, str | None]:
+    """Worker: read clean events → canonical parquet. Returns (status, path, n_events, err)."""
+    events_path = Path(payload["events_path"])
+    dst = Path(payload["dst"])
+    date = payload["date"]
+    market = payload["market"]
+    try:
+        events = pl.read_parquet(events_path)
+        if events.is_empty():
+            return "empty", str(dst), 0, None
+        canonical = events_frame_to_canonical(events, date=date, market=market)
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        canonical.write_parquet(dst)
+        return "written", str(dst), canonical.height, None
+    except Exception as exc:  # noqa: BLE001
+        return "error", str(dst), 0, str(exc)
 
 
 def events_frame_to_canonical(
@@ -43,6 +72,7 @@ def canonicalize_clean_dir(
     markets: tuple[str, ...] = ("SH", "SZ"),
     symbols: tuple[str, ...] | None = None,
     skip_existing: bool = False,
+    n_workers: int | None = None,
 ) -> list[Path]:
     """
     规范化 ``clean_dir`` 下所有 ``events.parquet``。
@@ -67,7 +97,9 @@ def canonicalize_clean_dir(
     """
     clean_dir = Path(clean_dir)
     out_dir = Path(out_dir)
-    written: list[Path] = []
+    symbol_set = set(symbols) if symbols is not None else None
+    pending: list[dict] = []
+    skipped = 0
 
     for market in markets:
         market_dir = clean_dir / market
@@ -77,30 +109,79 @@ def canonicalize_clean_dir(
             if not symbol_dir.is_dir():
                 continue
             symbol = symbol_dir.name
-            if symbols is not None and symbol not in symbols:
+            if symbol_set is not None and symbol not in symbol_set:
                 continue
             events_path = symbol_dir / "events.parquet"
             if not events_path.exists():
                 logger.warning("missing %s, skipping", events_path)
                 continue
 
-            dst_dir = out_dir / market / symbol
-            dst = dst_dir / f"{date}.parquet"
+            dst = out_dir / market / symbol / f"{date}.parquet"
             if skip_existing and dst.exists():
+                skipped += 1
                 continue
 
-            events = pl.read_parquet(events_path)
-            if events.is_empty():
-                logger.warning("empty %s, skipping", events_path)
-                continue
+            pending.append(
+                {
+                    "events_path": str(events_path),
+                    "dst": str(dst),
+                    "date": date,
+                    "market": market,
+                }
+            )
 
-            canonical = events_frame_to_canonical(events, date=date, market=market)
+    if skipped:
+        logger.info("skip_existing: reused %d canonical symbol-days for %s", skipped, date)
 
-            dst_dir.mkdir(parents=True, exist_ok=True)
-            canonical.write_parquet(dst)
-            written.append(dst)
-            logger.info("wrote %s (%d events)", dst, canonical.height)
+    if not pending:
+        logger.info("nothing to canonicalize for %s", date)
+        return []
 
+    workers = max(1, int(n_workers if n_workers is not None else default_canon_workers()))
+    written: list[Path] = []
+
+    if workers == 1:
+        for payload in pending:
+            status, path, n_events, err = _canonicalize_one(payload)
+            if status == "written":
+                written.append(Path(path))
+                logger.info("wrote %s (%d events)", path, n_events)
+            elif status == "empty":
+                logger.warning("empty %s, skipping", payload["events_path"])
+            else:
+                logger.error("failed %s: %s", path, err)
+        return written
+
+    logger.info(
+        "canonicalizing %d symbols for %s with n_workers=%d",
+        len(pending),
+        date,
+        workers,
+    )
+    import multiprocessing as mp
+
+    ctx = mp.get_context("spawn")
+    with ProcessPoolExecutor(max_workers=workers, mp_context=ctx) as pool:
+        futures = [pool.submit(_canonicalize_one, p) for p in pending]
+        total = len(futures)
+        for i, fut in enumerate(as_completed(futures), start=1):
+            status, path, n_events, err = fut.result()
+            if status == "written":
+                written.append(Path(path))
+            elif status == "empty":
+                logger.warning("empty shard skipped -> %s", path)
+            else:
+                logger.error("failed %s: %s", path, err)
+            if i % 200 == 0 or i == total:
+                logger.info(
+                    "canonicalize progress %s %d/%d written=%d",
+                    date,
+                    i,
+                    total,
+                    len(written),
+                )
+
+    logger.info("canonicalized %d symbol-days for %s", len(written), date)
     return written
 
 

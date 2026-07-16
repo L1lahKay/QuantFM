@@ -69,7 +69,10 @@ make minio-full-pipeline
 make minio-full-pipeline-full
 
 # ~302M 正式：22 日全市场（Chinchilla）+ 并行清洗 + 断点续跑
-CLEAN_WORKERS=16 SKIP_UPLOAD=1 bash quant_fm/scripts/run_minio_300m_pipeline.sh
+CLEAN_WORKERS=32 CANON_WORKERS=16 SKIP_UPLOAD=1 bash quant_fm/scripts/run_minio_300m_pipeline.sh
+
+# 进度
+uv run python -m quant_fm.scripts.check_pipeline_progress
 
 # 只要数据不要训练
 SKIP_TRAIN=1 MODE=full bash quant_fm/scripts/run_minio_full_pipeline.sh

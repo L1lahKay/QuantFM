@@ -111,7 +111,7 @@ make train-8gpu
 
 - PyLOB 是离线研究引擎，不是生产低延迟撮合系统；
 - 训练 checkpoint 已保存模型、optimizer、scaler 与 step，支持 `--resume` / `--resume auto` 断点续训；尚未持久化 sampler 精确位置与全部 RNG 状态；
-- 数据阶段支持日期级 / 标的级断点续跑（`.done`、`.clean_done`、`skip_existing`）与 `CLEAN_WORKERS` 多进程清洗；
+- 数据阶段支持日期级 / 标的级断点续跑（`.done`、`.clean_done`、`skip_existing`）、`CLEAN_WORKERS` 多进程清洗与 `CANON_WORKERS` 并行规范化；可用 `check_pipeline_progress` 查询进度；
 - manifest 中包含绝对路径，跨机器迁移时应重建或改写；
 - 合成 smoke 的回测指标没有经济含义；
 - 全市场效果需要更长时间跨度与独立 out-of-sample 数据验证。

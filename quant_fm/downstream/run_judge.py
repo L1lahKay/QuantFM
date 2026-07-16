@@ -30,6 +30,7 @@ import polars as pl
 
 from quant_fm.downstream.backtest_topk import backtest_topk
 from quant_fm.downstream.evaluate import (
+    cpcv_splits,
     deflated_sharpe_ratio,
     group_monotonicity,
     rank_ic,
@@ -39,6 +40,94 @@ from quant_fm.downstream.make_features import build_features
 from quant_fm.downstream.train_ranker import predict, train_ranker
 
 logger = logging.getLogger(__name__)
+
+
+def _run_cpcv(
+    feat_all: pl.DataFrame,
+    panel: pl.DataFrame,
+    *,
+    device: str,
+    epochs: int,
+    seed: int,
+    top_k: int | None,
+) -> dict:
+    """组合式 purged CV：每个 fold 仅用 train 日期拟合 Ranker，再在 test 块上算 RankIC。"""
+    dates = sorted(str(d) for d in feat_all["date"].unique().to_list())
+    n = len(dates)
+    if n < 4:
+        return {
+            "skipped": True,
+            "reason": f"need >= 4 dates for CPCV, got {n}",
+            "n_dates": n,
+        }
+
+    n_groups = min(6, n)
+    n_test_groups = 1 if n_groups <= 4 else 2
+    purge = 1 if n >= 8 else 0
+    embargo = 1 if n >= 8 else 0
+    splits = cpcv_splits(
+        dates,
+        n_groups=n_groups,
+        n_test_groups=n_test_groups,
+        purge=purge,
+        embargo=embargo,
+    )
+
+    fold_rows: list[dict] = []
+    fold_epochs = max(5, min(epochs, 15))
+    for i, (train_dates, test_dates) in enumerate(splits):
+        train_f = feat_all.filter(pl.col("date").is_in(train_dates))
+        test_f = feat_all.filter(pl.col("date").is_in(test_dates))
+        if train_f.is_empty() or test_f.is_empty():
+            continue
+        if train_f["date"].n_unique() < 2 or test_f["date"].n_unique() < 1:
+            continue
+        model, history = train_ranker(
+            train_f,
+            epochs=fold_epochs,
+            device=device,
+            seed=seed + i,
+        )
+        preds = predict(model, test_f, device=device)
+        pan = panel.filter(pl.col("date").is_in(test_f["date"].unique().to_list()))
+        ic = rank_ic(preds, pan)
+        mean_ic = float(np.nanmean(ic["ic"].to_numpy()))
+        n_per_day = max(test_f.height // max(test_f["date"].n_unique(), 1), 1)
+        k = top_k if top_k is not None else min(10, max(3, n_per_day // 5))
+        bt = backtest_topk(preds, pan, top_k=k, long_short=False, cost_bps=15.0)
+        fold_rows.append(
+            {
+                "fold": i,
+                "n_train_days": len(train_dates),
+                "n_test_days": len(test_dates),
+                "mean_rank_ic": mean_ic,
+                "final_train_ic": history[-1] if history else None,
+                "backtest_long_only_sharpe": bt.sharpe,
+                "backtest_long_only_ann_return": bt.ann_return,
+            }
+        )
+
+    if not fold_rows:
+        return {
+            "skipped": True,
+            "reason": "no valid CPCV folds after filtering",
+            "n_dates": n,
+            "n_groups": n_groups,
+        }
+
+    ics = np.array([r["mean_rank_ic"] for r in fold_rows], dtype=np.float64)
+    return {
+        "skipped": False,
+        "n_dates": n,
+        "n_groups": n_groups,
+        "n_test_groups": n_test_groups,
+        "purge": purge,
+        "embargo": embargo,
+        "n_folds": len(fold_rows),
+        "mean_rank_ic": float(np.nanmean(ics)),
+        "std_rank_ic": float(np.nanstd(ics, ddof=1)) if len(ics) > 1 else None,
+        "folds": fold_rows,
+    }
 
 
 def _file_meta(path: Path) -> dict:
@@ -177,6 +266,19 @@ def run_judge(
     )
     rand_ic = rank_ic(rand_preds, test_pan)
 
+    feat_all = pl.concat(
+        [df for df in (train_feat, val_feat, test_feat) if not df.is_empty()],
+        how="vertical_relaxed",
+    )
+    cpcv_report = _run_cpcv(
+        feat_all,
+        panel,
+        device=device,
+        epochs=epochs,
+        seed=seed,
+        top_k=top_k,
+    )
+
     ts = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%SZ")
     report = {
         "created_utc": ts,
@@ -198,6 +300,7 @@ def run_judge(
         "test": _eval_split(
             "test", model, test_feat, panel, device=device, top_k=top_k
         ),
+        "cpcv": cpcv_report,
         "test_random_baseline_mean_ic": float(np.nanmean(rand_ic["ic"].to_numpy())),
     }
 
@@ -216,6 +319,7 @@ def run_judge(
         "train_ic": report["ranker"]["final_train_ic"],
         "val_mean_rank_ic": report["val"].get("mean_rank_ic"),
         "test_mean_rank_ic": report["test"].get("mean_rank_ic"),
+        "cpcv_mean_rank_ic": cpcv_report.get("mean_rank_ic"),
         "test_random_baseline_mean_ic": report["test_random_baseline_mean_ic"],
         "report_path": str(run_path.resolve()),
     }

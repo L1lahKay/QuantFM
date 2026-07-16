@@ -11,7 +11,7 @@
 #   SKIP_TRAIN=1 bash ...          # 只做数据
 #   SKIP_DATA=1 bash ...           # 本地已有 tokens，直接训练
 #   SKIP_UPLOAD=1 bash ...         # 不上传 model-cache
-#   CLEAN_WORKERS=16 bash ...      # 并行洗股进程数（默认 min(32, CPU/2)）
+#   CLEAN_WORKERS=32 CANON_WORKERS=16 bash ...  # 并行洗股 / 规范化进程数
 #
 # 默认启用断点续跑：按日期记录 clean/canonicalize 完成状态，并跳过已生成
 # 的 events/tokens；数据完成后训练会从 runtime.resume 指定的 checkpoint 恢复。
