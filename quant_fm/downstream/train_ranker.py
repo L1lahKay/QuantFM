@@ -115,6 +115,34 @@ def _days_from_frame(
     return days
 
 
+def feature_columns(features: pl.DataFrame) -> list[str]:
+    """返回 Ranker 使用的有序特征列。"""
+    return [c for c in features.columns if c.startswith(("emb_", "factor_"))]
+
+
+def _scoring_days(
+    features: pl.DataFrame,
+    expected_columns: list[str] | None = None,
+) -> list[tuple[str, pl.DataFrame, np.ndarray]]:
+    """将无标签推理表按日拆为日期、主键和特征矩阵。"""
+    columns = feature_columns(features)
+    if expected_columns is not None and columns != expected_columns:
+        msg = (
+            "ranker feature columns mismatch: "
+            f"expected={expected_columns}, actual={columns}"
+        )
+        raise ValueError(msg)
+    if not columns:
+        msg = "no emb_* or factor_* columns available for scoring"
+        raise ValueError(msg)
+    days: list[tuple[str, pl.DataFrame, np.ndarray]] = []
+    for (date,), sub in features.group_by(["date"], maintain_order=True):
+        keys = sub.select(["date", "symbol"])
+        x = sub.select(columns).to_numpy().astype(np.float32)
+        days.append((str(date), keys, x))
+    return days
+
+
 def train_ranker(
     features: pl.DataFrame,
     *,
@@ -166,19 +194,22 @@ def train_ranker(
     return model, history
 
 
-@torch.no_grad()
+@torch.inference_mode()
 def predict(
     model: CrossSectionalRanker,
     features: pl.DataFrame,
     *,
     device: str = "cpu",
+    expected_columns: list[str] | None = None,
 ) -> pl.DataFrame:
-    """对每个 (date, symbol) 行打分；返回 ``date, symbol, score``。"""
+    """对无标签特征打分；返回严格的 ``date, symbol, score``。"""
     model.eval()
     dev = torch.device(device)
     out_rows: list[pl.DataFrame] = []
-    for date, x, _y in _days_from_frame(features):
+    for _date, keys, x in _scoring_days(features, expected_columns):
         pred = model(torch.from_numpy(x).to(dev)).cpu().numpy()
-        sub = features.filter(pl.col("date") == date).select(["date", "symbol"])
-        out_rows.append(sub.with_columns(pl.Series("score", pred)))
+        out_rows.append(keys.with_columns(pl.Series("score", pred)))
+    if not out_rows:
+        msg = "no days available to score"
+        raise ValueError(msg)
     return pl.concat(out_rows)

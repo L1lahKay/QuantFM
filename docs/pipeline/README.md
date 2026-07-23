@@ -13,7 +13,7 @@
 | 5 | [Manifest 与时间切分](05_manifest_splits.md) | `manifest.json` |
 | 6 | [OrderFlow FM 预训练](06_pretraining.md) | `best.pt`、`final.pt`、TensorBoard 日志 |
 | 7 | [股日 Embedding](07_embeddings.md) | `embeddings.parquet` |
-| 8 | [下游 Ranker 与回测](08_downstream_evaluation.md) | RankIC、回测与 judge report |
+| 8 | [Score 信号与研究验收](08_downstream_evaluation.md) | `scores.parquet`、`signal_manifest.json` |
 
 ## 三种运行路径
 
@@ -23,7 +23,7 @@
 uv run python -m quant_fm.scripts.smoke --workdir /tmp/quantfm-smoke
 ```
 
-用于 CI 和重构回归，不依赖 MinIO。预期终态：`SMOKE OK: all stages passed`。
+用于 CI 和重构回归，不依赖 MinIO。预期终态：`SMOKE OK: score signal generated`。
 
 ### 真实 Pilot
 
@@ -89,8 +89,9 @@ quant_fm/runs/<experiment>/
 │   ├── .done/        # 日期级：canonicalize 完成
 │   └── .clean_done/  # 日期级：当日 clean 完成（可复用）
 ├── run/            # checkpoint + TensorBoard
-├── embeddings*.parquet
-└── downstream/     # 下游裁判报告
+├── embeddings*.parquet  # 内部中间产物
+├── signal_artifact/     # 冻结 Ranker
+└── delivery/            # scores.parquet + signal_manifest.json
 ```
 
 该目录属于生成产物，已被 `.gitignore` 排除。断点续跑层级：日期 `.done` → clean 标的 `events.parquet` → events 股日 parquet → tokens 文件。
@@ -104,4 +105,4 @@ quant_fm/runs/<experiment>/
 | 无泄漏断言 | 禁止 val/test 日期拟合词表 | `assert_no_leakage()` |
 | 分片哈希 | 保证输入可审计、可复现 | manifest 中 `sha256` |
 | 验证集最优模型 | 防止使用过拟合的最终权重 | `best.pt` |
-| 下游统计检验 | 降低数据挖掘与偶然收益 | RankIC、CPCV、DSR |
+| 无标签信号生成 | 防止生产推理读取未来收益 | `quant_fm.signal.generate` |

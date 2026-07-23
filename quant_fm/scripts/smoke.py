@@ -3,8 +3,7 @@
 
 串联流水线各阶段，使 ``make smoke`` 在任一环节断裂时立即失败：
 合成规范事件 -> 拟合分箱 -> 分词 -> 覆盖率/泄漏门控 -> 清单 ->
-小规模预训练 -> 嵌入提取 -> 特征矩阵 -> 横截面排序器 ->
-Top-K 回测 -> RankIC / DSR 门控。
+小规模预训练 -> 嵌入提取 -> 冻结横截面排序器 -> 无标签 score 信号。
 
 运行::
 
@@ -162,19 +161,19 @@ def run(workdir: Path) -> None:
         "data": {
             "manifest": str(manifest_path),
             "vocab": str(vocab_path),
-            "context": 256,
-            "stride": 256,
+            "context": 64,
+            "stride": 64,
             "min_len": 8,
             "cache_size": 4,
             "num_workers": 0,
         },
         "model": {
-            "d_model": 64,
-            "n_layers": 2,
+            "d_model": 32,
+            "n_layers": 1,
             "n_heads": 4,
             "ffn_mult": 4.0,
             "dropout": 0.1,
-            "max_seq_len": 512,
+            "max_seq_len": 128,
             "rope_theta": 10000.0,
         },
         "optim": {
@@ -182,16 +181,16 @@ def run(workdir: Path) -> None:
             "weight_decay": 0.1,
             "betas": [0.9, 0.95],
             "grad_clip": 1.0,
-            "warmup_steps": 5,
-            "max_steps": 30,
-            "batch_size": 4,
+            "warmup_steps": 1,
+            "max_steps": 2,
+            "batch_size": 2,
             "grad_accum": 1,
             "precision": "fp32",
         },
         "runtime": {
             "out_dir": str(run_dir),
             "log_every": 10,
-            "eval_every": 20,
+            "eval_every": 1000,
             "ckpt_every": 1000,
             "fsdp": False,
             "device": "cpu",
@@ -217,33 +216,46 @@ def run(workdir: Path) -> None:
             model,
             manifest.split("test") or manifest.split("train"),
             device,
-            context=256,
+            context=64,
         )
     assert embeddings.height > 0, "no embeddings produced"
 
-    # ========== 阶段 7：下游选股演示（合成标签，仅验证代码能跑）==========
-    _downstream(embeddings, workdir)
-
-    logger.info("SMOKE OK: all stages passed")
-
-
-def _downstream(embeddings: pl.DataFrame, workdir: Path) -> None:
-    """构建合成标签面板并运行排序器/回测/门控。"""
-    from quant_fm.downstream.backtest_topk import backtest_topk
-    from quant_fm.downstream.evaluate import (
-        deflated_sharpe_ratio,
-        rank_ic,
-        rank_icir,
+    # ========== 阶段 7：离线训练 Ranker，生产侧无标签出 score ==========
+    _score_signal(
+        embeddings,
+        workdir,
+        fm_checkpoint=run_dir / "final.pt",
+        vocab_path=vocab_path,
     )
-    from quant_fm.downstream.make_features import build_features
-    from quant_fm.downstream.train_ranker import predict, train_ranker
+
+    logger.info("SMOKE OK: score signal generated")
+
+
+def _score_signal(
+    embeddings: pl.DataFrame,
+    workdir: Path,
+    *,
+    fm_checkpoint: Path,
+    vocab_path: Path,
+) -> None:
+    """仅在历史日造标签训练；最新日期完全无标签也必须能够出分。"""
+    from quant_fm.downstream.make_features import build_training_features
+    from quant_fm.downstream.train_ranker import feature_columns, train_ranker
+    from quant_fm.signal.artifact import save_ranker_artifact
+    from quant_fm.signal.generate import generate_scores
 
     rng = np.random.default_rng(1)
+    dates = sorted(str(value) for value in embeddings["date"].unique())
+    if len(dates) < 2:
+        msg = "signal smoke needs at least two embedding dates"
+        raise RuntimeError(msg)
+    train_embeddings = embeddings.filter(pl.col("date") == dates[0])
+    score_embeddings = embeddings.filter(pl.col("date") == dates[-1])
     emb_cols = [c for c in embeddings.columns if c.startswith("emb_")]
-    signal = embeddings[emb_cols[0]].to_numpy()
+    signal = train_embeddings[emb_cols[0]].to_numpy()
     fwd = 0.5 * (signal - signal.mean()) / (signal.std() + 1e-9) * 0.01
     fwd = fwd + rng.normal(0, 0.02, size=len(fwd))
-    panel = embeddings.select(["date", "symbol"]).with_columns(
+    panel = train_embeddings.select(["date", "symbol"]).with_columns(
         pl.Series("fwd_ret", fwd),
         pl.lit(False).alias("is_st"),
         pl.lit(False).alias("is_halt"),
@@ -251,26 +263,34 @@ def _downstream(embeddings: pl.DataFrame, workdir: Path) -> None:
         pl.lit(False).alias("limit_locked"),
     )
 
-    features = build_features(embeddings, panel, min_names_per_day=2)
+    features = build_training_features(train_embeddings, panel, min_names_per_day=2)
     model, history = train_ranker(features, epochs=5, use_attention=True, device="cpu")
-    preds = predict(model, features, device="cpu")
-
-    ic = rank_ic(preds, panel)
-    icir = rank_icir(ic)
-    result = backtest_topk(preds, panel, top_k=2, long_short=True)
-    dsr = deflated_sharpe_ratio(
-        result.sharpe / np.sqrt(244) if result.sharpe else 0.0,
-        n_trials=10,
-        n_obs=max(len(result.dates), 2),
-        sr_variance=0.25,
+    artifact_dir = workdir / "signal_artifact"
+    ranker_path = artifact_dir / "ranker.pt"
+    metadata_path = artifact_dir / "ranker_metadata.json"
+    save_ranker_artifact(
+        model,
+        ranker_path,
+        metadata_path,
+        feature_columns=feature_columns(features),
+        training_end_date=dates[0],
+        seed=0,
+        history=history,
     )
-    logger.info(
-        "downstream: train_ic=%.3f icir=%.3f sharpe=%.2f dsr=%.3f",
-        history[-1],
-        icir,
-        result.sharpe,
-        dsr,
+    scoring_path = workdir / "scoring_embeddings.parquet"
+    score_embeddings.write_parquet(scoring_path)
+    scores_path = generate_scores(
+        embeddings_path=scoring_path,
+        ranker_path=ranker_path,
+        ranker_metadata_path=metadata_path,
+        out_dir=workdir / "delivery",
+        device="cpu",
+        fm_checkpoint_path=fm_checkpoint,
+        vocab_path=vocab_path,
     )
+    scores = pl.read_parquet(scores_path)
+    assert scores.columns == ["date", "symbol", "score"]
+    assert scores["date"].unique().to_list() == [dates[-1]]
 
 
 def main() -> None:

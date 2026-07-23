@@ -132,18 +132,49 @@ def attach_fwd_ret(
     daily: pl.DataFrame,
     *,
     price_col: str = "vwap",
+    trading_days: list[str] | None = None,
 ) -> pl.DataFrame:
-    """按 symbol 对齐下一交易日价格，计算 ``fwd_ret``。"""
-    if daily.is_empty():
-        return daily.with_columns(pl.lit(None, dtype=pl.Float64).alias("fwd_ret"))
+    """
+    用**全局交易日历的下一交易日**对齐价格，计算 ``fwd_ret``。
 
-    daily = daily.sort(["symbol", "date"])
-    # shift within symbol: join date_i with date_{i+1} via window
-    with_next = daily.with_columns(
-        pl.col(price_col).shift(-1).over("symbol").alias("_next_px"),
-        pl.col("date").shift(-1).over("symbol").alias("next_date"),
+    与按 symbol ``shift(-1)`` 的旧实现不同：这里 ``next_date`` 由**所有标的共享的
+    交易日序列**决定，因此
+
+    * 每个信号日 ``T`` 的前瞻区间恒为「T → 下一交易日」，horizon 一致；
+    * 若某标的在下一交易日停牌 / 缺数据，则该行 ``fwd_ret = null``（不会像旧实现
+      那样跨过缺失日、把多日收益误当作 1 日）。
+
+    参数
+    ----------
+    price_col
+        计算收益用的价格列（``vwap`` 或 ``close``）。
+    trading_days
+        交易日历（``YYYY-MM-DD`` 列表）。缺省时用 ``daily`` 中出现过的日期排序。
+        **仅当传入的是连续交易日时，``fwd_ret`` 才具备「次日」语义。**
+    """
+    if daily.is_empty():
+        return daily.with_columns(
+            pl.lit(None, dtype=pl.Utf8).alias("next_date"),
+            pl.lit(None, dtype=pl.Float64).alias("fwd_ret"),
+        )
+
+    present = sorted(daily["date"].unique().to_list())
+    days = sorted(trading_days) if trading_days else present
+    # 全局「date -> 下一交易日」映射（最后一天无下一日 → null）。
+    next_map = pl.DataFrame(
+        {"date": days[:-1], "next_date": days[1:]},
+        schema={"date": pl.Utf8, "next_date": pl.Utf8},
     )
-    return with_next.with_columns(
+    daily = daily.join(next_map, on="date", how="left")
+
+    # 用「同标的、下一交易日」的价格作为前瞻价。
+    nxt = daily.select(
+        pl.col("symbol"),
+        pl.col("date").alias("next_date"),
+        pl.col(price_col).alias("_next_px"),
+    )
+    out = daily.join(nxt, on=["symbol", "next_date"], how="left")
+    return out.with_columns(
         (
             pl.when(pl.col("_next_px").is_not_null() & (pl.col(price_col) > 0))
             .then(pl.col("_next_px") / pl.col(price_col) - 1.0)
@@ -158,7 +189,12 @@ def build_panel(
     symbols: set[str] | None = None,
     price_col: str = "vwap",
 ) -> pl.DataFrame:
-    """多日构建面板；``fwd_ret`` 需要日历上后一天存在才有值。"""
+    """
+    多日构建面板；``fwd_ret`` 由**全局下一交易日**对齐（见 :func:`attach_fwd_ret`）。
+
+    ``dates`` 应为**连续交易日**并在末尾多带一天（用于最后一个信号日的 fwd_ret）；
+    否则 ``fwd_ret`` 只是「下一采样日」的收益，不具备次日语义。
+    """
     opts = storage_options_for_read()
     frames: list[pl.DataFrame] = []
     for d in dates:
@@ -169,7 +205,7 @@ def build_panel(
     if not frames:
         return pl.DataFrame()
     daily = pl.concat([f for f in frames if not f.is_empty()], how="vertical_relaxed")
-    return attach_fwd_ret(daily, price_col=price_col)
+    return attach_fwd_ret(daily, price_col=price_col, trading_days=list(dates))
 
 
 def main() -> None:

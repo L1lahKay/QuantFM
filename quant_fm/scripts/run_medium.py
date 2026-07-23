@@ -19,20 +19,80 @@ from __future__ import annotations
 import argparse
 import logging
 import math
+import multiprocessing as mp
+import os
 import shutil
+import subprocess
+import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 from pylob.pipeline.config import PipelineConfig
 from pylob.pipeline.workflow import build_clean_dataset
 
-from quant_fm.lob_rebuild.export_events import canonicalize_clean_dir
+from quant_fm.lob_rebuild.export_events import (
+    canonicalize_and_tokenize_clean_dir,
+    canonicalize_clean_dir,
+)
 from quant_fm.manifest.build_manifest import build_manifest
 from quant_fm.scripts.minio_config import load_read_config, read_bucket
 from quant_fm.scripts.suggest_model_size import estimate_events, suggest
 from quant_fm.tokenizer.fit_bins import fit_bins
 from quant_fm.tokenizer.tokenize_events import assert_no_leakage, tokenize_path
+from quant_fm.tokenizer.vocab import Vocab
 
 logger = logging.getLogger(__name__)
+
+
+def _default_tokenize_workers() -> int:
+    """Tokenize 并行度：环境变量 ``TOKENIZE_WORKERS``，默认 min(16, cpu)。"""
+    env = os.environ.get("TOKENIZE_WORKERS")
+    if env:
+        return max(1, int(env))
+    cpu = os.cpu_count() or 8
+    return max(1, min(16, cpu // 2))
+
+
+def _tokenize_one_job(job: tuple[str, str, str]) -> str:
+    """ProcessPool worker：``(src, dst, vocab_path)`` → 返回 src。"""
+    src_s, dst_s, vocab_s = job
+    tokenize_path(Path(src_s), Path(dst_s), Vocab.load(Path(vocab_s)))
+    return src_s
+
+
+def _tokenize_shards_parallel(
+    jobs: list[tuple[Path, Path]],
+    *,
+    vocab_path: Path,
+    drop_events: bool,
+    n_workers: int,
+) -> int:
+    """并行 tokenize 一批 ``(src, dst)``；可选删除 src。返回处理数。"""
+    if not jobs:
+        return 0
+    payload = [(str(s), str(d), str(vocab_path)) for s, d in jobs]
+    if n_workers <= 1 or len(payload) == 1:
+        for src, dst, _vp in ((Path(a), Path(b), c) for a, b, c in payload):
+            tokenize_path(src, dst, Vocab.load(vocab_path))
+            if drop_events:
+                src.unlink(missing_ok=True)
+        return len(payload)
+
+    done = 0
+    # 必须用 spawn：默认 fork 会继承 polars/rayon 已锁定的线程池，子进程死锁
+    # （表现为 tokenize 卡住、0 产出，主进程在 as_completed 上永久 futex_wait）。
+    # 与 canonicalize_clean_dir 的做法保持一致。
+    ctx = mp.get_context("spawn")
+    with ProcessPoolExecutor(max_workers=n_workers, mp_context=ctx) as pool:
+        futs = [pool.submit(_tokenize_one_job, job) for job in payload]
+        for fut in as_completed(futs):
+            src = Path(fut.result())
+            if drop_events:
+                src.unlink(missing_ok=True)
+            done += 1
+            if done % 500 == 0 or done == len(payload):
+                logger.info("tokenize progress %d/%d", done, len(payload))
+    return done
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DATES = ROOT / "quant_fm/data/medium_60_dates.txt"
@@ -117,6 +177,9 @@ def run(
     fit_sample_days: int | None,
     resume: bool,
     estimate_only: bool,
+    fast_clean: bool = False,
+    skip_manifest: bool = False,
+    reuse_vocab: Path | None = None,
     upload_minio: bool = False,
     upload_tag: str = "medium",
     upload_events: bool = False,
@@ -154,16 +217,109 @@ def run(
     if estimate_only:
         return
 
+    vocab_path = data_dir / "vocab.json"
+    vocab: Vocab | None = None
+    # 下游抽 embedding 场景：提前加载冻结 vocab，以便按日 tokenize 后立刻
+    # drop events，避免 60+ 天 events 堆积爆盘（约 4GB/天）。
+    if reuse_vocab is not None:
+        vocab = Vocab.load(reuse_vocab)
+        vocab.save(vocab_path)
+        logger.info(
+            "reuse frozen vocab: %s (fit_dates=%d, 按日 tokenize+drop)",
+            reuse_vocab,
+            len(vocab.fit_dates),
+        )
+
+    def _tokenize_day(day: str) -> int:
+        """
+        Tokenize one trading day's event shards in a **fresh subprocess**.
+
+        必须走子进程：本进程已跑过 clean/canonicalize，polars/rayon 残留上百线程、
+        占用上百 GB 常驻内存，此时在本进程内开 ``ProcessPoolExecutor(spawn)`` 会在
+        fork+exec 瞬间被父进程线程锁 / 巨大页表拖死（worker 全 futex_wait、0 产出）。
+        交给 ``quant_fm.scripts.tokenize_dir`` 在干净解释器里跑即可规避。
+        """
+        assert vocab is not None
+        pending = any(
+            not (tokens_dir / p.relative_to(events_dir)).exists()
+            for p in events_dir.rglob(f"{day}.parquet")
+        )
+        cmd = [
+            sys.executable,
+            "-m",
+            "quant_fm.scripts.tokenize_dir",
+            "--events-dir", str(events_dir),
+            "--tokens-dir", str(tokens_dir),
+            "--vocab", str(vocab_path),
+            "--day", day,
+            "--workers", str(_default_tokenize_workers()),
+        ]
+        if drop_events:
+            cmd.append("--drop-events")
+        if not resume:
+            cmd.append("--no-resume")
+        if pending or drop_events:
+            subprocess.run(cmd, check=True, cwd=str(ROOT))
+        return sum(1 for _ in tokens_dir.rglob(f"{day}.parquet"))
+
+    def _prune_empty_dirs(root: Path) -> None:
+        for empty in sorted(root.rglob("*"), reverse=True):
+            if empty.is_dir() and not any(empty.iterdir()):
+                empty.rmdir()
+
     for date in dates:
         marker = _date_done_marker(workdir, date)
+        # 旧 marker 可能只表示 canonicalize 完成、events 仍在磁盘上；
+        # reuse-vocab 路径下补做按日 tokenize + drop。
         if resume and marker.exists():
-            logger.info("resume: skip %s (marker exists)", date)
+            if vocab is not None and any(events_dir.rglob(f"{date}.parquet")):
+                n = _tokenize_day(date)
+                logger.info(
+                    "resume: tokenized leftover events for %s (%d shards)", date, n
+                )
+                if drop_events:
+                    _prune_empty_dirs(events_dir)
+                marker.write_text("tokenized\n")
+            else:
+                logger.info("resume: skip %s (marker exists)", date)
             continue
 
         day_clean = clean_dir / date
         clean_marker = _clean_done_marker(workdir, date)
         if resume and clean_marker.exists():
             logger.info("resume: reuse completed clean/%s", date)
+        elif not skip_clean and fast_clean:
+            # P0/P1 高性能路径：读一次 MinIO、SZ+SH 同池清洗、带本地 raw 缓存。
+            from quant_fm.lob_rebuild.clean_day_fast import (
+                clean_day_fast,
+                drop_day_cache,
+            )
+
+            raw_cache = data_dir / "raw_cache"
+            logger.info(
+                "clean(fast) %s SZ=%d SH=%d", date, len(symbols_sz), len(symbols_sh)
+            )
+            clean_stats = clean_day_fast(
+                date=date,
+                symbols_sz=symbols_sz,
+                symbols_sh=symbols_sh,
+                clean_dir=day_clean,
+                cache_dir=raw_cache,
+                minio_config=load_read_config(),
+                bucket=read_bucket(),
+                skip_existing=resume,
+            )
+            if int(clean_stats["errors"]):
+                failed = clean_stats.get("failed_symbols", [])
+                logger.warning(
+                    "clean accepted with %s explicit gap(s) on %s: %s",
+                    clean_stats["errors"],
+                    date,
+                    failed,
+                )
+            clean_marker.parent.mkdir(parents=True, exist_ok=True)
+            clean_marker.write_text("cleaned\n")
+            drop_day_cache(raw_cache, date)  # clean 完成后释放当日缓存
         elif not skip_clean:
             if symbols_sz:
                 logger.info("clean %s SZ (%d symbols)", date, len(symbols_sz))
@@ -178,14 +334,29 @@ def run(
             clean_marker.parent.mkdir(parents=True, exist_ok=True)
             clean_marker.write_text("cleaned\n")
 
-        canonicalize_clean_dir(
-            day_clean,
-            events_dir,
-            date=date,
-            markets=("SZ", "SH"),
-            symbols=symbols_sz + symbols_sh,
-            skip_existing=resume,
-        )
+        if vocab is not None:
+            token_paths = canonicalize_and_tokenize_clean_dir(
+                day_clean,
+                tokens_dir,
+                vocab_path=vocab_path,
+                date=date,
+                markets=("SZ", "SH"),
+                symbols=symbols_sz + symbols_sh,
+                skip_existing=resume,
+            )
+            from quant_fm.scripts.make_adhoc_manifest import write_day_index
+
+            write_day_index(tokens_dir, date)
+        else:
+            canonicalize_clean_dir(
+                day_clean,
+                events_dir,
+                date=date,
+                markets=("SZ", "SH"),
+                symbols=symbols_sz + symbols_sh,
+                skip_existing=resume,
+                strict=True,
+            )
 
         if drop_clean and day_clean.exists():
             shutil.rmtree(day_clean)
@@ -194,53 +365,103 @@ def run(
             clean_marker.unlink(missing_ok=True)
 
         marker.parent.mkdir(parents=True, exist_ok=True)
-        marker.write_text("canonicalized\n")
+        if vocab is not None:
+            failure_path = data_dir / ".failed" / f"{date}.json"
+            marker.write_text(
+                "tokenized_with_gaps\n" if failure_path.exists() else "tokenized\n"
+            )
+            logger.info("day done (tokenized): %s (%d shards)", date, len(token_paths))
+        else:
+            marker.write_text("canonicalized\n")
 
-    fit_dates = train_dates
-    train_paths = [p for p in events_dir.rglob("*.parquet") if p.stem <= train_end]
-    if not train_paths:
-        msg = "no train event shards found under events/"
-        raise RuntimeError(msg)
+    if vocab is None:
+        # 预训练数据路径：先 fit_bins，再一次性 tokenize。
+        fit_dates = train_dates
+        train_paths = [p for p in events_dir.rglob("*.parquet") if p.stem <= train_end]
+        if not train_paths:
+            msg = "no train event shards found under events/"
+            raise RuntimeError(msg)
 
-    if fit_sample_days is not None and fit_sample_days < len(train_dates):
-        sample_dates = set(train_dates[:fit_sample_days])
-        train_paths = [p for p in train_paths if p.stem in sample_dates]
-        fit_dates = [d for d in train_dates if d in sample_dates]
-        logger.info(
-            "fit_bins on first %d train days (%d shards)",
-            fit_sample_days,
-            len(train_paths),
-        )
+        if fit_sample_days is not None and fit_sample_days < len(train_dates):
+            sample_dates = set(train_dates[:fit_sample_days])
+            train_paths = [p for p in train_paths if p.stem in sample_dates]
+            fit_dates = [d for d in train_dates if d in sample_dates]
+            logger.info(
+                "fit_bins on first %d train days (%d shards)",
+                fit_sample_days,
+                len(train_paths),
+            )
 
-    vocab = fit_bins(train_paths, n_bins=n_bins, fit_dates=fit_dates)
-    vocab_path = data_dir / "vocab.json"
-    vocab.save(vocab_path)
-    assert_no_leakage(vocab, val_dates, test_dates)
+        vocab = fit_bins(train_paths, n_bins=n_bins, fit_dates=fit_dates)
+        vocab.save(vocab_path)
+        assert_no_leakage(vocab, val_dates, test_dates)
 
-    for p in sorted(events_dir.rglob("*.parquet")):
-        rel = p.relative_to(events_dir)
-        dst = tokens_dir / rel
-        if dst.exists() and resume:
-            continue
-        tokenize_path(p, dst, vocab)
+        jobs: list[tuple[Path, Path]] = []
+        for p in sorted(events_dir.rglob("*.parquet")):
+            rel = p.relative_to(events_dir)
+            dst = tokens_dir / rel
+            if dst.exists() and resume:
+                continue
+            jobs.append((p, dst))
+        if jobs:
+            logger.info("tokenizing %d event shards (workers=%d)", len(jobs), _default_tokenize_workers())
+            _tokenize_shards_parallel(
+                jobs,
+                vocab_path=vocab_path,
+                drop_events=drop_events,
+                n_workers=_default_tokenize_workers(),
+            )
+
         if drop_events:
-            p.unlink()
+            _prune_empty_dirs(events_dir)
+    else:
+        # 扫尾：任何未 tokenize 的残留 events（如中断留下的半日）。
+        # 只扫**本进程负责的日期**：跨日并行时多个 run_medium 共享 events_dir，
+        # 若在此全局扫描会撞上别的组正在写/删的分片（FileNotFoundError / 竞态）。
+        dates_set = set(dates)
+        leftover_jobs: list[tuple[Path, Path]] = []
+        for p in sorted(events_dir.rglob("*.parquet")):
+            if p.stem not in dates_set:
+                continue  # 别的并行组的日期，跳过
+            rel = p.relative_to(events_dir)
+            dst = tokens_dir / rel
+            if dst.exists() and resume:
+                if drop_events:
+                    p.unlink(missing_ok=True)
+                continue
+            leftover_jobs.append((p, dst))
+        if leftover_jobs:
+            logger.info(
+                "tokenizing %d leftover event shards (workers=%d)",
+                len(leftover_jobs),
+                _default_tokenize_workers(),
+            )
+            _tokenize_shards_parallel(
+                leftover_jobs,
+                vocab_path=vocab_path,
+                drop_events=drop_events,
+                n_workers=_default_tokenize_workers(),
+            )
+        if drop_events:
+            _prune_empty_dirs(events_dir)
 
-    if drop_events:
-        for empty in sorted(events_dir.rglob("*"), reverse=True):
-            if empty.is_dir() and not any(empty.iterdir()):
-                empty.rmdir()
-
-    manifest = build_manifest(
-        tokens_dir,
-        train_end=train_end,
-        val_end=val_end,
-        markets=("SZ", "SH"),
-        vocab_path=str(vocab_path),
-    )
-    manifest_path = data_dir / "manifest.json"
-    manifest.save(manifest_path)
-    logger.info("data ready: vocab=%s manifest=%s", vocab_path, manifest_path)
+    if skip_manifest:
+        # 跨日并行时：各组跳过收尾 manifest（扫全量 tokens + 逐文件 sha256 很重且会
+        # race），由驱动脚本在所有组结束后统一构建一次。
+        logger.info(
+            "skip_manifest: 跳过收尾 manifest（vocab=%s，tokens 就绪）", vocab_path
+        )
+    else:
+        manifest = build_manifest(
+            tokens_dir,
+            train_end=train_end,
+            val_end=val_end,
+            markets=("SZ", "SH"),
+            vocab_path=str(vocab_path),
+        )
+        manifest_path = data_dir / "manifest.json"
+        manifest.save(manifest_path)
+        logger.info("data ready: vocab=%s manifest=%s", vocab_path, manifest_path)
 
     if upload_minio:
         from quant_fm.scripts.upload_to_minio import remote_uri, upload_workdir
@@ -308,6 +529,22 @@ def main() -> None:
     )
     parser.add_argument("--resume", action="store_true")
     parser.add_argument(
+        "--fast-clean",
+        action="store_true",
+        help="P0/P1 高性能清洗：每天只读一次 MinIO、SZ+SH 同池、本地 raw 缓存续跑",
+    )
+    parser.add_argument(
+        "--skip-manifest",
+        action="store_true",
+        help="跳过收尾 manifest 构建（跨日并行时用，由驱动脚本统一建一次）",
+    )
+    parser.add_argument(
+        "--reuse-vocab",
+        type=Path,
+        default=None,
+        help="复用已冻结 vocab.json（抽 embedding 场景必须与预训练一致），跳过 fit_bins",
+    )
+    parser.add_argument(
         "--estimate-only",
         action="store_true",
         help="只打印规模与推荐模型，不跑流水线",
@@ -355,6 +592,9 @@ def main() -> None:
         fit_sample_days=args.fit_sample_days,
         resume=args.resume,
         estimate_only=args.estimate_only,
+        fast_clean=args.fast_clean,
+        skip_manifest=args.skip_manifest,
+        reuse_vocab=args.reuse_vocab,
         upload_minio=args.upload_minio,
         upload_tag=args.upload_tag,
         upload_events=args.upload_events,

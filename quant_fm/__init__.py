@@ -9,10 +9,11 @@ quant_fm：A 股订单流基础模型端到端预训练。
       -> 全局字段级分词器 / 词表    (quant_fm.tokenizer)
       -> 分片清单 + 时间切分         (quant_fm.manifest)
       -> 解码器多任务下一事件 FM     (quant_fm.pretrain)
-      -> 冻结的股日嵌入              (quant_fm.embedding)
-      -> 横截面排序器 + 回测门控     (quant_fm.downstream)
+      -> 冻结的股日嵌入（内部）       (quant_fm.embedding)
+      -> 冻结横截面排序器             (quant_fm.downstream)
+      -> 日频 score 信号              (quant_fm.signal)
 
-重量级模块（``pretrain``、``embedding``、``downstream``）惰性导入 torch，
+重量级模块（``pretrain``、``embedding``、``downstream``、``signal``）惰性导入 torch，
 因此 ``schema``、``tokenizer`` 和 ``manifest`` 可在无 GPU 环境下使用。
 """
 

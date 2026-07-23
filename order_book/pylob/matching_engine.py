@@ -185,6 +185,8 @@ class MatchingEngine(ABC):
                 self.logger.debug(
                     f"处理进度: {self.process_num:,}/{total_rows:,} ({self.process_percent:.2f}%)"
                 )
+                # 周期性压缩 tombstone，避免单向堆积时簿深度虚高、内存膨胀。
+                self._compact_book()
 
         # 结束交易会话
         self.finalize_trading_session()
@@ -432,6 +434,27 @@ class MatchingEngine(ABC):
                 self.asks[order.price] = deque()
             self.asks[order.price].append(order)
 
+    def _purge_level_front(self, price_level: deque) -> None:
+        """弹出队头已失效（数量≤0）的订单，摊还 O(1)。"""
+        while price_level and price_level[0].quantity <= 0:
+            price_level.popleft()
+
+    def _compact_book(self) -> None:
+        """去掉簿上的 tombstone，避免单向堆积时 deque 无限膨胀。"""
+        for book in (self.bids, self.asks):
+            empty_prices = []
+            for price, level in list(book.items()):
+                if not level:
+                    empty_prices.append(price)
+                    continue
+                live = deque(o for o in level if o.quantity > 0)
+                if not live:
+                    empty_prices.append(price)
+                elif len(live) < len(level):
+                    book[price] = live
+            for price in empty_prices:
+                del book[price]
+
     def cancel_order(
         self,
         order_id: int,
@@ -477,77 +500,62 @@ class MatchingEngine(ABC):
             return False
 
         order_to_cancel = self.orders[order_id]
-        price = order_to_cancel.price
 
         self.logger.debug(
             f"取消订单请求: 订单ID={order_id}, 取消时间={cancel_time}, 交易阶段={self.trading_phase.value}"
         )
 
-        success = False
-        if order_to_cancel.side == Side.BUY:
-            price_level = self.bids.get(price)
-            if price_level and order_to_cancel in price_level:
-                price_level.remove(order_to_cancel)
-                if not price_level:
-                    del self.bids[price]
-                success = True
-        else:  # Side.SELL
-            price_level = self.asks.get(price)
-            if price_level and order_to_cancel in price_level:
-                price_level.remove(order_to_cancel)
-                if not price_level:
-                    del self.asks[price]
-                success = True
+        # O(1) tombstone：勿对 deque 做 in/remove（档内深度大时会退化到 O(n)，
+        # 单向堆积活跃股上可把整天清洗拖死）。撮合路径会跳过 quantity<=0 并从队头弹出。
+        record_qty = (
+            cancel_quantity
+            if cancel_quantity is not None
+            else order_to_cancel.quantity
+        )
+        record_price = order_to_cancel.price
+        side = order_to_cancel.side
+        order_time = order_to_cancel.order_time
+        order_type = order_to_cancel.order_type
+        order_to_cancel.quantity = 0
 
-        if success:
-            record_qty = (
-                cancel_quantity
-                if cancel_quantity is not None
-                else order_to_cancel.quantity
-            )
-            record_price = order_to_cancel.price
-            self.pending_exchange_cancels.pop(order_id, None)
+        self.pending_exchange_cancels.pop(order_id, None)
+        cancel_record = Cancel(
+            cancel_id=self.next_cancel_id,
+            order_id=order_id,
+            side=side,
+            price=record_price,
+            quantity=record_qty,
+            order_time=order_time,
+            cancel_time=cancel_time,
+        )
+        self.cancels.append(cancel_record)
+        self.next_cancel_id += 1
 
-            cancel_record = Cancel(
-                cancel_id=self.next_cancel_id,
-                order_id=order_id,
-                side=order_to_cancel.side,
-                price=record_price,
-                quantity=record_qty,
-                order_time=order_to_cancel.order_time,
-                cancel_time=cancel_time,
-            )
-            self.cancels.append(cancel_record)
-            self.next_cancel_id += 1
+        del self.orders[order_id]
+        self.used_order_ids.discard(order_id)
 
-            # 从订单字典中删除，这样集合竞价时就找不到了
-            del self.orders[order_id]
-            self.used_order_ids.remove(order_id)
+        order_type_str = (
+            "市价单"
+            if order_type == "1"
+            else ("本地最优单" if order_type == "U" else "限价单")
+        )
 
-            order_type_str = (
-                "市价单"
-                if order_to_cancel.order_type == "1"
-                else ("本地最优单" if order_to_cancel.order_type == "U" else "限价单")
-            )
-
-            if self.trading_phase == TradingPhase.CALL_AUCTION:
-                self.logger.debug(
-                    f"集合竞价阶段：{order_type_str} {order_id} 已成功撤销，将不参与后续撮合。"
-                )
-            else:
-                self.logger.debug(
-                    f"连续竞价阶段：{order_type_str} {order_id} 已成功撤销。"
-                )
-
+        if self.trading_phase == TradingPhase.CALL_AUCTION:
             self.logger.debug(
-                f"原订单信息: 类型: {order_type_str}, 方向: {order_to_cancel.side.value}, "
-                f"价格: {order_to_cancel.price:.2f}, 数量: {order_to_cancel.quantity}, "
-                f"挂单时间: {order_to_cancel.order_time}"
+                f"集合竞价阶段：{order_type_str} {order_id} 已成功撤销，将不参与后续撮合。"
             )
         else:
-            self.logger.warning(f"订单 {order_id} 撤销失败，订单可能已经成交或不存在。")
+            self.logger.debug(
+                f"连续竞价阶段：{order_type_str} {order_id} 已成功撤销。"
+            )
 
-        return success
+        self.logger.debug(
+            f"原订单信息: 类型: {order_type_str}, 方向: {side.value}, "
+            f"价格: {record_price:.2f}, 数量: {record_qty}, "
+            f"挂单时间: {order_time}"
+        )
+
+        return True
 
     # ------------------------------------------------------------------
     # 集合竞价

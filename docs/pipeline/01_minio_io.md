@@ -78,3 +78,15 @@ make check-minio
 - `AccessDenied`：凭据缺少读取权限，或 object key 缺少 `HDS/...` 前缀。
 - `SignatureDoesNotMatch`：写端使用了错误密钥，确认已 `source ~/.minio_fm_env.sh`。
 - 读取很慢：单日合并文件可达数亿行，属预期行为；下游通过 symbol filter 降低进入撮合阶段的数据量。
+
+## IO 优化：单次读取 + 本地缓存 + 列投影（`--fast-clean`）
+
+旧清洗路径对 SZ、SH 各读一次全市场日文件（`default/2` + `default/3`），单日读 **4 次**且无缓存。
+高性能路径 `quant_fm/lob_rebuild/clean_day_fast.py`（`run_medium --fast-clean`）把它降到**每日 1 次读取**：
+
+- **一次读 union（SZ∪SH）**：SZ/SH 共用同一份内存帧，读取 4 次 → 1 次；
+- **本地 raw 缓存**：`<workdir>/data/raw_cache/<date>/` 缓存过滤+投影后的原始帧，
+  中断/重启秒级续跑、不再重下（这是长窗口连续跑的稳定性关键）；
+- **列投影**：`scan_parquet(...).select(REQUIRED_COLUMNS ∩ schema)`，减少下载字节。
+
+详见 [订单簿重建：高性能清洗路径](pipeline/02_order_book_rebuild.md#高性能清洗路径---fast-cleanp0p1-重构) 一节。

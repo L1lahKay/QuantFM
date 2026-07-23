@@ -83,9 +83,16 @@ class PolarsS3Reader:
             frame = pl.scan_parquet(uri, storage_options=self.storage_options)
             if symbol_filter:
                 logger.info("Filtering symbols=%s", ",".join(symbol_filter))
-                frame = frame.filter(
-                    pl.col("symbol").cast(pl.String).str.zfill(6).is_in(symbol_filter)
-                )
+                schema = frame.collect_schema()
+                if schema.get("symbol") == pl.String:
+                    frame = frame.filter(pl.col("symbol").is_in(symbol_filter))
+                else:
+                    frame = frame.filter(
+                        pl.col("symbol")
+                        .cast(pl.String)
+                        .str.zfill(6)
+                        .is_in(symbol_filter)
+                    )
             collected = frame.collect()
             logger.info("Loaded %d rows from %s", collected.height, object_key)
             frames.append(collected)

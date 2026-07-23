@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 
+import numpy as np
 import polars as pl
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,20 @@ def _embedding_columns(df: pl.DataFrame) -> list[str]:
     return [c for c in df.columns if c.startswith("emb_")]
 
 
-def build_features(
+def _normalise_keys(frame: pl.DataFrame) -> pl.DataFrame:
+    """统一信号主键类型，避免字符串股票代码在 join 时丢失前导零。"""
+    required = {"date", "symbol"}
+    missing = required - set(frame.columns)
+    if missing:
+        msg = f"missing key columns: {sorted(missing)}"
+        raise ValueError(msg)
+    return frame.with_columns(
+        pl.col("date").cast(pl.Utf8),
+        pl.col("symbol").cast(pl.Utf8).str.zfill(6),
+    )
+
+
+def build_training_features(
     embeddings: pl.DataFrame,
     panel: pl.DataFrame,
     *,
@@ -54,6 +68,11 @@ def build_features(
     polars.DataFrame
         列：``date, symbol, label, <emb_*>, <factor_*>``。
     """
+    if "fwd_ret" not in panel.columns:
+        msg = "training panel must contain fwd_ret"
+        raise ValueError(msg)
+    embeddings = _normalise_keys(embeddings)
+    panel = _normalise_keys(panel)
     df = embeddings.join(panel, on=["date", "symbol"], how="inner")
 
     # 可交易性过滤：仅保留 T+1 可操作的标的。
@@ -62,6 +81,7 @@ def build_features(
             df = df.filter(~pl.col(flag).cast(pl.Boolean).fill_null(False))
 
     if factors is not None:
+        factors = _normalise_keys(factors)
         df = df.join(factors, on=["date", "symbol"], how="left")
 
     # 标签为横截面超额收益排序（按日）。
@@ -90,3 +110,80 @@ def build_features(
         len(_embedding_columns(df)),
     )
     return df.select(keep).sort(["date", "symbol"])
+
+
+def build_scoring_features(
+    embeddings: pl.DataFrame,
+    *,
+    factors: pl.DataFrame | None = None,
+    universe: pl.DataFrame | None = None,
+    min_names_per_day: int = 1,
+) -> pl.DataFrame:
+    """
+    构建不含未来标签的生产打分特征。
+
+    该接口只依赖信号日已经产生的 embedding，以及可选的 PIT 因子/股票池。
+    它有意不接收 panel，防止在线推理意外读取 ``fwd_ret``。
+    """
+    if min_names_per_day < 1:
+        msg = "min_names_per_day must be >= 1"
+        raise ValueError(msg)
+    df = _normalise_keys(embeddings)
+    emb_cols = _embedding_columns(df)
+    if not emb_cols:
+        msg = "embeddings must contain at least one emb_* column"
+        raise ValueError(msg)
+
+    forbidden = {"label", "fwd_ret", "xs_ret"} & set(df.columns)
+    if forbidden:
+        msg = (
+            f"scoring embeddings contain forbidden future columns: {sorted(forbidden)}"
+        )
+        raise ValueError(msg)
+
+    if universe is not None:
+        keys = _normalise_keys(universe).select(["date", "symbol"]).unique()
+        df = df.join(keys, on=["date", "symbol"], how="inner")
+    if factors is not None:
+        factors = _normalise_keys(factors)
+        forbidden = {"label", "fwd_ret", "xs_ret"} & set(factors.columns)
+        if forbidden:
+            msg = (
+                f"scoring factors contain forbidden future columns: {sorted(forbidden)}"
+            )
+            raise ValueError(msg)
+        df = df.join(factors, on=["date", "symbol"], how="left")
+
+    feature_cols = emb_cols + [c for c in df.columns if c.startswith("factor_")]
+    invalid = [
+        name
+        for name in feature_cols
+        if df.select(pl.col(name).is_null().any()).item()
+        or not bool(np.isfinite(df[name].cast(pl.Float64).to_numpy()).all())
+    ]
+    if invalid:
+        msg = f"scoring features contain null/NaN/Inf: {invalid}"
+        raise ValueError(msg)
+
+    counts = df.group_by("date").len().rename({"len": "_n"})
+    df = df.join(counts, on="date").filter(pl.col("_n") >= min_names_per_day)
+    if df.is_empty():
+        msg = "no rows available for scoring after universe/day filters"
+        raise ValueError(msg)
+    return df.select(["date", "symbol", *feature_cols]).sort(["date", "symbol"])
+
+
+def build_features(
+    embeddings: pl.DataFrame,
+    panel: pl.DataFrame,
+    *,
+    factors: pl.DataFrame | None = None,
+    min_names_per_day: int = 20,
+) -> pl.DataFrame:
+    """兼容旧调用；新代码应显式调用 :func:`build_training_features`。"""
+    return build_training_features(
+        embeddings,
+        panel,
+        factors=factors,
+        min_names_per_day=min_names_per_day,
+    )

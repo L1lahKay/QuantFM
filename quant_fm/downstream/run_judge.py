@@ -102,8 +102,12 @@ def _run_cpcv(
                 "n_test_days": len(test_dates),
                 "mean_rank_ic": mean_ic,
                 "final_train_ic": history[-1] if history else None,
+                "backtest_long_only_sharpe_daily": bt.sharpe_daily,
+                "backtest_long_only_cum_return": bt.cum_return,
+                "backtest_long_only_hit_rate": bt.hit_rate,
                 "backtest_long_only_sharpe": bt.sharpe,
                 "backtest_long_only_ann_return": bt.ann_return,
+                "backtest_reliable": bt.reliable,
             }
         )
 
@@ -183,7 +187,7 @@ def _eval_split(
     bt_ls = backtest_topk(preds, pan, top_k=k, long_short=True, cost_bps=15.0)
     bt_lo = backtest_topk(preds, pan, top_k=k, long_short=False, cost_bps=15.0)
     dsr = deflated_sharpe_ratio(
-        bt_lo.sharpe / np.sqrt(244) if bt_lo.sharpe else 0.0,
+        bt_lo.sharpe_daily,
         n_trials=5,
         n_obs=max(len(bt_lo.dates), 2),
         sr_variance=0.25,

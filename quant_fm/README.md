@@ -3,7 +3,7 @@
 > **新手请先读**：[docs/QuantFM.md](../docs/QuantFM.md)（含阅读顺序、Python 概念、代码内 `# [导读]` 注释索引）  
 > **全部文档索引**：[docs/README.md](../docs/README.md)（含 MinIO、流水线、调研与阶段汇报）
 
-在 `order_book/pylob/` 沪深订单簿子项目之上，构建一套**可复现、可验证**的订单流基础模型（OrderFlow FM）预训练流水线。Python 导入名仍为 `pylob`。FM 只负责“学市场语言”，产出冻结的 stock-day embedding；最终选股由下游截面 ranker + meta-labeling 完成。
+在 `order_book/pylob/` 沪深订单簿子项目之上，构建一套**可复现、可验证**的订单流基础模型流水线。Python 导入名仍为 `pylob`。FM embedding 是内部中间产物，冻结 Ranker 的最终生产输出仅为日频 `score`。
 
 ## 数据流
 
@@ -15,8 +15,9 @@
   → 分片 manifest + 时间切分     quant_fm/manifest
 【写】MinIO :9100  model-cache   tokens/ + vocab + manifest
   → （可选）decoder-only 预训练  quant_fm/pretrain
-  → 冻结 stock-day embedding     quant_fm/embedding
-  → 截面 ranker + 回测           quant_fm/downstream
+  → 冻结 stock-day embedding     quant_fm/embedding（内部）
+  → 冻结截面 ranker              quant_fm/downstream
+  → date/symbol/score            quant_fm/signal（唯一交付）
 ```
 
 MinIO **读写**详见 [docs/minio_setup.md](../docs/minio_setup.md)。
@@ -54,7 +55,17 @@ uv sync --extra fm     # 或  pip install -e ".[fm]"
 make smoke
 ```
 
-`smoke` 会跑通全部环节：合成 cn_l2_v1 事件 → 拟合分箱 → tokenize → 覆盖率/无泄漏闸门 → manifest → 微型预训练 → 抽 embedding → 截面 ranker → Top-K 回测 → RankIC/DSR。结尾打印 `SMOKE OK` 即表示整条链路可用。
+`smoke` 会跑通全部环节：合成事件 → tokenize → 微型预训练 → embedding → 离线冻结 Ranker → 在没有未来标签的日期生成 score。结尾打印 `SMOKE OK: score signal generated` 即表示生产链路可用。
+
+正式交付目录只包含：
+
+```text
+delivery/
+├── scores.parquet
+└── signal_manifest.json
+```
+
+`score(T)` 仅在 T 日收盘后可用，且只保证同日横截面可比。组合构建、交易成本与回测不属于生产信号链路。
 
 ## 真实 Pilot
 

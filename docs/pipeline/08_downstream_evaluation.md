@@ -1,8 +1,8 @@
-# 阶段 8：下游 Ranker 与回测验收
+# 阶段 8：生产 Score 信号与研究验收
 
 ## 目标
 
-检验预训练 embedding 是否包含可迁移到截面选股的有效信息。FM 只负责学习订单流表征，最终策略效果由独立下游模型与统计闸门判断。
+生产目标是从内部 embedding 和冻结 Ranker 生成 `date, symbol, score`。生产推理不得读取 panel、`fwd_ret` 或 `label`。RankIC、CPCV 与 Top-K 回测保留为 research-only 工具，不属于交付链路。
 
 ## 核心代码
 
@@ -10,6 +10,9 @@
 |------|------|
 | `quant_fm/downstream/make_features.py` | embedding 与日频面板拼接、过滤 |
 | `quant_fm/downstream/train_ranker.py` | 截面 Ranker 训练与预测 |
+| `quant_fm/signal/train.py` | 用历史标签离线训练并冻结 Ranker |
+| `quant_fm/signal/generate.py` | 无标签生成生产 score |
+| `quant_fm/signal/schema.py` | 三列信号契约与校验 |
 | `quant_fm/downstream/evaluate.py` | RankIC/ICIR、分组单调性、CPCV、DSR |
 | `quant_fm/downstream/backtest_topk.py` | Top-K 多空/多头回测 |
 | `quant_fm/downstream/run_judge.py` | 完整下游验收与报告持久化 |
@@ -22,7 +25,17 @@
 - 股票状态过滤字段，如 ST、停牌、新股、涨跌停锁定；
 - checkpoint 元数据。
 
-## 流程
+## 生产流程
+
+```text
+历史 embedding + 历史 panel → signal.train → ranker.pt
+信号日 embedding + ranker.pt → signal.generate
+                              → scores.parquet + signal_manifest.json
+```
+
+最新信号日即使尚无未来收益，也必须能够正常出分。对外交付不包含 embedding、panel、checkpoint、持仓或回测指标。
+
+## Research-only 流程
 
 ```text
 embedding + panel
@@ -36,7 +49,22 @@ embedding + panel
   → 持久化 judge report
 ```
 
-## 运行
+## 生产运行
+
+```bash
+uv run python -m quant_fm.signal.train \
+  --embeddings runs/history/embeddings/train.parquet \
+  --panel runs/history/panel/daily_panel.parquet \
+  --out-dir runs/history/signal_artifact
+
+uv run python -m quant_fm.signal.generate \
+  --embeddings runs/oos/embeddings.parquet \
+  --ranker runs/history/signal_artifact/ranker.pt \
+  --ranker-metadata runs/history/signal_artifact/ranker_metadata.json \
+  --out-dir runs/oos/delivery
+```
+
+## Research-only 运行
 
 ```bash
 # 1) 抽股日 embedding（按 split）

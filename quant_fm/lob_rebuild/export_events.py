@@ -37,7 +37,7 @@ def default_canon_workers() -> int:
 
 
 def _canonicalize_one(payload: dict) -> tuple[str, str, int, str | None]:
-    """Worker: read clean events → canonical parquet. Returns (status, path, n_events, err)."""
+    """Read clean events and return ``(status, path, n_events, error)``."""
     events_path = Path(payload["events_path"])
     dst = Path(payload["dst"])
     date = payload["date"]
@@ -50,7 +50,33 @@ def _canonicalize_one(payload: dict) -> tuple[str, str, int, str | None]:
         dst.parent.mkdir(parents=True, exist_ok=True)
         canonical.write_parquet(dst)
         return "written", str(dst), canonical.height, None
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
+        return "error", str(dst), 0, str(exc)
+
+
+def _canonicalize_tokenize_one(payload: dict) -> tuple[str, str, int, str | None]:
+    """Fuse clean→canonical→token to avoid two intermediate parquet round trips."""
+    from quant_fm.tokenizer.tokenize_events import tokenize_frame
+    from quant_fm.tokenizer.vocab import Vocab
+
+    events_path = Path(payload["events_path"])
+    dst = Path(payload["dst"])
+    try:
+        events = pl.read_parquet(events_path)
+        if events.is_empty():
+            return "empty", str(dst), 0, None
+        canonical = events_frame_to_canonical(
+            events,
+            date=payload["date"],
+            market=payload["market"],
+        )
+        tokens = tokenize_frame(canonical, Vocab.load(Path(payload["vocab_path"])))
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        tmp = dst.with_suffix(".parquet.tmp")
+        tokens.write_parquet(tmp)
+        tmp.replace(dst)
+        return "written", str(dst), tokens.height, None
+    except Exception as exc:
         return "error", str(dst), 0, str(exc)
 
 
@@ -73,6 +99,7 @@ def canonicalize_clean_dir(
     symbols: tuple[str, ...] | None = None,
     skip_existing: bool = False,
     n_workers: int | None = None,
+    strict: bool = False,
 ) -> list[Path]:
     """
     规范化 ``clean_dir`` 下所有 ``events.parquet``。
@@ -139,6 +166,7 @@ def canonicalize_clean_dir(
 
     workers = max(1, int(n_workers if n_workers is not None else default_canon_workers()))
     written: list[Path] = []
+    errors = 0
 
     if workers == 1:
         for payload in pending:
@@ -149,7 +177,11 @@ def canonicalize_clean_dir(
             elif status == "empty":
                 logger.warning("empty %s, skipping", payload["events_path"])
             else:
+                errors += 1
                 logger.error("failed %s: %s", path, err)
+        if strict and errors:
+            msg = f"canonicalize failed for {errors} symbol(s) on {date}"
+            raise RuntimeError(msg)
         return written
 
     logger.info(
@@ -171,6 +203,7 @@ def canonicalize_clean_dir(
             elif status == "empty":
                 logger.warning("empty shard skipped -> %s", path)
             else:
+                errors += 1
                 logger.error("failed %s: %s", path, err)
             if i % 200 == 0 or i == total:
                 logger.info(
@@ -182,6 +215,93 @@ def canonicalize_clean_dir(
                 )
 
     logger.info("canonicalized %d symbol-days for %s", len(written), date)
+    if strict and errors:
+        msg = f"canonicalize failed for {errors} symbol(s) on {date}"
+        raise RuntimeError(msg)
+    return written
+
+
+def canonicalize_and_tokenize_clean_dir(
+    clean_dir: Path,
+    tokens_dir: Path,
+    *,
+    vocab_path: Path,
+    date: str,
+    markets: tuple[str, ...] = ("SH", "SZ"),
+    symbols: tuple[str, ...] | None = None,
+    skip_existing: bool = False,
+    n_workers: int | None = None,
+) -> list[Path]:
+    """Directly convert clean shards to final tokens in one worker pass."""
+    clean_dir = Path(clean_dir)
+    tokens_dir = Path(tokens_dir)
+    symbol_set = set(symbols) if symbols is not None else None
+    pending: list[dict[str, str]] = []
+    written: list[Path] = []
+
+    for market in markets:
+        market_dir = clean_dir / market
+        if not market_dir.is_dir():
+            continue
+        for symbol_dir in sorted(market_dir.iterdir()):
+            if not symbol_dir.is_dir():
+                continue
+            symbol = symbol_dir.name
+            if symbol_set is not None and symbol not in symbol_set:
+                continue
+            events_path = symbol_dir / "events.parquet"
+            if not events_path.exists():
+                continue
+            dst = tokens_dir / market / symbol / f"{date}.parquet"
+            if skip_existing and dst.exists():
+                written.append(dst)
+                continue
+            pending.append(
+                {
+                    "events_path": str(events_path),
+                    "dst": str(dst),
+                    "date": date,
+                    "market": market,
+                    "vocab_path": str(vocab_path),
+                }
+            )
+
+    if not pending:
+        return written
+    workers = max(1, int(n_workers if n_workers is not None else default_canon_workers()))
+    errors: list[str] = []
+    if workers == 1:
+        results = (_canonicalize_tokenize_one(payload) for payload in pending)
+        for status, path, _rows, error in results:
+            if status == "written":
+                written.append(Path(path))
+            elif status == "error":
+                errors.append(f"{path}: {error}")
+    else:
+        import multiprocessing as mp
+
+        ctx = mp.get_context("spawn")
+        with ProcessPoolExecutor(max_workers=workers, mp_context=ctx) as pool:
+            futures = [pool.submit(_canonicalize_tokenize_one, item) for item in pending]
+            for index, future in enumerate(as_completed(futures), start=1):
+                status, path, _rows, error = future.result()
+                if status == "written":
+                    written.append(Path(path))
+                elif status == "error":
+                    errors.append(f"{path}: {error}")
+                if index % 200 == 0 or index == len(futures):
+                    logger.info(
+                        "fused tokenize progress %s %d/%d written=%d errors=%d",
+                        date,
+                        index,
+                        len(futures),
+                        len(written),
+                        len(errors),
+                    )
+    if errors:
+        msg = f"fused canonicalize/tokenize failed on {date}: {errors[:5]}"
+        raise RuntimeError(msg)
+    logger.info("fused canonicalize/tokenize done %s shards=%d", date, len(written))
     return written
 
 

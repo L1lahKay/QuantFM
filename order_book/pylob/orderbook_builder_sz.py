@@ -66,6 +66,8 @@ class OrderBookSZ(ResultMixin, MatchingEngine):
 
         self.trade_df = trade_df_full.to_pandas()
         self.trade_df_with_c = trade_df_test.to_pandas()
+        # 市价单查询用：按 buy_id / sell_id 建索引，避免每次全表扫描（O(n)→O(1)）。
+        self._build_trade_id_index()
 
         # --- order df: symbol/int_time/serial 强制类型 ---
         odf = (
@@ -180,6 +182,40 @@ class OrderBookSZ(ResultMixin, MatchingEngine):
             )
             self.logger.debug("*************** 交易会话处理完成 ***************")
 
+    def _build_trade_id_index(self) -> None:
+        """为 ``trade_df_with_c`` 建立 buy_id / sell_id → 子表 索引。"""
+        df = self.trade_df_with_c
+        if df is None or len(df) == 0:
+            self._trades_by_buy_id: dict = {}
+            self._trades_by_sell_id: dict = {}
+            return
+        # groupby 一次，后续市价单查询 O(1)；否则每单全表扫描在活跃股上会退化到不可用。
+        # key 统一成 int，与撮合侧 order_id 对齐（避免 numpy.int64 / float 查不到）。
+        buy: dict = {}
+        for k, g in df.groupby("buy_id", sort=False):
+            if pd.notna(k):
+                buy[int(k)] = g
+        sell: dict = {}
+        for k, g in df.groupby("sell_id", sort=False):
+            if pd.notna(k):
+                sell[int(k)] = g
+        self._trades_by_buy_id = buy
+        self._trades_by_sell_id = sell
+
+    def _lookup_trades_for_order(self, order_id: int, side: Side) -> pd.DataFrame:
+        """按方向从索引取该订单相关成交；无索引时回退到全表过滤。"""
+        oid = int(order_id)
+        empty = self.trade_df_with_c.iloc[0:0]
+        if side == Side.BUY:
+            indexed = getattr(self, "_trades_by_buy_id", None)
+            if indexed is not None:
+                return indexed.get(oid, empty)
+            return self.trade_df_with_c[self.trade_df_with_c["buy_id"] == oid]
+        indexed = getattr(self, "_trades_by_sell_id", None)
+        if indexed is not None:
+            return indexed.get(oid, empty)
+        return self.trade_df_with_c[self.trade_df_with_c["sell_id"] == oid]
+
     def _query_market_order_type(self, order_id: int, side: Side) -> int:
         """
         查询市价单类型.
@@ -200,17 +236,7 @@ class OrderBookSZ(ResultMixin, MatchingEngine):
             return -1, None
 
         try:
-            # 根据订单方向确定查询列
-            if side == Side.BUY:
-                # 买单查询buy_order_id列
-                order_trades = self.trade_df_with_c[
-                    self.trade_df_with_c["buy_id"] == order_id
-                ]
-            else:
-                # 卖单查询sell_order_id列
-                order_trades = self.trade_df_with_c[
-                    self.trade_df_with_c["sell_id"] == order_id
-                ]
+            order_trades = self._lookup_trades_for_order(order_id, side)
 
             if len(order_trades) == 0:
                 self.logger.debug(f"未找到订单 {order_id} 的交易记录")

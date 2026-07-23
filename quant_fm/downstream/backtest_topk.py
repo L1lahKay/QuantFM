@@ -17,27 +17,55 @@ import polars as pl
 logger = logging.getLogger(__name__)
 
 TRADING_DAYS = 244  # A 股惯例
+MIN_DAYS_FOR_ANNUALIZATION = 60  # 少于该天数不年化，避免小样本指数外推爆表
 
 
 @dataclass(slots=True)
 class BacktestResult:
-    """回测汇总统计与日收益序列。"""
+    """
+    回测汇总统计与日收益序列。
+
+    指标分两类：
+    * **原始/区间指标**（任何样本长度都成立）：``mean_daily_return``、
+      ``daily_vol``、``sharpe_daily``、``cum_return``（区间累计收益）、
+      ``hit_rate``（正收益日占比）、``max_drawdown``、``turnover``。
+    * **年化指标**（仅在 ``n_days >= min_days`` 时给出，否则为 ``None``）：
+      ``sharpe``（= sharpe_daily × √TRADING_DAYS）、``ann_return``（CAGR）。
+
+    ``reliable`` 标记年化指标是否可信。
+    """
 
     daily_returns: np.ndarray
     dates: list[str]
-    sharpe: float
-    ann_return: float
+    # 原始/区间指标
+    mean_daily_return: float
+    daily_vol: float
+    sharpe_daily: float
+    cum_return: float
+    hit_rate: float
     max_drawdown: float
     turnover: float
+    # 年化指标（小样本时为 None）
+    sharpe: float | None
+    ann_return: float | None
+    reliable: bool
+    min_days: int
 
-    def as_dict(self) -> dict[str, float]:
+    def as_dict(self) -> dict[str, float | None]:
         """返回可 JSON 序列化的摘要。"""
         return {
-            "sharpe": self.sharpe,
-            "ann_return": self.ann_return,
+            "n_days": float(len(self.dates)),
+            "reliable": self.reliable,
+            "min_days_for_annualization": float(self.min_days),
+            "mean_daily_return": self.mean_daily_return,
+            "daily_vol": self.daily_vol,
+            "sharpe_daily": self.sharpe_daily,
+            "cum_return": self.cum_return,
+            "hit_rate": self.hit_rate,
             "max_drawdown": self.max_drawdown,
             "turnover": self.turnover,
-            "n_days": float(len(self.dates)),
+            "sharpe": self.sharpe,
+            "ann_return": self.ann_return,
         }
 
 
@@ -55,6 +83,8 @@ def backtest_topk(
     top_k: int = 50,
     long_short: bool = False,
     cost_bps: float = 15.0,
+    min_days: int = MIN_DAYS_FOR_ANNUALIZATION,
+    trading_days: int = TRADING_DAYS,
 ) -> BacktestResult:
     """
     运行 Top-K 回测。
@@ -72,6 +102,11 @@ def backtest_topk(
         为真时同时做空 bottom-K（美元中性）。
     cost_bps
         按换手收取的往返交易成本（基点）。
+    min_days
+        样本天数低于该值时不给出年化 Sharpe/收益（置 ``None``、``reliable=False``），
+        避免用极短样本做指数外推得到爆表数字。
+    trading_days
+        年化用的年交易日数。
 
     返回
     -------
@@ -114,27 +149,63 @@ def backtest_topk(
         prev_long, prev_short = long_set, short_set
 
     returns = np.asarray(daily_returns, dtype=np.float64)
-    equity = np.cumprod(1.0 + returns)
-    mean, std = returns.mean(), returns.std(ddof=1) if returns.size > 1 else 0.0
-    sharpe = float(mean / std * np.sqrt(TRADING_DAYS)) if std > 0 else 0.0
-    ann_return = (
-        float(equity[-1] ** (TRADING_DAYS / len(returns)) - 1) if returns.size else 0.0
-    )
+    n = returns.size
+    equity = np.cumprod(1.0 + returns) if n else np.asarray([], dtype=np.float64)
+
+    # 原始/区间指标：任何样本长度都成立，不做年化外推。
+    mean = float(returns.mean()) if n else 0.0
+    std = float(returns.std(ddof=1)) if n > 1 else 0.0
+    sharpe_daily = float(mean / std) if std > 0 else 0.0
+    cum_return = float(equity[-1] - 1.0) if n else 0.0
+    hit_rate = float(np.mean(returns > 0.0)) if n else 0.0
+
+    # 年化指标：仅在样本足够长时给出，否则置 None 并标记不可信。
+    reliable = n >= min_days
+    if reliable and std > 0:
+        sharpe = sharpe_daily * float(np.sqrt(trading_days))
+        ann_return = float(equity[-1] ** (trading_days / n) - 1.0)
+    else:
+        sharpe = None
+        ann_return = None
 
     result = BacktestResult(
         daily_returns=returns,
         dates=dates,
+        mean_daily_return=mean,
+        daily_vol=std,
+        sharpe_daily=sharpe_daily,
+        cum_return=cum_return,
+        hit_rate=hit_rate,
+        max_drawdown=_max_drawdown(equity) if n else 0.0,
+        turnover=float(np.mean(turnovers)) if turnovers else 0.0,
         sharpe=sharpe,
         ann_return=ann_return,
-        max_drawdown=_max_drawdown(equity) if returns.size else 0.0,
-        turnover=float(np.mean(turnovers)) if turnovers else 0.0,
+        reliable=reliable,
+        min_days=min_days,
     )
-    logger.info(
-        "backtest: days=%d sharpe=%.2f ann=%.2f%% mdd=%.2f%% turnover=%.2f",
-        len(dates),
-        result.sharpe,
-        result.ann_return * 100,
-        result.max_drawdown * 100,
-        result.turnover,
-    )
+    if reliable:
+        logger.info(
+            "backtest: days=%d cum=%.2f%% sharpe_d=%.3f sharpe_ann=%.2f "
+            "ann=%.2f%% hit=%.2f mdd=%.2f%% turnover=%.2f",
+            n,
+            cum_return * 100,
+            sharpe_daily,
+            sharpe,
+            (ann_return or 0.0) * 100,
+            hit_rate,
+            result.max_drawdown * 100,
+            result.turnover,
+        )
+    else:
+        logger.info(
+            "backtest: days=%d cum=%.2f%% sharpe_d=%.3f hit=%.2f mdd=%.2f%% "
+            "turnover=%.2f [年化略过：样本<%d日，不可信]",
+            n,
+            cum_return * 100,
+            sharpe_daily,
+            hit_rate,
+            result.max_drawdown * 100,
+            result.turnover,
+            min_days,
+        )
     return result

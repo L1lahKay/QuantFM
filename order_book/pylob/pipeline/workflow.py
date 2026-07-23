@@ -89,8 +89,21 @@ def _clean_one_symbol(
     cut_time: int,
     cut_serial: int | None,
     write_debug_artifacts: bool,
+    timeout_s: float | None = None,
 ) -> str:
-    """Clean a single symbol; returns status ``written`` or ``empty``."""
+    """
+    Clean a single symbol; returns status ``written`` or ``empty``.
+
+    ``timeout_s``：单票回放墙钟上限（秒）。超时抛 ``TimeoutError``，由 worker
+    捕获为 ``error``，避免个别活跃股拖死整天进程池。默认读环境变量
+    ``CLEAN_SYMBOL_TIMEOUT``（缺省 900；设为 0 关闭）。
+    """
+    import os
+    import time
+
+    if timeout_s is None:
+        timeout_s = float(os.environ.get("CLEAN_SYMBOL_TIMEOUT", "300"))
+
     orderbook = OrderBookSH() if market == "SH" else OrderBookSZ()
     order_data = orderbook.prepare_market_data(
         trade_df,
@@ -101,6 +114,18 @@ def _clean_one_symbol(
     )
     if order_data is None or len(order_data) == 0:
         return "empty"
+
+    if timeout_s and timeout_s > 0:
+        deadline = time.monotonic() + timeout_s
+        orig = orderbook.process_single_market_record
+
+        def _guarded(row_data):
+            if time.monotonic() > deadline:
+                msg = f"clean timeout after {timeout_s:.0f}s symbol={symbol}"
+                raise TimeoutError(msg)
+            return orig(row_data)
+
+        orderbook.process_single_market_record = _guarded  # type: ignore[method-assign]
 
     orderbook.process_workflow(order_data)
     events = build_event_stream(order_data, market=market)
@@ -130,9 +155,10 @@ def _worker_clean_symbol(payload: dict[str, Any]) -> tuple[str, str, str | None]
             cut_time=payload["cut_time"],
             cut_serial=payload["cut_serial"],
             write_debug_artifacts=payload["write_debug_artifacts"],
+            timeout_s=payload.get("timeout_s"),
         )
         return payload["symbol"], status, None
-    except Exception as exc:  # noqa: BLE001 - keep day job alive on bad symbols
+    except Exception as exc:
         return payload["symbol"], "error", f"{type(exc).__name__}: {exc}"
 
 
@@ -232,9 +258,9 @@ def build_clean_dataset(minio_config: MinioConfig, config: PipelineConfig) -> No
                     )
                 else:
                     empty += 1
-            except Exception as exc:  # noqa: BLE001
+            except Exception:
                 errors += 1
-                logger.exception("failed symbol=%s: %s", symbol, exc)
+                logger.exception("failed symbol=%s", symbol)
         logger.info(
             "clean done market=%s written=%d empty=%d errors=%d skipped=%d",
             config.market,
@@ -283,7 +309,8 @@ def build_clean_dataset(minio_config: MinioConfig, config: PipelineConfig) -> No
             else:
                 errors += 1
                 logger.error("failed symbol=%s: %s", symbol, err)
-            if i % 50 == 0 or i == total:
+            # 尾盘更密打点，避免「停在 900/1000」假象（实际卡在最后几只）。
+            if i % 50 == 0 or i == total or (total - i) <= 20:
                 logger.info(
                     "clean progress %s %d/%d written=%d empty=%d errors=%d",
                     config.market,

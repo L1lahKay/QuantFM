@@ -1,13 +1,18 @@
-.PHONY: help install install-fm smoke pilot medium medium-try medium-pipeline medium-estimate medium-smoke judge-medium-try tensorboard-medium train train-pilot train-8gpu train-medium-8gpu check-minio upload-pilot upload-medium download-medium minio-pipeline minio-pipeline-full minio-full-pipeline minio-full-pipeline-full test lint
+.PHONY: help install install-fm smoke signal signal-smoke pilot medium medium-try medium-pipeline medium-estimate medium-smoke judge-medium-try judge-300m watch-300m baselines-300m tensorboard-medium train train-pilot train-8gpu train-medium-8gpu check-minio upload-pilot upload-medium download-medium minio-pipeline minio-pipeline-full minio-full-pipeline minio-full-pipeline-full test lint
 
 PY ?= python
 WORKDIR ?= quant_fm/runs/pilot
 MEDIUM_WORKDIR ?= quant_fm/runs/medium
+SIGNAL_EMBEDDINGS ?= quant_fm/runs/oos2026/embeddings/all.parquet
+SIGNAL_ARTIFACT ?= quant_fm/runs/medium_300m/signal_artifact
+SIGNAL_OUT ?= quant_fm/runs/oos2026/delivery
 
 help:
 	@echo "QuantFM 目标："
 	@echo "  make install-fm   安装 FM 训练额外依赖（torch、pyyaml、tensorboard）"
 	@echo "  make smoke        在合成数据上跑通全流程（CPU，无需 MinIO）"
+	@echo "  make signal       用冻结 Ranker 生成 date/symbol/score 生产信号"
+	@echo "  make signal-smoke 验证无标签 score 生成链路"
 	@echo "  make pilot        清洗并 tokenize（读 MinIO :9000，凭据见 minio_setup.md）"
 	@echo "  make upload-pilot 上传 tokens 到 model-cache（写 MinIO :9100）"
 	@echo "  make check-minio  检查 MinIO 读写 endpoint 连通性"
@@ -21,6 +26,9 @@ help:
 	@echo "  make train-pilot  单卡 pilot 预训练（需先 make pilot）"
 	@echo "  make train-8gpu   8 卡 pilot 预训练（torchrun + FSDP）"
 	@echo "  make train-medium-8gpu  8 卡中等规模预训练（需先有 medium tokens）"
+	@echo "  make judge-300m   [research-only] embedding → panel → 下游 judge"
+	@echo "  make watch-300m   监控 302M 训练（AUTO_JUDGE=1 训完自动 judge）"
+	@echo "  make baselines-300m  [research-only] 生成传统因子基线"
 	@echo "  make test         运行 pytest"
 	@echo "  make lint         运行 ruff"
 
@@ -33,6 +41,15 @@ install-fm:
 # 在合成数据上做端到端验证，需先安装 fm 额外依赖
 smoke:
 	$(PY) -m quant_fm.scripts.smoke --workdir quant_fm/runs/smoke
+
+signal-smoke: smoke
+
+signal:
+	$(PY) -m quant_fm.signal.generate \
+		--embeddings $(SIGNAL_EMBEDDINGS) \
+		--ranker $(SIGNAL_ARTIFACT)/ranker.pt \
+		--ranker-metadata $(SIGNAL_ARTIFACT)/ranker_metadata.json \
+		--out-dir $(SIGNAL_OUT)
 
 # 真实试点：先设置 MINIO_* 环境变量，下方为示例日期/股票
 pilot:
@@ -103,9 +120,24 @@ upload-medium:
 download-medium:
 	$(PY) -m quant_fm.scripts.download_from_minio --workdir $(MEDIUM_WORKDIR) --tag medium
 
-# 下游裁判（默认用 best.pt；结果写入 workdir/downstream/runs/ + history.jsonl）
+# RESEARCH ONLY：下游裁判不属于 score 生产链路
 judge-medium-try:
 	$(PY) -m quant_fm.downstream.run_judge --workdir quant_fm/runs/medium_try --checkpoint quant_fm/runs/medium_try/run/best.pt
+
+# 302M：抽 embedding → panel → judge（训练完成后）
+judge-300m:
+	bash quant_fm/scripts/run_judge_300m.sh
+
+# 监控 302M 训练；AUTO_JUDGE=1 训完自动跑下游
+watch-300m:
+	AUTO_JUDGE=$${AUTO_JUDGE:-1} bash quant_fm/scripts/watch_300m_train.sh
+
+# 传统因子基线（默认跳过全量 OFI；加 MAX_OFI_SHARDS=3000 可扫部分 tokens）
+baselines-300m:
+	$(PY) -m quant_fm.downstream.baselines \
+		--panel quant_fm/runs/medium_300m/panel/daily_panel.parquet \
+		--out quant_fm/runs/medium_300m/panel/factors.parquet \
+		--skip-ofi
 
 check-minio:
 	$(PY) -m quant_fm.scripts.check_minio

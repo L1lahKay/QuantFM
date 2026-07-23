@@ -25,12 +25,17 @@ def _ensure_mc_alias(name: str = "fm_upload") -> str:
     cfg = load_write_config()
     scheme = "https" if cfg.secure else "http"
     url = f"{scheme}://{cfg.endpoint}"
-    subprocess.run(
-        ["mc", "alias", "set", name, url, cfg.access_key, cfg.secret_key],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        subprocess.run(
+            ["mc", "alias", "set", name, url, cfg.access_key, cfg.secret_key],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError:
+        # CalledProcessError renders the full argv, including credentials.
+        msg = f"failed to configure MinIO alias {name!r} for {url}"
+        raise RuntimeError(msg) from None
     return name
 
 
@@ -70,7 +75,10 @@ def upload_workdir(
         msg = f"missing: {', '.join(str(p) for p in missing)}; run data pipeline first"
         raise FileNotFoundError(msg)
 
-    alias = _ensure_mc_alias()
+    # dry-run 只打印计划命令，不要求本机已配置 mc alias
+    alias = "fm_upload"
+    if not dry_run:
+        alias = _ensure_mc_alias()
     remote = f"{alias}/{dest}"
     cmds: list[list[str]] = [
         ["mc", "cp", "--recursive", str(tokens) + "/", f"{remote}/tokens/"],
@@ -83,7 +91,7 @@ def upload_workdir(
         )
 
     for cmd in cmds:
-        logger.info("upload: %s", " ".join(cmd))
+        logger.info("upload%s: %s", " (dry-run)" if dry_run else "", " ".join(cmd))
         if not dry_run:
             subprocess.run(cmd, check=True)
 
@@ -128,17 +136,23 @@ def main() -> None:
     parser.add_argument("--include-events", action="store_true")
     parser.add_argument("--delete-local", action="store_true")
     parser.add_argument("--verify", action="store_true")
+    parser.add_argument(
+        "--verify-only",
+        action="store_true",
+        help="只检查远端 tag，不执行上传",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
-    upload_workdir(
-        args.workdir,
-        tag=args.tag,
-        include_events=args.include_events,
-        delete_local=args.delete_local,
-        dry_run=args.dry_run,
-    )
-    if args.verify and not args.dry_run:
+    if not args.verify_only:
+        upload_workdir(
+            args.workdir,
+            tag=args.tag,
+            include_events=args.include_events,
+            delete_local=args.delete_local,
+            dry_run=args.dry_run,
+        )
+    if (args.verify or args.verify_only) and not args.dry_run:
         verify_upload(args.tag)
 
 
