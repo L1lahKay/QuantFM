@@ -435,25 +435,48 @@ class MatchingEngine(ABC):
             self.asks[order.price].append(order)
 
     def _purge_level_front(self, price_level: deque) -> None:
-        """弹出队头已失效（数量≤0）的订单，摊还 O(1)。"""
-        while price_level and price_level[0].quantity <= 0:
+        """弹出队头已失效或已不在活动订单索引中的订单，摊还 O(1)."""
+        while price_level and (
+            price_level[0].quantity <= 0
+            or self.orders.get(price_level[0].order_id) is not price_level[0]
+        ):
             price_level.popleft()
 
     def _compact_book(self) -> None:
-        """去掉簿上的 tombstone，避免单向堆积时 deque 无限膨胀。"""
+        """防御性清理无效订单，保证价格档只包含活动订单."""
         for book in (self.bids, self.asks):
             empty_prices = []
             for price, level in list(book.items()):
                 if not level:
                     empty_prices.append(price)
                     continue
-                live = deque(o for o in level if o.quantity > 0)
+                live = deque(
+                    order
+                    for order in level
+                    if order.quantity > 0 and self.orders.get(order.order_id) is order
+                )
                 if not live:
                     empty_prices.append(price)
                 elif len(live) < len(level):
                     book[price] = live
             for price in empty_prices:
                 del book[price]
+
+    def _remove_from_book(self, order: Order) -> bool:
+        """从订单所在价格档物理删除订单，并在档位为空时删除价格档."""
+        book = self.bids if order.side == Side.BUY else self.asks
+        price_level = book.get(order.price)
+        if price_level is None:
+            return False
+
+        try:
+            price_level.remove(order)
+        except ValueError:
+            return False
+
+        if not price_level:
+            del book[order.price]
+        return True
 
     def cancel_order(
         self,
@@ -505,17 +528,25 @@ class MatchingEngine(ABC):
             f"取消订单请求: 订单ID={order_id}, 取消时间={cancel_time}, 交易阶段={self.trading_phase.value}"
         )
 
-        # O(1) tombstone：勿对 deque 做 in/remove（档内深度大时会退化到 O(n)，
-        # 单向堆积活跃股上可把整天清洗拖死）。撮合路径会跳过 quantity<=0 并从队头弹出。
         record_qty = (
-            cancel_quantity
-            if cancel_quantity is not None
-            else order_to_cancel.quantity
+            cancel_quantity if cancel_quantity is not None else order_to_cancel.quantity
         )
         record_price = order_to_cancel.price
         side = order_to_cancel.side
         order_time = order_to_cancel.order_time
         order_type = order_to_cancel.order_type
+
+        # 撤单必须同步更新 deque 与 orders。deque.remove 为 O(n)，但可保证中间
+        # 订单撤销后同价位其余订单的 FIFO 顺序不变，也不会留下 tombstone。
+        if not self._remove_from_book(order_to_cancel):
+            # 修复已存在的不一致状态，避免 orders 继续引用一个不在簿上的订单。
+            del self.orders[order_id]
+            order_to_cancel.quantity = 0
+            self.logger.error(
+                f"订单 {order_id} 存在于活动索引但不在对应价格档，已清理异常索引"
+            )
+            return False
+
         order_to_cancel.quantity = 0
 
         self.pending_exchange_cancels.pop(order_id, None)
@@ -545,9 +576,7 @@ class MatchingEngine(ABC):
                 f"集合竞价阶段：{order_type_str} {order_id} 已成功撤销，将不参与后续撮合。"
             )
         else:
-            self.logger.debug(
-                f"连续竞价阶段：{order_type_str} {order_id} 已成功撤销。"
-            )
+            self.logger.debug(f"连续竞价阶段：{order_type_str} {order_id} 已成功撤销。")
 
         self.logger.debug(
             f"原订单信息: 类型: {order_type_str}, 方向: {side.value}, "

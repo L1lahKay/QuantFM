@@ -125,6 +125,10 @@ class EventWindowDataset(Dataset):
     def __len__(self) -> int:
         return len(self._windows)  # [导读] DataLoader 用这个决定一共有多少条样本
 
+    def window_shard_index(self, index: int) -> int:
+        """供 shard-aware sampler 使用，不暴露内部窗口实现。"""
+        return self._windows[index].shard_idx
+
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         """返回第 idx 个窗口：各字段的一段整数序列 + length。"""
         win = self._windows[idx]

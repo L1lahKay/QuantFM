@@ -10,13 +10,21 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import torch
 from torch import nn
+from torch.nn import functional as F
 
+from quant_fm.moe.backbone import SparseMoEFeedForward
+from quant_fm.moe.config import BackboneMoEConfig
 from quant_fm.pretrain.dataset import DEFAULT_TARGET_FIELDS, FIELD_ORDER
+from quant_fm.pretrain.field_fusion import (
+    EventFieldFusion,
+    FieldFusionConfig,
+    embedding_dim_for_fusion,
+)
 from quant_fm.pretrain.heads import MultiHead
 from quant_fm.tokenizer.tokenize_events import TOKEN_FIELDS
 from quant_fm.tokenizer.vocab import PAD_ID
@@ -41,14 +49,55 @@ class OrderFlowFMConfig:
     n_layers: int = 10
     n_heads: int = 8
     ffn_mult: float = 4.0
+    ffn_hidden: int | None = None
     dropout: float = 0.1
     max_seq_len: int = 4096
     rope_theta: float = 10_000.0
     tie_none: bool = True
+    field_fusion: str = "legacy_sum"
+    field_dim: int = 32
+    field_dropout: float = 0.0
+    field_input_norm: bool = True
+    scalar_fields: dict[str, str] = field(default_factory=dict)
+    standalone_scalar_fields: tuple[str, ...] = ()
+    schema_version: str = "cn_l2_v1"
+    vocab_version: str = "1.0"
+    vocab_sha256: str = ""
+    field_specs: tuple[dict[str, object], ...] = ()
+    continuous_normalizers: dict[str, dict[str, float | int]] = field(
+        default_factory=dict
+    )
+    book_state_timing: str = "none"
+    context_horizon: int = 0
+    pooling_version: str = "flat_v1"
+    backbone_moe: BackboneMoEConfig = field(default_factory=BackboneMoEConfig)
+
+    def __post_init__(self) -> None:
+        if self.d_model % self.n_heads:
+            msg = "d_model must be divisible by n_heads"
+            raise ValueError(msg)
+        if self.ffn_hidden is not None and self.ffn_hidden < 1:
+            msg = "ffn_hidden must be positive when provided"
+            raise ValueError(msg)
+        invalid_layers = set(self.backbone_moe.layer_indices) - set(
+            range(self.n_layers)
+        )
+        if invalid_layers:
+            msg = f"backbone MoE layers out of range: {invalid_layers}"
+            raise ValueError(msg)
 
     def target_sizes(self) -> dict[str, int]:
         """返回预测（头）字段的 id 空间大小。"""
         return {f: self.field_sizes[f] for f in self.target_fields}
+
+    def fusion_config(self) -> FieldFusionConfig:
+        """构造并校验事件字段融合配置。"""
+        return FieldFusionConfig(
+            method=self.field_fusion,
+            field_dim=self.field_dim,
+            field_dropout=self.field_dropout,
+            input_norm=self.field_input_norm,
+        )
 
 
 class RMSNorm(nn.Module):
@@ -61,12 +110,15 @@ class RMSNorm(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """按最后一维的 RMS 归一化。"""
-        norm = x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
-        return norm * self.weight
+        return F.rms_norm(x, (x.size(-1),), self.weight, self.eps)
 
 
 def _rope_cache(
-    seq_len: int, head_dim: int, theta: float, device: torch.device
+    seq_len: int,
+    head_dim: int,
+    theta: float,
+    device: torch.device,
+    dtype: torch.dtype = torch.float32,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """预计算旋转嵌入的余弦/正弦表。"""
     inv_freq = 1.0 / (
@@ -75,7 +127,7 @@ def _rope_cache(
     pos = torch.arange(seq_len, device=device).float()
     freqs = torch.outer(pos, inv_freq)
     emb = torch.cat((freqs, freqs), dim=-1)
-    return emb.cos(), emb.sin()
+    return emb.cos().to(dtype), emb.sin().to(dtype)
 
 
 def _rotate_half(x: torch.Tensor) -> torch.Tensor:
@@ -88,8 +140,8 @@ def _apply_rope(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """对形状 ``[B, H, L, D]`` 的 query/key 应用 RoPE。"""
-    cos = cos[None, None, :, :]
-    sin = sin[None, None, :, :]
+    cos = cos.to(dtype=q.dtype)[None, None, :, :]
+    sin = sin.to(dtype=q.dtype)[None, None, :, :]
     q_rot = q * cos + _rotate_half(q) * sin
     k_rot = k * cos + _rotate_half(k) * sin
     return q_rot, k_rot
@@ -112,6 +164,8 @@ class CausalAttention(nn.Module):
         cos: torch.Tensor,
         sin: torch.Tensor,
         key_mask: torch.Tensor,
+        *,
+        full_mask: bool = False,
     ) -> torch.Tensor:
         """运行注意力。``key_mask`` 为 ``[B, L]`` 布尔（True = 有效）。"""
         b, length, _ = x.shape
@@ -120,15 +174,20 @@ class CausalAttention(nn.Module):
         q, k, v = qkv[0], qkv[1], qkv[2]
         q, k = _apply_rope(q, k, cos, sin)
 
-        # 合并因果掩码与 key 填充为布尔掩码（True = 可 attend）。
-        causal = torch.ones(length, length, dtype=torch.bool, device=x.device).tril()
-        attn_mask = causal[None, None] & key_mask[:, None, None, :]
+        # 无 padding 时直接走 fused causal SDPA，避免逐层创建 L×L mask。
+        attn_mask = None
+        if not full_mask:
+            causal = torch.ones(
+                length, length, dtype=torch.bool, device=x.device
+            ).tril()
+            attn_mask = causal[None, None] & key_mask[:, None, None, :]
         out = nn.functional.scaled_dot_product_attention(
             q,
             k,
             v,
             attn_mask=attn_mask,
             dropout_p=self.dropout if self.training else 0.0,
+            is_causal=full_mask,
         )
         out = out.transpose(1, 2).contiguous().view(b, length, -1)
         return self.proj(out)
@@ -151,14 +210,21 @@ class SwiGLU(nn.Module):
 class Block(nn.Module):
     """Pre-norm Transformer 块。"""
 
-    def __init__(self, cfg: OrderFlowFMConfig) -> None:
+    def __init__(self, cfg: OrderFlowFMConfig, layer_index: int = 0) -> None:
         super().__init__()
         self.norm1 = RMSNorm(cfg.d_model)
         self.attn = CausalAttention(cfg)
         self.norm2 = RMSNorm(cfg.d_model)
-        hidden = int(cfg.d_model * cfg.ffn_mult)
-        self.ffn = SwiGLU(cfg.d_model, hidden)
+        self.is_moe = bool(
+            cfg.backbone_moe.enabled and layer_index in cfg.backbone_moe.layer_indices
+        )
+        if self.is_moe:
+            self.ffn = SparseMoEFeedForward(cfg.d_model, cfg.backbone_moe)
+        else:
+            hidden = cfg.ffn_hidden or int(cfg.d_model * cfg.ffn_mult)
+            self.ffn = SwiGLU(cfg.d_model, hidden)
         self.dropout = nn.Dropout(cfg.dropout)
+        self._auxiliary_loss: torch.Tensor | None = None
 
     def forward(
         self,
@@ -166,11 +232,26 @@ class Block(nn.Module):
         cos: torch.Tensor,
         sin: torch.Tensor,
         key_mask: torch.Tensor,
+        *,
+        full_mask: bool = False,
     ) -> torch.Tensor:
         """带残差连接的注意力与前馈。"""
-        x = x + self.dropout(self.attn(self.norm1(x), cos, sin, key_mask))
-        x = x + self.dropout(self.ffn(self.norm2(x)))
+        x = x + self.dropout(
+            self.attn(self.norm1(x), cos, sin, key_mask, full_mask=full_mask)
+        )
+        ffn_output = self.ffn(self.norm2(x))
+        if self.is_moe:
+            self._auxiliary_loss = ffn_output.auxiliary_loss
+            ffn_hidden = ffn_output.hidden
+        else:
+            self._auxiliary_loss = None
+            ffn_hidden = ffn_output
+        x = x + self.dropout(ffn_hidden)
         return x
+
+    def auxiliary_loss(self) -> torch.Tensor | None:
+        """返回最近一次前向的 router 正则。"""
+        return self._auxiliary_loss
 
 
 class OrderFlowFM(nn.Module):
@@ -179,18 +260,47 @@ class OrderFlowFM(nn.Module):
     def __init__(self, cfg: OrderFlowFMConfig) -> None:
         super().__init__()
         self.cfg = cfg
+        fusion_cfg = cfg.fusion_config()
+        embedding_dim = embedding_dim_for_fusion(fusion_cfg, cfg.d_model)
         # [导读] 每个字段一张 Embedding 表：整数 id → d_model 维向量
         self.embeddings = nn.ModuleDict(
             {
-                f: nn.Embedding(cfg.field_sizes[f], cfg.d_model, padding_idx=PAD_ID)
+                f: nn.Embedding(cfg.field_sizes[f], embedding_dim, padding_idx=PAD_ID)
                 for f in cfg.input_fields
             }
         )
+        invalid_scalar_targets = set(cfg.scalar_fields.values()) - set(cfg.input_fields)
+        if invalid_scalar_targets:
+            msg = (
+                "scalar fields reference non-input token fields: "
+                f"{sorted(invalid_scalar_targets)}"
+            )
+            raise ValueError(msg)
+        # v2 连续双通道：无 bias 的 scalar projection 加到对应 ordinal token 表示。
+        scalar_names = (*cfg.scalar_fields, *cfg.standalone_scalar_fields)
+        if len(set(scalar_names)) != len(scalar_names):
+            msg = "a scalar field cannot be both paired and standalone"
+            raise ValueError(msg)
+        self.scalar_projections = nn.ModuleDict(
+            {scalar: nn.Linear(1, embedding_dim, bias=False) for scalar in scalar_names}
+        )
+        self.field_fusion = EventFieldFusion(
+            n_fields=len(cfg.input_fields) + len(cfg.standalone_scalar_fields),
+            input_dim=embedding_dim,
+            d_model=cfg.d_model,
+            config=fusion_cfg,
+        )
         self.drop = nn.Dropout(cfg.dropout)
-        self.blocks = nn.ModuleList(Block(cfg) for _ in range(cfg.n_layers))
+        self.blocks = nn.ModuleList(
+            Block(cfg, layer_index) for layer_index in range(cfg.n_layers)
+        )
         self.norm = RMSNorm(cfg.d_model)
         self.head = MultiHead(cfg.d_model, cfg.target_sizes())  # 6 个分类头
-        self._rope: dict[torch.device, tuple[torch.Tensor, torch.Tensor]] = {}
+        self._rope: dict[
+            tuple[str, int | None, torch.dtype],
+            tuple[torch.Tensor, torch.Tensor],
+        ] = {}
+        self._last_moe_aux_loss: torch.Tensor | None = None
         self.apply(self._init_weights)
 
     def _init_weights(self, module: nn.Module) -> None:
@@ -208,12 +318,22 @@ class OrderFlowFM(nn.Module):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
     def _get_rope(
-        self, length: int, device: torch.device
+        self, length: int, device: torch.device, dtype: torch.dtype
     ) -> tuple[torch.Tensor, torch.Tensor]:
         head_dim = self.cfg.d_model // self.cfg.n_heads
-        cos, sin = _rope_cache(
-            max(length, self.cfg.max_seq_len), head_dim, self.cfg.rope_theta, device
-        )
+        key = (device.type, device.index, dtype)
+        cached = self._rope.get(key)
+        required = max(length, self.cfg.max_seq_len)
+        if cached is None or cached[0].size(0) < required:
+            cached = _rope_cache(
+                required,
+                head_dim,
+                self.cfg.rope_theta,
+                device,
+                dtype,
+            )
+            self._rope[key] = cached
+        cos, sin = cached
         return cos[:length], sin[:length]
 
     def encode(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
@@ -223,17 +343,39 @@ class OrderFlowFM(nn.Module):
         device = key_mask.device
 
         # [导读] 步骤1：各字段 embedding 相加，得到「每个事件的向量表示」
-        x = None
-        for f in self.cfg.input_fields:
-            emb = self.embeddings[f](batch[f])
-            x = emb if x is None else x + emb
+        parts_by_field = {
+            field: self.embeddings[field](batch[field])
+            for field in self.cfg.input_fields
+        }
+        for scalar, token_field in self.cfg.scalar_fields.items():
+            scalar_value = batch[scalar].to(parts_by_field[token_field].dtype)
+            scalar_part = self.scalar_projections[scalar](scalar_value.unsqueeze(-1))
+            parts_by_field[token_field] = parts_by_field[token_field] + scalar_part
+        parts = [parts_by_field[field] for field in self.cfg.input_fields]
+        for scalar in self.cfg.standalone_scalar_fields:
+            projection = self.scalar_projections[scalar]
+            scalar_value = batch[scalar].to(projection.weight.dtype)
+            parts.append(projection(scalar_value.unsqueeze(-1)))
+        x = self.field_fusion(parts)
         x = self.drop(x)
 
         # [导读] 步骤2：过 N 层 Transformer（因果注意力 = 只能看过去的事件）
-        cos, sin = self._get_rope(length, device)
+        cos, sin = self._get_rope(length, device, x.dtype)
+        full_mask = bool(key_mask.all())
+        auxiliary_losses: list[torch.Tensor] = []
         for block in self.blocks:
-            x = block(x, cos, sin, key_mask)
+            x = block(x, cos, sin, key_mask, full_mask=full_mask)
+            auxiliary = block.auxiliary_loss()
+            if auxiliary is not None:
+                auxiliary_losses.append(auxiliary)
+        self._last_moe_aux_loss = (
+            torch.stack(auxiliary_losses).sum() if auxiliary_losses else None
+        )
         return self.norm(x)
+
+    def moe_auxiliary_loss(self) -> torch.Tensor | None:
+        """返回最近一次前向的 backbone router 正则。"""
+        return self._last_moe_aux_loss
 
     def forward(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         """返回序列上各字段 logits（未做 softmax 的原始分数）。"""

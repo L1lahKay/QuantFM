@@ -1,0 +1,25 @@
+# 在冻结 event-FM embedding 之后训练；路由特征必须全部在 score(T) 时点可用。
+moe_router_version: "1.0"
+placement: temporal_aggregator
+enabled: true
+n_experts: 4
+top_k: 2
+expert_hidden: 256
+router_hidden: 128
+dropout: 0.05
+temperature: 1.0
+capacity_factor: 1.25
+load_balance_weight: 0.01
+router_z_loss_weight: 0.001
+
+regime_features:
+  # 正式宏观 regime 实验至少覆盖 252 个连续交易日。
+  - {name: market_return_5d, availability_lag: 0}
+  - {name: market_return_20d, availability_lag: 0}
+  - {name: market_realized_vol_20d, availability_lag: 0}
+  - {name: market_breadth, availability_lag: 0}
+  - {name: market_turnover, availability_lag: 0}
+  - {name: industry_relative_strength_20d, availability_lag: 0}
+  - {name: stock_spread, availability_lag: 0}
+  - {name: stock_depth, availability_lag: 0}
+  - {name: stock_ofi, availability_lag: 0}

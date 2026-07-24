@@ -17,10 +17,13 @@ import numpy as np
 import polars as pl
 import torch
 
-from quant_fm.embedding.pool_stock_day import pool_hidden
+from quant_fm.embedding.pool_stock_day import (
+    MultiScaleStockDayPoolAccumulator,
+    StockDayPoolAccumulator,
+)
 from quant_fm.manifest.build_manifest import Manifest
-from quant_fm.pretrain.dataset import FIELD_ORDER
 from quant_fm.pretrain.train import load_checkpoint, resolve_device
+from quant_fm.tokenizer.transforms import int_time_to_ms
 
 if TYPE_CHECKING:
     from quant_fm.manifest.build_manifest import ShardEntry
@@ -66,37 +69,63 @@ def _embed_shard(
     *,
     context: int,
     pooling: str,
+    last_k: int = 256,
     amp_dtype: torch.dtype | None = None,
 ) -> np.ndarray:
     """分块编码单个分片并返回池化嵌入向量。"""
-    df = pl.read_parquet(shard.path, columns=list(FIELD_ORDER))
+    token_fields = model.cfg.input_fields
+    scalar_fields = (
+        *model.cfg.scalar_fields,
+        *model.cfg.standalone_scalar_fields,
+    )
+    input_columns = (*token_fields, *scalar_fields)
+    read_columns = (
+        (*input_columns, "int_time") if pooling == "multi_scale" else input_columns
+    )
+    df = pl.read_parquet(shard.path, columns=list(read_columns))
     n = df.height
-    fields = {f: df[f].to_numpy().astype(np.int64) for f in FIELD_ORDER}
+    fields = {field: df[field].to_numpy().astype(np.int64) for field in token_fields}
+    fields.update(
+        {field: df[field].to_numpy().astype(np.float32) for field in scalar_fields}
+    )
 
-    chunk_embs: list[torch.Tensor] = []
-    chunk_weights: list[int] = []
+    accumulator = (
+        MultiScaleStockDayPoolAccumulator(model.cfg.d_model)
+        if pooling == "multi_scale"
+        else StockDayPoolAccumulator(model.cfg.d_model, method=pooling, last_k=last_k)
+    )
+    elapsed = (
+        int_time_to_ms(df["int_time"].to_numpy()) if pooling == "multi_scale" else None
+    )
     for start in range(0, n, context):
         end = min(start + context, n)
         length = end - start
         batch = {
-            f: torch.from_numpy(fields[f][start:end].copy()).unsqueeze(0).to(device)
-            for f in FIELD_ORDER
+            field: torch.from_numpy(fields[field][start:end].copy())
+            .unsqueeze(0)
+            .to(device)
+            for field in input_columns
         }
         batch["attention_mask"] = torch.ones(
             (1, length), dtype=torch.bool, device=device
         )
         with _autocast(device, amp_dtype):
             hidden = model.encode(batch)[0]  # [L, d]
-        pooled = pool_hidden(hidden, batch["attention_mask"][0], method=pooling)
-        chunk_embs.append(pooled.float().cpu())
-        chunk_weights.append(length)
+        if isinstance(accumulator, MultiScaleStockDayPoolAccumulator):
+            if elapsed is None:  # pragma: no cover - construction invariant
+                msg = "missing intraday time array"
+                raise RuntimeError(msg)
+            time_tensor = torch.from_numpy(elapsed[start:end].copy()).to(device)
+            accumulator.update(hidden, batch["attention_mask"][0], time_tensor)
+        else:
+            accumulator.update(hidden, batch["attention_mask"][0])
 
-    if not chunk_embs:
-        return np.zeros(model.cfg.d_model, dtype=np.float32)
-    weights = torch.tensor(chunk_weights, dtype=torch.float32).unsqueeze(1)
-    stacked = torch.stack(chunk_embs)
-    day_emb = (stacked * weights).sum(dim=0) / weights.sum()
-    return day_emb.numpy().astype(np.float32)
+    value = (
+        accumulator.concatenate()
+        if isinstance(accumulator, MultiScaleStockDayPoolAccumulator)
+        else accumulator.value()
+    )
+    return value.numpy().astype(np.float32)
 
 
 def extract_stock_day_embeddings(
@@ -106,21 +135,27 @@ def extract_stock_day_embeddings(
     *,
     context: int = 2048,
     pooling: str = "mean",
+    last_k: int = 256,
     amp_dtype: torch.dtype | None = None,
 ) -> pl.DataFrame:
     """生成 ``(date, symbol, market, emb_*)`` 嵌入数据帧。"""
     rows: list[dict[str, object]] = []
-    d = model.cfg.d_model
     for shard in shards:
         vec = _embed_shard(
-            model, shard, device, context=context, pooling=pooling, amp_dtype=amp_dtype
+            model,
+            shard,
+            device,
+            context=context,
+            pooling=pooling,
+            last_k=last_k,
+            amp_dtype=amp_dtype,
         )
         row: dict[str, object] = {
             "date": shard.date,
             "symbol": shard.symbol,
             "market": shard.market,
         }
-        row.update({f"emb_{i}": float(vec[i]) for i in range(d)})
+        row.update({f"emb_{i}": float(value) for i, value in enumerate(vec)})
         rows.append(row)
         logger.info("embedded %s %s", shard.date, shard.symbol)
     return pl.DataFrame(rows)
@@ -134,6 +169,7 @@ def extract_stock_day_embeddings_batched(
     *,
     context: int = 2048,
     pooling: str = "mean",
+    last_k: int = 256,
     batch_size: int = 16,
     log_every: int = 200,
     amp_dtype: torch.dtype | None = None,
@@ -142,16 +178,28 @@ def extract_stock_day_embeddings_batched(
     批处理版：把多个（股日）分片的 context 分块打包进同一 forward，显著提高 GPU 吞吐。
 
     每个分片按 ``context`` 切块；不同分片的块右侧 padding 到同一长度后组 batch。
-    逐块池化后按块事件数加权，重建每个分片的股日向量（与逐块加权平均一致）。
+    流式累加每个股日：mean 按真实事件严格平均，last/lastk 跨 chunk 保留尾部。
     """
     d = model.cfg.d_model
+    token_fields = model.cfg.input_fields
+    scalar_fields = (
+        *model.cfg.scalar_fields,
+        *model.cfg.standalone_scalar_fields,
+    )
+    input_columns = (*token_fields, *scalar_fields)
+    read_columns = (
+        (*input_columns, "int_time") if pooling == "multi_scale" else input_columns
+    )
 
     # 预扫描出所有 (shard_idx, 起止) 块，块内数据延迟读取以省内存。
     meta: list[dict] = [
         {"date": s.date, "symbol": s.symbol, "market": s.market} for s in shards
     ]
-    acc = [torch.zeros(d, dtype=torch.float32) for _ in shards]
-    wsum = [0.0 for _ in shards]
+    accumulators = (
+        [MultiScaleStockDayPoolAccumulator(d) for _ in shards]
+        if pooling == "multi_scale"
+        else [StockDayPoolAccumulator(d, method=pooling, last_k=last_k) for _ in shards]
+    )
 
     pending: list[tuple[int, dict[str, np.ndarray], int]] = []
 
@@ -160,30 +208,57 @@ def extract_stock_day_embeddings_batched(
             return
         max_len = max(length for _, _, length in batch_chunks)
         bsz = len(batch_chunks)
-        fields_t = {
-            f: torch.zeros((bsz, max_len), dtype=torch.long) for f in FIELD_ORDER
+        fields_t: dict[str, torch.Tensor] = {
+            field: torch.zeros((bsz, max_len), dtype=torch.long)
+            for field in token_fields
         }
+        fields_t.update(
+            {
+                field: torch.zeros((bsz, max_len), dtype=torch.float32)
+                for field in scalar_fields
+            }
+        )
         mask = torch.zeros((bsz, max_len), dtype=torch.bool)
         for bi, (_, fields, length) in enumerate(batch_chunks):
-            for f in FIELD_ORDER:
-                fields_t[f][bi, :length] = torch.from_numpy(fields[f])
+            for field in input_columns:
+                fields_t[field][bi, :length] = torch.from_numpy(fields[field])
             mask[bi, :length] = True
-        batch = {f: fields_t[f].to(device) for f in FIELD_ORDER}
+        batch = {field: fields_t[field].to(device) for field in input_columns}
         batch["attention_mask"] = mask.to(device)
         with _autocast(device, amp_dtype):
             hidden = model.encode(batch)  # [B, Lmax, d]
-        for bi, (sidx, _, length) in enumerate(batch_chunks):
-            pooled = pool_hidden(hidden[bi], mask[bi], method=pooling).float().cpu()
-            acc[sidx] += pooled * float(length)
-            wsum[sidx] += float(length)
+        for bi, (sidx, fields, length) in enumerate(batch_chunks):
+            accumulator = accumulators[sidx]
+            # Keep all three streams aligned to the real chunk length.  In a
+            # mixed-length batch ``hidden`` and ``attention_mask`` are padded
+            # to ``max_len`` while the intraday timestamps are not.
+            device_mask = batch["attention_mask"][bi, :length]
+            chunk_hidden = hidden[bi, :length]
+            if isinstance(accumulator, MultiScaleStockDayPoolAccumulator):
+                times = torch.from_numpy(fields["__time_of_day_ms"]).to(device)
+                accumulator.update(chunk_hidden, device_mask, times)
+            else:
+                accumulator.update(chunk_hidden, device_mask)
 
     for sidx, shard in enumerate(shards):
-        df = pl.read_parquet(shard.path, columns=list(FIELD_ORDER))
+        df = pl.read_parquet(shard.path, columns=list(read_columns))
         n = df.height
-        cols = {f: df[f].to_numpy().astype(np.int64) for f in FIELD_ORDER}
+        cols = {field: df[field].to_numpy().astype(np.int64) for field in token_fields}
+        cols.update(
+            {field: df[field].to_numpy().astype(np.float32) for field in scalar_fields}
+        )
+        if pooling == "multi_scale":
+            cols["__time_of_day_ms"] = int_time_to_ms(df["int_time"].to_numpy())
         for start in range(0, n, context):
             end = min(start + context, n)
-            chunk = {f: cols[f][start:end].copy() for f in FIELD_ORDER}
+            chunk = {
+                field: cols[field][start:end].copy()
+                for field in (
+                    (*input_columns, "__time_of_day_ms")
+                    if pooling == "multi_scale"
+                    else input_columns
+                )
+            }
             pending.append((sidx, chunk, end - start))
             if len(pending) >= batch_size:
                 flush(pending)
@@ -194,12 +269,15 @@ def extract_stock_day_embeddings_batched(
 
     rows: list[dict[str, object]] = []
     for sidx, m in enumerate(meta):
-        if wsum[sidx] > 0:
-            vec = (acc[sidx] / wsum[sidx]).numpy().astype(np.float32)
-        else:
-            vec = np.zeros(d, dtype=np.float32)
+        accumulator = accumulators[sidx]
+        vec_tensor = (
+            accumulator.concatenate()
+            if isinstance(accumulator, MultiScaleStockDayPoolAccumulator)
+            else accumulator.value()
+        )
+        vec = vec_tensor.numpy().astype(np.float32)
         row: dict[str, object] = dict(m)
-        row.update({f"emb_{i}": float(vec[i]) for i in range(d)})
+        row.update({f"emb_{i}": float(value) for i, value in enumerate(vec)})
         rows.append(row)
     logger.info("embedded %d/%d shards (done)", len(shards), len(shards))
     return pl.DataFrame(rows)
@@ -209,10 +287,21 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument(
+        "--vocab",
+        type=Path,
+        help="v2 checkpoint 必填，用于校验 schema/字段顺序/vocab hash",
+    )
     parser.add_argument("--split", default="test")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--context", type=int, default=2048)
     parser.add_argument("--pooling", default="mean")
+    parser.add_argument(
+        "--last-k",
+        type=int,
+        default=256,
+        help="lastk_mean 跨整个股日保留的最后事件数",
+    )
     parser.add_argument("--device", default="auto")
     parser.add_argument(
         "--dtype",
@@ -250,7 +339,7 @@ def main() -> None:
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
     amp_dtype = DTYPE_MAP[args.dtype] if device.type == "cuda" else None
-    model = load_checkpoint(args.checkpoint, device)
+    model = load_checkpoint(args.checkpoint, device, vocab_path=args.vocab)
     manifest = Manifest.load(args.manifest)
     shards = manifest.split(args.split)
     if args.num_parts > 1:
@@ -270,6 +359,7 @@ def main() -> None:
             device,
             context=args.context,
             pooling=args.pooling,
+            last_k=args.last_k,
             batch_size=args.batch_size,
             amp_dtype=amp_dtype,
         )
@@ -280,6 +370,7 @@ def main() -> None:
             device,
             context=args.context,
             pooling=args.pooling,
+            last_k=args.last_k,
             amp_dtype=amp_dtype,
         )
     args.out.parent.mkdir(parents=True, exist_ok=True)

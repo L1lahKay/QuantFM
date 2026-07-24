@@ -1,0 +1,71 @@
+# QuantFM v2 Stage-1 消融配置（约 25M；新 artifact 目录，不覆盖 v1）。
+schema_version: cn_l2_v2
+seed: 42
+
+data:
+  manifest: quant_fm/runs/v2_shared/data/manifest.json
+  vocab: quant_fm/runs/v2_shared/data/vocab_v2.json
+  context: 2048
+  stride: 2048
+  min_len: 16
+  cache_size: 16
+  num_workers: 8
+  shard_aware_sampler: true
+  persistent_workers: true
+  prefetch_factor: 2
+  validation_plan: quant_fm/runs/v2_shared/validation_windows.json
+  validation_seed: 42
+  validation_windows: 800
+
+model:
+  d_model: 384
+  n_layers: 10
+  n_heads: 8
+  ffn_hidden: 1056
+  dropout: 0.1
+  max_seq_len: 4096
+  rope_theta: 10000.0
+  field_fusion:
+    method: gated_sum
+    categorical_dim: 32
+    field_dropout: 0.10
+    input_norm: true
+
+loss:
+  normalize_by_train_entropy: true
+  targets:
+    tok_evt_type: {type: ce, weight: 1.0}
+    tok_side: {type: ce, weight: 1.0}
+    tok_price_bin: {type: ordinal_ce, weight: 1.0, ordinal_weight: 0.5}
+    tok_volume_bin: {type: ordinal_ce, weight: 0.5, ordinal_weight: 0.25}
+    tok_delta_t_bin: {type: ordinal_ce, weight: 0.5, ordinal_weight: 0.25}
+
+book:
+  state_timing: post_event
+
+pooling:
+  version: hierarchical_v1
+  method: multi_scale
+  outputs: [mean_all, last_256, continuous_pm, close_30m]
+
+optim:
+  lr: 4.0e-4
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+  grad_clip: 1.0
+  warmup_steps: 500
+  max_update_steps: 5000
+  micro_batch_size: 8
+  grad_accum: 4
+  precision: bf16
+
+runtime:
+  out_dir: quant_fm/runs/v2_25m/run
+  log_every: 20
+  eval_every: 500
+  val_max_batches: 100
+  ckpt_every: 1000
+  save_best: true
+  fsdp: false
+  fsdp_no_sync: true
+  device: auto
