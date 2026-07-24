@@ -21,3 +21,25 @@ def test_sampler_is_complete_disjoint_and_deterministic() -> None:
     assert left == list(rank0)
     rank0.set_epoch(1)
     assert left != list(rank0)
+
+
+def test_sampler_cyclically_pads_when_dataset_is_smaller_than_world() -> None:
+    class _TinyDataset:
+        def __len__(self) -> int:
+            return 1
+
+        def window_shard_index(self, index: int) -> int:
+            return 0
+
+    samplers = [
+        ShardAwareDistributedSampler(
+            _TinyDataset(),
+            num_replicas=4,
+            rank=rank,
+            shuffle=False,
+        )
+        for rank in range(4)
+    ]
+
+    assert [len(sampler) for sampler in samplers] == [1, 1, 1, 1]
+    assert [list(sampler) for sampler in samplers] == [[0], [0], [0], [0]]

@@ -22,6 +22,7 @@ from quant_fm.pretrain.model import OrderFlowFM, OrderFlowFMConfig  # noqa: E402
 from quant_fm.pretrain.train import (  # noqa: E402
     _build_dataloaders,
     _save_checkpoint,
+    _validate_resume_metadata,
     load_checkpoint,
 )
 from quant_fm.tokenizer.field_spec import FieldSpec  # noqa: E402
@@ -163,6 +164,20 @@ def test_v2_checkpoint_requires_exact_vocab_artifact(tmp_path) -> None:
     tampered.write_text(vocab.to_json() + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="vocab_sha256"):
         load_checkpoint(checkpoint, torch.device("cpu"), vocab_path=tampered)
+
+
+def test_v2_resume_rejects_same_shape_configuration_changes(tmp_path) -> None:
+    vocab, vocab_path, _ = _artifacts(tmp_path)
+    config = _model_config(vocab, vocab_path)
+    model = OrderFlowFM(config)
+    checkpoint = tmp_path / "model.pt"
+    _save_checkpoint(model, config, checkpoint)
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+    changed = _model_config(vocab, vocab_path)
+    changed.pooling_version = "multi_scale_v1"
+
+    with pytest.raises(ValueError, match="pooling_version"):
+        _validate_resume_metadata(payload, changed, target_specs=None)
 
 
 def test_v2_training_loader_persists_fixed_validation_plan(tmp_path) -> None:

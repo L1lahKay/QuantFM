@@ -239,7 +239,12 @@ class Block(nn.Module):
         x = x + self.dropout(
             self.attn(self.norm1(x), cos, sin, key_mask, full_mask=full_mask)
         )
-        ffn_output = self.ffn(self.norm2(x))
+        normalized = self.norm2(x)
+        ffn_output = (
+            self.ffn(normalized, attention_mask=key_mask)
+            if self.is_moe
+            else self.ffn(normalized)
+        )
         if self.is_moe:
             self._auxiliary_loss = ffn_output.auxiliary_loss
             ffn_hidden = ffn_output.hidden

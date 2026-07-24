@@ -31,6 +31,17 @@ class RankerConfig:
     use_attention: bool = True
 
 
+@dataclass(slots=True)
+class RankerTrainingResult:
+    """包含最佳验证模型与逐 epoch 轨迹的训练结果。"""
+
+    model: CrossSectionalRanker
+    history: list[dict[str, float | int | None]]
+    best_epoch: int
+    best_val_ic: float | None
+    stopped_early: bool
+
+
 class _RowMLP(nn.Module):
     """逐行 MLP（对各股票相同变换 -> 等变）。"""
 
@@ -156,13 +167,71 @@ def train_ranker(
     device: str = "cpu",
     seed: int = 0,
 ) -> tuple[CrossSectionalRanker, list[float]]:
-    """训练排序器；返回模型与各 epoch 平均训练 RankIC。"""
-    torch.manual_seed(seed)
-    days = _days_from_frame(features)
+    """兼容训练入口；无验证集时返回各 epoch 训练 RankIC。"""
+    result = fit_ranker(
+        features,
+        epochs=epochs,
+        lr=lr,
+        weight_decay=weight_decay,
+        hidden=hidden,
+        depth=depth,
+        dropout=dropout,
+        use_attention=use_attention,
+        device=device,
+        seed=seed,
+    )
+    history = [float(row["train_ic"] or 0.0) for row in result.history]
+    return result.model, history
+
+
+def _evaluate_days(
+    model: CrossSectionalRanker,
+    days: list[tuple[str, np.ndarray, np.ndarray]],
+    device: torch.device,
+) -> float:
+    """关闭 dropout 后计算整段日均截面相关。"""
     if not days:
+        return float("nan")
+    was_training = model.training
+    model.eval()
+    values: list[float] = []
+    with torch.inference_mode():
+        for _date, x, y in days:
+            pred = model(torch.from_numpy(x).to(device))
+            target = torch.from_numpy(y).to(device)
+            values.append(float(_pearson(pred, target).item()))
+    model.train(was_training)
+    return float(np.mean(values))
+
+
+def fit_ranker(
+    train_features: pl.DataFrame,
+    *,
+    val_features: pl.DataFrame | None = None,
+    epochs: int = 100,
+    patience: int = 8,
+    min_delta: float = 1e-4,
+    lr: float = 1e-3,
+    weight_decay: float = 1e-2,
+    hidden: int = 128,
+    depth: int = 2,
+    dropout: float = 0.3,
+    use_attention: bool = True,
+    device: str = "cpu",
+    seed: int = 0,
+    shuffle_days: bool = True,
+) -> RankerTrainingResult:
+    """训练并按验证 IC early-stop，最终恢复最佳 epoch 权重。"""
+    torch.manual_seed(seed)
+    train_days = _days_from_frame(train_features)
+    val_days = _days_from_frame(val_features) if val_features is not None else []
+    if not train_days:
         msg = "no days available to train the ranker"
         raise ValueError(msg)
-    in_dim = days[0][1].shape[1]
+    if val_days and val_days[0][1].shape[1] != train_days[0][1].shape[1]:
+        msg = "train and validation feature dimensions differ"
+        raise ValueError(msg)
+    in_dim = train_days[0][1].shape[1]
     dev = torch.device(device)
     model = CrossSectionalRanker(
         RankerConfig(
@@ -175,11 +244,23 @@ def train_ranker(
     ).to(dev)
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
 
-    history: list[float] = []
+    history: list[dict[str, float | int | None]] = []
+    rng = np.random.default_rng(seed)
+    best_state: dict[str, torch.Tensor] | None = None
+    best_val = -float("inf")
+    best_epoch = -1
+    stale_epochs = 0
+    stopped_early = False
     model.train()
     for epoch in range(epochs):
         ics = []
-        for _date, x, y in days:
+        order = (
+            rng.permutation(len(train_days))
+            if shuffle_days
+            else np.arange(len(train_days))
+        )
+        for day_index in order:
+            _date, x, y = train_days[int(day_index)]
             xt = torch.from_numpy(x).to(dev)
             yt = torch.from_numpy(y).to(dev)
             pred = model(xt)
@@ -188,10 +269,39 @@ def train_ranker(
             loss.backward()
             optimizer.step()
             ics.append(-float(loss.item()))
-        mean_ic = float(np.mean(ics))
-        history.append(mean_ic)
-        logger.info("epoch %d train RankIC %.4f", epoch, mean_ic)
-    return model, history
+        train_ic = _evaluate_days(model, train_days, dev)
+        val_ic = _evaluate_days(model, val_days, dev) if val_days else None
+        history.append({"epoch": epoch, "train_ic": train_ic, "val_ic": val_ic})
+        logger.info(
+            "epoch %d train RankIC %.4f val RankIC %s",
+            epoch,
+            train_ic,
+            f"{val_ic:.4f}" if val_ic is not None else "n/a",
+        )
+        selection_ic = val_ic if val_ic is not None else train_ic
+        if selection_ic > best_val + min_delta:
+            best_val = selection_ic
+            best_epoch = epoch
+            best_state = {
+                name: value.detach().cpu().clone()
+                for name, value in model.state_dict().items()
+            }
+            stale_epochs = 0
+        else:
+            stale_epochs += 1
+        if val_days and stale_epochs >= patience:
+            stopped_early = True
+            logger.info("early stop at epoch %d; best epoch=%d", epoch, best_epoch)
+            break
+    if best_state is not None:
+        model.load_state_dict(best_state)
+    return RankerTrainingResult(
+        model=model,
+        history=history,
+        best_epoch=best_epoch,
+        best_val_ic=float(best_val) if val_days else None,
+        stopped_early=stopped_early,
+    )
 
 
 @torch.inference_mode()

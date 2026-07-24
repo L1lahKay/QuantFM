@@ -95,7 +95,7 @@ class TemporalRegimeMoE(nn.Module):
             if token_index.numel() == 0:
                 continue
             weights = route.topk_weights[token_index, slot_index]
-            if token_index.numel() > capacity:
+            if self.training and token_index.numel() > capacity:
                 keep = weights.topk(capacity, sorted=False).indices
                 token_index, weights = token_index[keep], weights[keep]
             accepted += token_index.numel()

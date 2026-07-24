@@ -16,6 +16,15 @@
 4. 运行 smoke 和测试；
 5. 若需真实数据，再配置 MinIO。
 
+若复现模型底层 v2，还应按顺序查看：
+
+1. `order_book/pylob/book_state.py` 与 `quant_fm/schema/cn_l2_v2.py`；
+2. `quant_fm/tokenizer/field_spec.py`、`fit_bins_v2.py`、`tokenize_events_v2.py`；
+3. `quant_fm/pretrain/dataset_v2.py`、`field_fusion.py`、`heads.py`；
+4. `quant_fm/pretrain/train.py`、`sampler.py`、`validation_sampler.py` 与 `eval.py`；
+5. `quant_fm/benchmark/` 与 `quant_fm/experiments/registry.py`；
+6. `quant_fm/embedding/`、`quant_fm/cross_asset/` 与实验性的 `quant_fm/moe/`。
+
 ## 无外部依赖复现
 
 ```bash
@@ -30,9 +39,45 @@ uv run python -m quant_fm.scripts.smoke --workdir /tmp/quantfm-smoke
 - 测试通过；
 - 日志出现 `training complete`；
 - 生成 embedding；
-- 日志最终出现 `SMOKE OK: all stages passed`。
+- 日志最终出现 `SMOKE OK: score signal generated`。
 
 Smoke 使用合成数据和微型 CPU 模型，只验证工程链路，不代表真实投资收益。
+
+当前全仓回归基线（分支 `MOE`，2026-07-24）：
+
+```text
+243 passed, 2 skipped, 1 xfailed
+```
+
+其中 skip 为依赖本机真实数据/环境的测试，xfail 是已显式登记的预期行为；不要为了得到相同计数而关闭本机可用的真实数据测试。
+
+模型底层 v2 的快速专项回归：
+
+```bash
+uv run python -m pytest -q \
+  tests/test_book_state_causality.py \
+  tests/test_order_book_cancel_consistency.py \
+  tests/test_tokenizer_v2.py \
+  tests/test_fit_bins_stratified.py \
+  tests/test_field_fusion.py \
+  tests/test_multitask_loss_v2.py \
+  tests/test_pretrain_v2_integration.py \
+  tests/test_validation_sampler.py \
+  tests/test_pretrain_eval.py \
+  tests/test_hierarchical_pooling.py \
+  tests/test_intraday_aggregator.py \
+  tests/test_cross_asset_causality.py \
+  tests/test_cross_asset_dataset_model.py \
+  tests/test_training_schedule.py \
+  tests/test_shard_aware_sampler.py \
+  tests/test_attention_fast_path.py \
+  tests/test_rope_cache.py \
+  tests/test_inference_checkpoint.py \
+  tests/test_experiment_registry.py \
+  tests/test_moe_router.py \
+  tests/test_moe_causality.py \
+  tests/test_backbone_moe.py
+```
 
 ## 真实数据验证
 
@@ -90,6 +135,60 @@ make train-8gpu
 - FSDP、AMP、梯度累积和有效 batch 是否符合配置；
 - `best.pt` 与 `final.pt` 的语义是否清晰。
 
+### V2 artifact 兼容性
+
+v2 不把“列看起来一样”视为兼容。下列内容必须作为一套实验 artifact 冻结：
+
+| 产物/元数据 | 必须满足的约束 |
+|-------------|----------------|
+| `vocab_v2.json` | `vocab_version=2.0`；六个特殊 token id 固定；含完整有序 FieldSpec、fit dates、occupancy、normalizer 与采样参数 |
+| token shards + manifest | token/scalar 列与 FieldSpec 一致；manifest shard SHA-256、日期 split 不变 |
+| `validation_windows.json` | 记录 context/stride/min_len、seed、manifest fingerprint 和确定的 dataset indices |
+| v2 checkpoint | `fm_artifact_version=2.0`；记录 schema/vocab 版本、vocab SHA-256、有序字段、loss targets、盘口时序、context 与 pooling 版本 |
+
+`load_checkpoint()` 加载 v2 权重时必须传入原始 vocab 路径。当前推理加载会严格核对
+artifact 版本、schema、vocab SHA-256、完整有序 FieldSpec，并确认 checkpoint 中选择的
+输入/目标字段是 vocab 字段的合法保序子序列；续训还会把 schema、vocab hash、
+FieldSpec、输入/目标字段及 loss targets 与当前配置逐项比较。checkpoint 虽然同时记录
+continuous normalizer、盘口状态时序、context 与 pooling 版本，但当前加载器不会把这些
+记录全部与外部 manifest/运行配置逐项比较；它们仍须通过冻结 vocab、配置快照、固定验证
+计划和实验登记进行审计。不得通过修改 checkpoint 字典或放宽现有检查来“修复”不兼容。
+
+v1 继续使用原有 `PAD=0, N_SPECIAL=1` 与 `legacy_sum`。v2 的 `PAD/UNK/NA/BOS/EOS/SESSION_BREAK` 是独立 id 空间，禁止把 v2 常量回写到 v1 artifact。
+
+### 固定验证计划
+
+首次 v2 训练可自动生成配置指定的 `validation_windows.json`，也可提前创建：
+
+```bash
+uv run python -m quant_fm.pretrain.validation_sampler \
+  --manifest quant_fm/runs/v2_shared/data/manifest.json \
+  --split val --context 2048 --stride 2048 --min-len 16 \
+  --seed 42 --max-windows 800 \
+  --out quant_fm/runs/v2_shared/validation_windows.json
+```
+
+25M 与 100M 实验必须使用同一份计划。计划按日期、交易所、板块、流动性和活跃度尽可能平衡；没有 PIT 流动性输入时使用显式 `unknown` bucket。加载时会重新核对 manifest fingerprint 与窗口参数，防止修改数据后继续沿用旧计划。
+
+v2 训练与诊断入口：
+
+```bash
+uv run python -m quant_fm.pretrain.train \
+  --config quant_fm/pretrain/config_v2_25m.yaml
+
+uv run python -m quant_fm.pretrain.eval \
+  --checkpoint quant_fm/runs/v2_25m/run/best.pt \
+  --config quant_fm/pretrain/config_v2_25m.yaml \
+  --validation-plan quant_fm/runs/v2_shared/validation_windows.json \
+  --device cpu --out quant_fm/runs/v2_25m/run/val_diagnostics.json
+```
+
+仓库还提供 `config_v2_230m.yaml` 与 `config_v2_backbone_moe.yaml` 作为后续 dense/
+sparse 对照候选。配置文件存在不代表相应模型已经训练，也不应跳过 25M/100M 闸门直接
+宣称放大或 MoE 有效。
+
+诊断至少比较 per-field CE、train-unigram CE、copy baseline、训练熵归一化 CE、top-k、预测熵和字段梯度范数；不能只看总 loss。
+
 ### 研究有效性
 
 - 预训练 loss 仅是过程指标；
@@ -110,8 +209,17 @@ make train-8gpu
 ## 已知边界
 
 - PyLOB 是离线研究引擎，不是生产低延迟撮合系统；
-- 训练 checkpoint 已保存模型、optimizer、scaler 与 step，支持 `--resume` / `--resume auto` 断点续训；尚未持久化 sampler 精确位置与全部 RNG 状态；
+- checkpoint 分为两类：`step*.pt` / `final_resume.pt` 保存模型、optimizer、scaler 与
+  `TrainState`，用于续训；`best.pt` / `final.pt` 不含 optimizer/scaler，面向评估和推理。
+  后两者显式传给 `--resume` 会直接报错；`--resume auto` 优先选择编号最大的
+  `step*.pt`，仅在不存在定期 checkpoint 时尝试 `final_resume.pt`，二者都不存在则从头
+  训练。所有类型都尚未持久化 sampler 精确位置与全部 RNG 状态；
 - 数据阶段支持日期级 / 标的级断点续跑（`.done`、`.clean_done`、`skip_existing`）、`CLEAN_WORKERS` 多进程清洗与 `CANON_WORKERS` 并行规范化；可用 `check_pipeline_progress` 查询进度；
 - manifest 中包含绝对路径，跨机器迁移时应重建或改写；
 - 合成 smoke 的回测指标没有经济含义；
+- 现有 MinIO/Pilot/Medium 一键脚本仍生成 v1 events/tokens；v2 数据准备目前由库 API 完成，尚无新的全链路一键命令；
+- v2 实现已经通过单元/集成回归，但尚未生成正式 25M/100M checkpoint，未做新 untouched OOS，也未证明 score 或交易成本后收益改善；
+- 多尺度池化、`IntradayAggregator` 和 `cross_asset` 已有因果测试，但尚未接入默认生产 score 路径；
+- Temporal Regime-MoE 与顶部 Backbone-MoE 已有模块、配置和代码级测试，但尚无正式
+  真实数据训练、消融或 OOS 结论，也未接入默认 score 路径；
 - 全市场效果需要更长时间跨度与独立 out-of-sample 数据验证。

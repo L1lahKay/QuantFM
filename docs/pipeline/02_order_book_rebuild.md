@@ -1,4 +1,9 @@
-# 阶段 2：订单簿重建与清洗
+# 阶段 2：订单簿重建、撤单一致性与因果盘口状态
+
+> 当前状态（2026-07）：撤单一致性修复和因果 `BookState` 基础设施已实现并通过测试；
+> 现有 `build_clean_dataset` / `run_medium` 仍按原有事件导出流程运行。要生成
+> `cn_l2_v2`，调用方必须在逐事件 raw replay 时显式捕获 pre/post 状态，生产清洗
+> 编排尚未自动接入这一步。
 
 ## 目标
 
@@ -9,6 +14,7 @@
 | 文件 | 责任 |
 |------|------|
 | `order_book/pylob/matching_engine.py` | 公共撮合、撤单、集合竞价和状态管理 |
+| `order_book/pylob/book_state.py` | 不修改撮合引擎地读取紧凑盘口，以及显式捕获单事件 pre/post 状态 |
 | `order_book/pylob/orderbook_builder_sh.py` | 上海逐笔规则与 trade/order 还原 |
 | `order_book/pylob/orderbook_builder_sz.py` | 深圳限价、市价、本地最优及撤单规则 |
 | `order_book/pylob/result_mixin.py` | 快照、结果比对与导出 |
@@ -22,6 +28,30 @@ from pylob import OrderBookSH, OrderBookSZ
 from pylob.pipeline.workflow import build_clean_dataset
 ```
 
+v2 盘口状态使用以下独立 API，不会改变上述 v1 路径：
+
+```python
+from pylob import (
+    capture_book_transition,
+    iter_book_state_transitions,
+    snapshot_book_state,
+)
+
+# 只读当前状态，不推进事件
+state = snapshot_book_state(book, tick_size=100)
+
+# apply_event 必须且只能处理当前事件；调用方负责把 transition 与事件逐行保存
+transition = capture_book_transition(
+    book,
+    lambda: apply_event(current_event),
+    tick_size=100,
+)
+```
+
+`BookState.valid` 表示买卖两侧报价同时存在；单边簿并不会被丢弃，其可用一侧深度
+和 imbalance 仍会保留。快照包括 bid/ask 一档、5/10 档累计深度、spread、
+L1/L5/L10 imbalance 和 microprice 相对 mid 的 tick 偏移。
+
 ## 数据流
 
 ```text
@@ -32,6 +62,30 @@ trade/order parquet
   → OrderBookSH / OrderBookSZ 逐条回放
   → ADD / CANCEL / TRADE 事件与订单簿结果
 ```
+
+若目标是 v2 特征，逐事件分支必须改为：
+
+```text
+按交易所时间 + exchange sequence 稳定排序
+  → snapshot pre_event_state(t)
+  → 只处理 event(t)
+  → snapshot post_event_state(t)
+  → 将 transition 与 event(t) 行对齐保存
+```
+
+禁止先完成整日回放，再从最终订单簿反推历史状态。`local_time` 可能包含接收延迟，
+不能作为同时间戳事件的首要排序键。
+
+## 撤单一致性修复
+
+`MatchingEngine.cancel_order()` 现在会从对应 bid/ask price-level deque 中物理删除
+订单，并在档位为空时删除价格档；`_compact_book()` 和队首清理也会同时检查数量与
+活动订单索引。这保证：
+
+- `orders` 中不存在的订单不会残留在盘口队列；
+- 全撤单后数量归零，空价格档被删除；
+- 撤销同价位中间订单不改变其余订单 FIFO 顺序；
+- SH/SZ 构建器共用相同一致性约束。
 
 ### 交易阶段
 
@@ -134,13 +188,25 @@ clean/<date>/<market>/<symbol>/events.parquet
    ```bash
    uv run python -m pytest tests/test_call_auction.py \
      tests/test_continuous_auction.py \
-     tests/test_shanghai_trade_order.py -q
+     tests/test_shanghai_trade_order.py \
+     tests/test_order_book_cancel_consistency.py \
+     tests/test_book_state_causality.py -q
    ```
 
 2. 快照一致性：使用 `quant_fm/lob_rebuild/snapshot_check.py` 将重建盘口与交易所快照逐档比较。
 
 3. 结果比对：调用 `compare_df()` 检查回放成交/撤单与输入记录的一致性。
 
+截至本次底层 v2 改造，全仓测试结果为 `243 passed, 2 skipped, 1 xfailed`。该结果
+证明当前代码回归与因果性测试通过，不代表 v2 已完成真实数据重放、模型重训或 OOS
+收益验收。
+
 ## 设计边界
 
-PyLOB 是研究与离线验证引擎，不是生产级低延迟撮合服务。当前集合竞价实现覆盖核心最大成交量规则，但不宣称完整实现交易所全部 tie-break 细则。
+PyLOB 是研究与离线验证引擎，不是生产级低延迟撮合服务。当前集合竞价实现覆盖核心
+最大成交量规则，但不宣称完整实现交易所全部 tie-break 细则。
+
+当前最重要的集成边界是：`book_state.py` 只提供状态读取与 capture helper，现有
+`workflow.py`、`clean_day_fast.py` 和 canonicalize 编排不会自动记录每个 raw event 的
+transition。运行 v2 数据生产前，必须显式接入 capture、校验事件数严格一一对应，并
+落出 `book_features`；否则不得把产物标记为 `cn_l2_v2`。

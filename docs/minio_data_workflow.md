@@ -2,6 +2,8 @@
 
 > **读写分离**：读 `zeus-cn-quote` @ `:9000`，写 `model-cache` @ `:9100`。  
 > 完整读写 API 与命令见 **[minio_setup.md](./minio_setup.md)**。
+>
+> 本文所有现成 shell/Makefile 流程是 V1 稳定路径。V2 的盘口回放、token+scalar 与训练 loader 已有底层实现，但仍需将真实回放批量产物接入该编排；当前不得用 V2 配置直接读 V1 tokens。
 
 ## 背景：MinIO 上有什么
 

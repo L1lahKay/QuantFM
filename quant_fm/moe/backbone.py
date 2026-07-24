@@ -63,13 +63,35 @@ class SparseMoEFeedForward(nn.Module):
             for _ in range(config.n_routed_experts)
         )
 
-    def forward(self, inputs: torch.Tensor) -> SparseMoEOutput:
-        """稀疏分派扁平 token，并恢复原始前置形状。"""
+    def forward(
+        self,
+        inputs: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+    ) -> SparseMoEOutput:
+        """只对有效 token 做稀疏分派，并恢复原始前置形状。"""
         original_shape = inputs.shape
         flat = inputs.reshape(-1, original_shape[-1])
-        route = self.router(flat)
-        routed = torch.zeros_like(flat)
-        total_assignments = flat.size(0) * self.config.top_k
+        if attention_mask is None:
+            active_mask = torch.ones(
+                flat.size(0), dtype=torch.bool, device=inputs.device
+            )
+        else:
+            if tuple(attention_mask.shape) != tuple(original_shape[:-1]):
+                msg = "attention_mask must match the leading input dimensions"
+                raise ValueError(msg)
+            active_mask = attention_mask.to(
+                device=inputs.device, dtype=torch.bool
+            ).reshape(
+                -1,
+            )
+        active = flat[active_mask]
+        if active.size(0) == 0:
+            msg = "SparseMoEFeedForward requires at least one active token"
+            raise ValueError(msg)
+
+        route = self.router(active)
+        routed = torch.zeros_like(active)
+        total_assignments = active.size(0) * self.config.top_k
         capacity = max(
             1,
             math.ceil(
@@ -85,18 +107,20 @@ class SparseMoEFeedForward(nn.Module):
             if token_index.numel() == 0:
                 continue
             weights = route.topk_weights[token_index, slot_index]
-            if token_index.numel() > capacity:
+            if self.training and token_index.numel() > capacity:
                 keep = weights.topk(capacity, sorted=False).indices
                 token_index = token_index[keep]
                 weights = weights[keep]
             accepted += token_index.numel()
-            expert_output = expert(flat[token_index])
+            expert_output = expert(active[token_index])
             routed.index_add_(
                 0,
                 token_index,
                 expert_output * weights.to(expert_output.dtype).unsqueeze(-1),
             )
-        hidden = routed if self.shared is None else routed + self.shared(flat)
+        active_hidden = routed if self.shared is None else routed + self.shared(active)
+        hidden = torch.zeros_like(flat)
+        hidden[active_mask] = active_hidden
         auxiliary = route.auxiliary_loss(
             load_balance_weight=self.config.load_balance_weight,
             router_z_loss_weight=self.config.router_z_loss_weight,

@@ -72,6 +72,7 @@ class ShardAwareDistributedSampler(Sampler[int]):
         if self.drop_last:
             indices = indices[: self.total_size]
         elif indices:
-            indices.extend(indices[: self.total_size - len(indices)])
+            repeats = math.ceil(self.total_size / len(indices))
+            indices = (indices * repeats)[: self.total_size]
         start = self.rank * self.num_samples
         return iter(indices[start : start + self.num_samples])

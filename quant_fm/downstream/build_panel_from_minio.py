@@ -7,7 +7,7 @@
 * 日终价 ``close``：当日最后一条 snapshot 的 ``last_px``
 * 日 VWAP ``vwap``：末笔 ``total_notional / total_vol``（累计成交金额/量）
 * ``fwd_ret``：下一交易日 VWAP / 当日 VWAP - 1（无下一交易日则为 null）
-* ``limit_locked``：收盘价触及涨跌停（相对 upper/lower 容差内）
+* ``limit_locked``：成交后观测价格全天锁在涨停或跌停附近
 * ``is_halt``：全日 ``total_vol==0``
 * ``is_st`` / ``is_new``：L2 快照无法可靠判断 → 默认 ``False``
   （正式生产请换官方 ST/新股日历覆盖）
@@ -23,14 +23,19 @@ from __future__ import annotations
 import argparse
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import polars as pl
 from pylob.pipeline.paths import zeus_default_object_key
 
+from quant_fm.downstream.return_spec import RETURN_SPECS, get_return_spec
 from quant_fm.schema.cn_l2_v1 import PRICE_SCALE
 from quant_fm.scripts.minio_config import read_bucket, storage_options_for_read
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from quant_fm.downstream.return_spec import ReturnSpec
 
 
 def _snapshot_uri(date: str) -> str:
@@ -66,11 +71,25 @@ def eod_from_snapshots(
     if symbols is not None:
         lf = lf.filter(pl.col("ticker").cast(pl.Utf8).is_in(sorted(symbols)))
 
-    # 每个 ticker 取 exch_time 最大的一行（日终）
+    # 日终累计字段取末值；开高低只在已有成交量的快照上聚合，避免盘前昨收污染。
     eod = (
         lf.sort(["ticker", "exch_time"])
         .group_by("ticker", maintain_order=True)
-        .agg(pl.all().last())
+        .agg(
+            pl.col("wind_code").last(),
+            pl.col("trading_day").last(),
+            pl.col("exch_time").last(),
+            pl.col("status").last(),
+            pl.col("pre_close_px").last(),
+            pl.col("last_px").last(),
+            pl.col("last_px").filter(pl.col("total_vol") > 0).first().alias("open_px"),
+            pl.col("last_px").filter(pl.col("total_vol") > 0).max().alias("high_px"),
+            pl.col("last_px").filter(pl.col("total_vol") > 0).min().alias("low_px"),
+            pl.col("total_vol").last(),
+            pl.col("total_notional").last(),
+            pl.col("upper_limit_px").last(),
+            pl.col("lower_limit_px").last(),
+        )
         .collect()
     )
     if eod.is_empty():
@@ -89,6 +108,9 @@ def eod_from_snapshots(
         pl.col("ticker").cast(pl.Utf8).str.zfill(6).alias("symbol"),
         market.alias("market"),
         (pl.col("last_px").cast(pl.Float64) / PRICE_SCALE).alias("close"),
+        (pl.col("open_px").cast(pl.Float64) / PRICE_SCALE).alias("open"),
+        (pl.col("high_px").cast(pl.Float64) / PRICE_SCALE).alias("high"),
+        (pl.col("low_px").cast(pl.Float64) / PRICE_SCALE).alias("low"),
         (pl.col("pre_close_px").cast(pl.Float64) / PRICE_SCALE).alias("pre_close"),
         (
             pl.when(pl.col("total_vol") > 0)
@@ -104,8 +126,14 @@ def eod_from_snapshots(
         (pl.col("total_vol").cast(pl.Int64) <= 0).alias("is_halt"),
     ).with_columns(
         (
-            (pl.col("close") >= pl.col("upper") * 0.9995)
-            | (pl.col("close") <= pl.col("lower") * 1.0005)
+            (
+                (pl.col("low") >= pl.col("upper") * 0.9995)
+                & (pl.col("high") <= pl.col("upper") * 1.0005)
+            )
+            | (
+                (pl.col("high") <= pl.col("lower") * 1.0005)
+                & (pl.col("low") >= pl.col("lower") * 0.9995)
+            )
         ).alias("limit_locked"),
         pl.lit(False).alias("is_st"),
         pl.lit(False).alias("is_new"),
@@ -115,6 +143,9 @@ def eod_from_snapshots(
             "date",
             "symbol",
             "market",
+            "open",
+            "high",
+            "low",
             "close",
             "pre_close",
             "vwap",
@@ -183,11 +214,154 @@ def attach_fwd_ret(
     ).drop(["_next_px"])
 
 
+def build_execution_panel(
+    daily: pl.DataFrame,
+    *,
+    signal_dates: list[str],
+    trading_calendar: list[str],
+    spec: ReturnSpec,
+    require_complete_horizon: bool = True,
+) -> pl.DataFrame:
+    """
+    构造以信号日为键、显式带建仓/退出日期的研究面板。
+
+    目标组合只能使用 ``eligible_at_signal``；``entry_fillable`` 是下一交易日
+    的实际成交结果，只能由回测执行器用于拒单，不能用于事后补选股票。
+    """
+    spec.validate()
+    required = {
+        "date",
+        "symbol",
+        spec.entry_price,
+        spec.exit_price,
+        "is_st",
+        "is_new",
+        "is_halt",
+        "limit_locked",
+    }
+    missing = required - set(daily.columns)
+    if missing:
+        msg = f"daily quotes missing required columns: {sorted(missing)}"
+        raise ValueError(msg)
+    calendar = list(dict.fromkeys(str(value) for value in trading_calendar))
+    if calendar != sorted(calendar):
+        msg = "trading_calendar must be strictly increasing"
+        raise ValueError(msg)
+    positions = {date: i for i, date in enumerate(calendar)}
+    unknown = sorted(set(signal_dates) - set(positions))
+    if unknown:
+        msg = f"signal dates absent from trading calendar: {unknown[:5]}"
+        raise ValueError(msg)
+
+    mapping_rows: list[dict[str, str | None]] = []
+    incomplete: list[str] = []
+    for date in signal_dates:
+        index = positions[date]
+        entry_index = index + spec.entry_day_lag
+        exit_index = index + spec.exit_day_lag
+        entry_date = calendar[entry_index] if entry_index < len(calendar) else None
+        exit_date = calendar[exit_index] if exit_index < len(calendar) else None
+        if entry_date is None or exit_date is None:
+            incomplete.append(date)
+        mapping_rows.append(
+            {"date": date, "entry_date": entry_date, "exit_date": exit_date}
+        )
+    if incomplete and require_complete_horizon:
+        msg = (
+            "trading calendar does not cover the requested return horizon for "
+            f"signal dates: {incomplete[:5]}"
+        )
+        raise ValueError(msg)
+
+    mapping = pl.DataFrame(
+        mapping_rows,
+        schema={"date": pl.Utf8, "entry_date": pl.Utf8, "exit_date": pl.Utf8},
+    )
+    base_columns = [
+        "date",
+        "symbol",
+        *[name for name in ("market",) if name in daily.columns],
+        "is_st",
+        "is_new",
+        "is_halt",
+        "limit_locked",
+    ]
+    signal = daily.select(base_columns).filter(pl.col("date").is_in(signal_dates))
+    signal = signal.rename(
+        {
+            "is_st": "is_st_at_signal",
+            "is_new": "is_new_at_signal",
+            "is_halt": "is_halt_at_signal",
+            "limit_locked": "limit_locked_at_signal",
+        }
+    ).with_columns(
+        (
+            ~pl.col("is_st_at_signal").fill_null(True)
+            & ~pl.col("is_new_at_signal").fill_null(True)
+            & ~pl.col("is_halt_at_signal").fill_null(True)
+        ).alias("eligible_at_signal")
+    )
+    entry = daily.select(
+        pl.col("date").alias("entry_date"),
+        "symbol",
+        pl.col(spec.entry_price).cast(pl.Float64).alias("entry_px"),
+        pl.col("is_halt").alias("is_halt_entry"),
+        pl.col("limit_locked").alias("limit_locked_entry"),
+    )
+    exit_quotes = daily.select(
+        pl.col("date").alias("exit_date"),
+        "symbol",
+        pl.col(spec.exit_price).cast(pl.Float64).alias("exit_px"),
+        pl.col("is_halt").alias("is_halt_exit"),
+        pl.col("limit_locked").alias("limit_locked_exit"),
+    )
+    out = (
+        signal.join(mapping, on="date", how="left")
+        .join(entry, on=["symbol", "entry_date"], how="left")
+        .join(exit_quotes, on=["symbol", "exit_date"], how="left")
+        .with_columns(
+            pl.lit(spec.name).alias("return_spec"),
+            pl.lit(spec.entry_price).alias("entry_price_field"),
+            pl.lit(spec.exit_price).alias("exit_price_field"),
+            (
+                pl.col("entry_px").is_not_null()
+                & (pl.col("entry_px") > 0)
+                & ~pl.col("is_halt_entry").fill_null(True)
+                & ~pl.col("limit_locked_entry").fill_null(True)
+            ).alias("entry_fillable"),
+            (
+                pl.col("exit_px").is_not_null()
+                & (pl.col("exit_px") > 0)
+                & ~pl.col("is_halt_exit").fill_null(True)
+                & ~pl.col("limit_locked_exit").fill_null(True)
+            ).alias("exit_fillable"),
+        )
+        .with_columns(
+            pl.when(
+                pl.col("entry_px").is_not_null()
+                & pl.col("exit_px").is_not_null()
+                & (pl.col("entry_px") > 0)
+            )
+            .then(pl.col("exit_px") / pl.col("entry_px") - 1.0)
+            .otherwise(None)
+            .alias("fwd_ret")
+        )
+        .sort(["date", "symbol"])
+    )
+    if out.select(pl.struct(["date", "symbol"]).is_duplicated().any()).item():
+        msg = "execution panel contains duplicate (date, symbol) keys"
+        raise ValueError(msg)
+    return out
+
+
 def build_panel(
     dates: list[str],
     *,
     symbols: set[str] | None = None,
     price_col: str = "vwap",
+    signal_dates: list[str] | None = None,
+    return_spec: ReturnSpec | None = None,
+    require_complete_horizon: bool = True,
 ) -> pl.DataFrame:
     """
     多日构建面板；``fwd_ret`` 由**全局下一交易日**对齐（见 :func:`attach_fwd_ret`）。
@@ -205,6 +379,14 @@ def build_panel(
     if not frames:
         return pl.DataFrame()
     daily = pl.concat([f for f in frames if not f.is_empty()], how="vertical_relaxed")
+    if return_spec is not None:
+        return build_execution_panel(
+            daily,
+            signal_dates=signal_dates or list(dates),
+            trading_calendar=list(dates),
+            spec=return_spec,
+            require_complete_horizon=require_complete_horizon,
+        )
     return attach_fwd_ret(daily, price_col=price_col, trading_days=list(dates))
 
 
@@ -217,6 +399,16 @@ def main() -> None:
         help="逗号分隔交易日 YYYY-MM-DD；与 --dates-file / --from-embeddings 三选一",
     )
     parser.add_argument("--dates-file", type=Path)
+    parser.add_argument(
+        "--signal-dates-file",
+        type=Path,
+        help="score 信号日期；与完整 --calendar-file 分开，避免少估值日",
+    )
+    parser.add_argument(
+        "--calendar-file",
+        type=Path,
+        help="覆盖 entry/exit horizon 的完整连续交易日历",
+    )
     parser.add_argument(
         "--from-embeddings",
         type=Path,
@@ -233,6 +425,16 @@ def main() -> None:
         help="fwd_ret 用的价格（默认 vwap）",
     )
     parser.add_argument(
+        "--return-spec",
+        choices=sorted(RETURN_SPECS),
+        help="显式可执行收益口径；给定后替代 legacy --price",
+    )
+    parser.add_argument(
+        "--allow-incomplete-horizon",
+        action="store_true",
+        help="研究排查用；默认未来行情不完整即失败",
+    )
+    parser.add_argument(
         "--out",
         type=Path,
         default=Path("quant_fm/runs/medium_try/panel/daily_panel.parquet"),
@@ -241,28 +443,52 @@ def main() -> None:
 
     symbols: set[str] | None = None
     dates: list[str] = []
+    signal_dates: list[str] = []
+
+    def _read_dates(path: Path) -> list[str]:
+        return [
+            line.strip()
+            for line in path.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        ]
 
     if args.from_embeddings is not None:
         emb = pl.read_parquet(args.from_embeddings)
-        dates = sorted(emb["date"].unique().to_list())
+        signal_dates = sorted(emb["date"].unique().to_list())
+        dates = signal_dates
         symbols = set(emb["symbol"].cast(pl.Utf8).str.zfill(6).to_list())
-        logger.info("from embeddings: %d dates, %d symbols", len(dates), len(symbols))
+        logger.info(
+            "from embeddings: %d dates, %d symbols", len(signal_dates), len(symbols)
+        )
+    elif args.signal_dates_file is not None:
+        signal_dates = _read_dates(args.signal_dates_file)
+        dates = signal_dates
     elif args.dates_file is not None:
-        dates = [
-            ln.strip()
-            for ln in args.dates_file.read_text(encoding="utf-8").splitlines()
-            if ln.strip() and not ln.strip().startswith("#")
-        ]
+        dates = _read_dates(args.dates_file)
+        signal_dates = list(dates)
     elif args.dates:
         dates = [d.strip() for d in args.dates.split(",") if d.strip()]
+        signal_dates = list(dates)
     else:
         parser.error("need --dates or --dates-file or --from-embeddings")
+
+    if args.calendar_file is not None:
+        dates = _read_dates(args.calendar_file)
+    if args.return_spec and args.calendar_file is None:
+        parser.error("--return-spec requires an explicit --calendar-file")
 
     if args.symbols:
         symbols = {s.strip().zfill(6) for s in args.symbols.split(",") if s.strip()}
 
     # fwd_ret 需要多一天；若末日无下一交易日则该日为空，调用方可多传一天。
-    panel = build_panel(dates, symbols=symbols, price_col=args.price)
+    panel = build_panel(
+        dates,
+        symbols=symbols,
+        price_col=args.price,
+        signal_dates=signal_dates,
+        return_spec=get_return_spec(args.return_spec) if args.return_spec else None,
+        require_complete_horizon=not args.allow_incomplete_horizon,
+    )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     panel.write_parquet(args.out)
     n_ret = panel.filter(pl.col("fwd_ret").is_not_null()).height

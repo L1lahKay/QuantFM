@@ -2,6 +2,8 @@
 
 本文档说明如何从 MinIO 上的 A 股 Level-2 原始 parquet，一步步生成预训练所需的 **规范 events** 与 **tokens**。
 
+> 本文第 1–4 节是当前已接入 MinIO 编排的 **V1 稳定路径**。V2 的因果盘口、`cn_l2_v2`、分层分箱和 token+scalar 底层 API 已实现，但还没有被 `run_pilot.py` / `run_medium.py` 自动编排。不得将 V1 events 直接改名为 V2 产物。
+
 ---
 
 ## 1. 总览
@@ -295,6 +297,38 @@ manifest.save(Path("quant_fm/runs/demo/data/manifest.json"))
 
 ---
 
+### 4.6 V2 产物链（底层 API 已实现，批量编排待接入）
+
+V2 不是在 V1 token 上多加几列即可。每个事件必须按交易所序号回放，在 apply 事件前/后分别捕获状态，再生成行对齐特征：
+
+```text
+PyLOB event stream
+  → iter_book_state_transitions(..., apply_event=...)
+  → transitions_to_feature_frame(...)
+  → cn_l2_v2.events_to_canonical(..., book_features=...)
+  → fit_vocab_v2(train_event_paths, field_specs=FULL_FIELD_SPECS_V2)
+  → tokenize_path_v2(...)
+  → build_manifest(..., vocab_path=".../vocab_v2.json")
+  → manifest.schema_version = vocab.schema_version
+  → manifest.save(...)
+```
+
+关键契约：
+
+- `book_features` 必须与 events 等长；少了必需 `*_post` 列时 `cn_l2_v2` 会直接报错。
+- 事件通用状态使用 `post_event_state(t)` 来预测 `t+1`；事件价格距离明确使用 `event_price_distance_ticks_pre`。
+- V2 特殊 ID 是 `PAD=0, UNK=1, NA=2, BOS=3, EOS=4, SESSION_BREAK=5`；真实 0 值不得编码为 `NA`。
+- `fit_vocab_v2()` 只能读训练日；分层 reservoir 的 seed、`FieldSpec` 顺序、schema version 和训练日应固化进 `vocab_v2.json`。
+- V2 tokens 同时包含 `tok_*` 和 `val_*` 列。下游 `EventWindowDatasetV2` 仅从冻结 `FieldSpec` 派生字段顺序，不猜测 parquet 列。
+- `build_manifest()` 默认仍写 `cn_l2_v1`；V2 在保存 manifest 前必须显式执行
+  `manifest.schema_version = vocab.schema_version`，不能仅把 `vocab_path` 改成
+  `vocab_v2.json`。
+- 产物应写入 `quant_fm/runs/v2_shared/`等独立根目录；禁止覆盖 V1 `events/`、`tokens/` 或 `vocab.json`。
+
+完整代码级步骤和验收命令见 [模型底层 V2 代码改造指导](./模型底层v2代码改造指导.md)。
+
+---
+
 ## 5. 验证产物
 
 ```bash
@@ -449,13 +483,18 @@ python -m quant_fm.scripts.upload_to_minio \
 | Step 3 分箱 | `quant_fm/tokenizer/fit_bins.py` | `fit_bins()` |
 | Step 4 分词 | `quant_fm/tokenizer/tokenize_events.py` | `tokenize_path()` |
 | Step 5 清单 | `quant_fm/manifest/build_manifest.py` | `build_manifest()` |
+| V2 状态捕获 | `order_book/pylob/book_state.py` | `iter_book_state_transitions()` |
+| V2 盘口转换 | `quant_fm/tokenizer/lob_transforms.py` | `transitions_to_feature_frame()` |
+| V2 schema | `quant_fm/schema/cn_l2_v2.py` | `events_to_canonical()` |
+| V2 分箱 / 词表 | `quant_fm/tokenizer/fit_bins_v2.py` | `fit_vocab_v2()` |
+| V2 分词 | `quant_fm/tokenizer/tokenize_events_v2.py` | `tokenize_path_v2()` |
 
 ---
 
 ## 9. 常见问题
 
 **Q：`clean/.../tokens.parquet` 和 `quant_fm/.../tokens/` 有什么区别？**  
-A：前者是 PyLOB 内置 tokenizer 产物；**quant_fm 预训练只认后者**（基于 cn_l2_v1 + 全局 vocab）。
+A：前者是 PyLOB 内置 tokenizer 产物，不是 QuantFM 训练输入。QuantFM V1 读本文生成的 `cn_l2_v1 + vocab.json` tokens；V2 则读 `cn_l2_v2 + vocab_v2.json` 的 token+scalar shards，两者不能混用。
 
 **Q：为什么要分 clean events 和 canonical events 两步？**  
 A：PyLOB 输出是撮合引擎内部格式；cn_l2_v1 统一沪深字段、板块、会话等，便于跨市场训练与审计。
@@ -483,11 +522,29 @@ events + tokens + manifest 就绪后：
 # 预训练
 python -m quant_fm.pretrain.train --config quant_fm/pretrain/config_pilot.yaml
 
-# 抽 embedding
-python -m quant_fm.embedding.extract_hidden ...
+# V2（先按 §4.6 生成 v2_shared/data 产物）
+python -m quant_fm.pretrain.train --config quant_fm/pretrain/config_v2_25m.yaml
 
-# 下游排序 / 回测
-python -m quant_fm.downstream.train_ranker ...
+# 抽训练期 embedding
+python -m quant_fm.embedding.extract_hidden \
+  --checkpoint quant_fm/runs/pilot/run/best.pt \
+  --manifest quant_fm/runs/pilot/data/manifest.json \
+  --split train \
+  --out quant_fm/runs/pilot/embeddings/train.parquet \
+  --device cpu --dtype fp32
+
+# 离线训练并冻结 Ranker（train_ranker.py 本身是库模块，不是 CLI）
+python -m quant_fm.signal.train \
+  --embeddings quant_fm/runs/pilot/embeddings/train.parquet \
+  --panel quant_fm/runs/pilot/panel/daily_panel.parquet \
+  --out-dir quant_fm/runs/pilot/signal_artifact \
+  --device cpu
+
+# 研究裁判 / 回测
+python -m quant_fm.downstream.run_judge \
+  --workdir quant_fm/runs/pilot \
+  --checkpoint quant_fm/runs/pilot/run/best.pt \
+  --device cpu
 ```
 
 更多概念说明见 [QuantFM.md](./QuantFM.md)。

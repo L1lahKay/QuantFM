@@ -50,6 +50,8 @@ HDS/SOURCE=zeus/DOMAIN=quote/DATASET=china_stock/
 | `quant_fm/scripts/upload_to_minio.py` | 上传 tokens、vocab、manifest |
 | `quant_fm/scripts/download_from_minio.py` | 从模型缓存恢复训练数据 |
 
+> 当前一键 MinIO 编排生成并上传的是 V1 `cn_l2_v1/vocab.json/tokens/manifest.json`。V2 底层模块已实现，但还没有接入 `run_pilot.py` / `run_medium.py` 的原始回放编排；在该接入完成前，不要把上传的 V1 产物标记为 V2。
+
 ## 输入与输出
 
 输入：
@@ -89,4 +91,4 @@ make check-minio
   中断/重启秒级续跑、不再重下（这是长窗口连续跑的稳定性关键）；
 - **列投影**：`scan_parquet(...).select(REQUIRED_COLUMNS ∩ schema)`，减少下载字节。
 
-详见 [订单簿重建：高性能清洗路径](pipeline/02_order_book_rebuild.md#高性能清洗路径---fast-cleanp0p1-重构) 一节。
+详见 [订单簿重建：高性能清洗路径](02_order_book_rebuild.md#高性能清洗路径---fast-cleanp0p1-重构) 一节。

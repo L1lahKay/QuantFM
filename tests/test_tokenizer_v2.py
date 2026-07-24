@@ -205,3 +205,19 @@ def test_vocab_v2_loader_rejects_v1_artifact(tmp_path) -> None:
     artifact.write_text('{"schema_version": "cn_l2_v1"}', encoding="utf-8")
     with pytest.raises(ValueError, match="vocab_version"):
         VocabV2.load(artifact)
+
+
+def test_fit_dates_cannot_misrepresent_fitted_shards(tmp_path) -> None:
+    source = tmp_path / "events.parquet"
+    _frame().write_parquet(source)
+
+    with pytest.raises(ValueError, match="exactly match dates observed"):
+        fit_vocab_v2(
+            [source],
+            field_specs=_specs(),
+            fit_dates=("2024-12-31",),
+            categorical_values={
+                "evt_type": ("ADD", "CANCEL", "EXEC"),
+                "side": ("B", "S", "N"),
+            },
+        )

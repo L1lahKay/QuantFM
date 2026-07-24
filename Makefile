@@ -1,4 +1,4 @@
-.PHONY: help install install-fm smoke signal signal-smoke pilot medium medium-try medium-pipeline medium-estimate medium-smoke judge-medium-try judge-300m watch-300m baselines-300m tensorboard-medium train train-pilot train-8gpu train-medium-8gpu check-minio upload-pilot upload-medium download-medium minio-pipeline minio-pipeline-full minio-full-pipeline minio-full-pipeline-full test lint
+.PHONY: help install install-fm smoke signal signal-smoke pilot medium medium-try medium-pipeline medium-estimate medium-smoke judge-medium-try judge-300m research-score research-oos2026 watch-300m baselines-300m tensorboard-medium train train-pilot train-8gpu train-medium-8gpu check-minio upload-pilot upload-medium download-medium minio-pipeline minio-pipeline-full minio-full-pipeline minio-full-pipeline-full test lint
 
 PY ?= python
 WORKDIR ?= quant_fm/runs/pilot
@@ -127,6 +127,19 @@ judge-medium-try:
 # 302M：抽 embedding → panel → judge（训练完成后）
 judge-300m:
 	bash quant_fm/scripts/run_judge_300m.sh
+
+# 严格 OOS score 研究评估（调用方提供 execution panel）
+research-score:
+	@test -n "$(SCORES)" || (echo "need SCORES=/path/to/scores.parquet" && exit 2)
+	@test -n "$(PANEL)" || (echo "need PANEL=/path/to/execution_panel.parquet" && exit 2)
+	$(PY) -m quant_fm.downstream.run_score_evaluation \
+		--scores "$(SCORES)" \
+		--panel "$(PANEL)" \
+		--out-dir "$${OUT_DIR:-quant_fm/runs/research_score}"
+
+research-oos2026:
+	@test -n "$(CALENDAR)" || (echo "need CALENDAR=/path/to/calendar_with_two_future_days.txt" && exit 2)
+	bash quant_fm/scripts/run_oos2026_research.sh
 
 # 监控 302M 训练；AUTO_JUDGE=1 训完自动跑下游
 watch-300m:

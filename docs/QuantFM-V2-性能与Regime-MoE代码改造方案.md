@@ -15,7 +15,7 @@
 | 表征聚合 | 跨 chunk `last/last-k`、多尺度固定池化和 `IntradayAggregator` 模块已实现 | 聚合器尚未接入默认生产 score 路径，需独立训练/回测 |
 | 股票间影响 | 已有 5 分钟时钟对齐、PIT 行业 join、leave-one-out 上下文与 O(N) 模型 | 仍是可组合研究模块，未替换当前默认 Ranker |
 | 严格 OOS 评估 | 已有明确 ReturnSpec、execution panel、缓冲 Top-K/成本、风险归因和独立 score 研究入口 | 2026 连续 60 日已参与方案形成，只是 architecture validation；最终结论必须用新的 untouched OOS |
-| 训练性能 / MoE | fixed validation sampler 已实现 | micro/update/token 计数、attention fast path、推理 checkpoint 拆分、Regime-MoE 和 Backbone-MoE 尚未实现 |
+| 训练性能 / MoE | micro/update/global token 计数、token-only 固定 LR horizon、FP16 overflow 跳步、shard-aware sampler、RoPE cache、causal fast path、`ffn_hidden`、resume/inference checkpoint、Temporal/Backbone MoE、基础 telemetry/artifact 均已实现 | 真实 GPU benchmark、token 长度均衡、Temporal 主流程集成、完整 telemetry/loader、MoE 多 seed/OOS 和生产验收 |
 
 因此，本文后续 PR 节仍是「目标设计 + 验收门槛」，不代表所列项目全部已进入主流程。可直接运行的底层 V2 路径见 [模型底层 V2 代码改造指导](./模型底层v2代码改造指导.md)，严格 score 研究边界见 [严格 OOS 研究回测](./严格OOS研究回测.md)。
 
@@ -23,10 +23,10 @@
 
 不建议直接将当前 18 层 Dense Transformer 全部替换为 token-level MoE。推荐按四层推进：
 
-1. 修复训练 step、RoPE、causal mask、数据局部性和推理 checkpoint；
-2. 修复跨 chunk 池化，引入多尺度日内表征和轻量 temporal aggregator；
-3. 构建真实因果盘口、连续时间、有序 Loss 和约 230M 高效主干的 Dense V2；
-4. 先在股日聚合/Ranker 引入 Regime-MoE，通过后再替换顶部少量 FFN。
+1. 已完成训练 step、RoPE、causal mask、基础数据局部性和 checkpoint 角色的代码修复，并补真实 GPU benchmark；
+2. 跨 chunk/multi-scale/temporal aggregator 代码已完成，补标准训练和下游消融；
+3. 因果盘口、Tokenizer/Loss 与约 230M Dense 配置已完成，补真实 V2 数据和训练；
+4. Temporal/顶部 MoE 代码已完成，但仍先验收轻量 Regime-MoE，再决定顶部 FFN 是否晋级。
 
 核心判断：
 
@@ -34,13 +34,14 @@
 - 当前 302M 模型实际欠训练，不能据此判断 Dense 容量已经用尽；
 - 对次日横截面预测，真实盘口输入、目标对齐和日内池化比盲目增加参数更重要；
 - MoE 不会自动形成牛/熊专家，专家性取决于路由粒度、因果 regime 输入和行情覆盖；
-- 当前 embedding 小 batch 下，主干 MoE 可能因 dispatch/all-to-all 比 Dense 更慢。
+- 当前实现是本地 Python expert dispatch、没有 all-to-all；小 batch 下仍可能因分散 GEMM
+  和 dispatch 开销比 Dense 更慢。all-to-all 只属于未来 expert-parallel 候选。
 
 ## 2. 已确认的基线事实
 
-### 2.1 训练预算语义错误
+### 2.1 历史训练预算语义错误与当前修复
 
-当前 `quant_fm/pretrain/train.py` 每个 micro-batch 增加 `state.step`，但 `grad_accum=2` 时每两个 micro-step 才更新一次参数。LR、验证、checkpoint 和 `max_steps` 却都使用同一个 step。
+旧版 `quant_fm/pretrain/train.py` 每个 micro-batch 增加 `state.step`，但 `grad_accum=2` 时每两个 micro-step 才更新一次参数。LR、验证、checkpoint 和 `max_steps` 却都使用同一个 step。
 
 ```text
 train windows                = 2,348,341
@@ -52,6 +53,12 @@ effective epoch              ≈ 0.545
 ```
 
 配置注释把 40,000 当 optimizer updates，和代码实际行为相差约 2 倍。验证 loss 从约 5.93 持续下降到最终约 5.33，尚未明显平台。
+
+当前代码已拆分 `micro_step/update_step/samples_seen/non_pad_tokens_seen`：只有参数更新成功
+才推进 update/sample/token，FP16 overflow 跳步不会误计；LR、验证、日志和存盘统一按
+update。`max_update_steps`/`max_train_tokens` 为 OR 停止条件，token-budget-only 必须提供
+固定的 `optim.lr_schedule_steps`。历史 302M 数字仍应按旧 micro-step 口径解读，不能反向
+改写为 40,000 optimizer updates。
 
 ### 2.2 Loss 与表征出口问题
 
@@ -75,9 +82,11 @@ volume        ≈ 2.147
 132 passed, 8 failed, 2 skipped, 1 xfailed
 ```
 
-8 个失败均涉及撤单后零数量订单仍残留在价格档队列。当前代码已修复物理 deque 删除、空价格档清理和 FIFO 一致性，并为盘口转换增加了 prefix-causality 测试。截至 2026-07-24，仓库全量测试为 `215 passed, 2 skipped, 1 xfailed`；这只证明代码契约通过，不等于 V2 已完成训练或 OOS 验证。
+8 个失败均涉及撤单后零数量订单仍残留在价格档队列。当前代码已修复物理 deque 删除、空价格档清理和 FIFO 一致性，并为盘口转换增加了 prefix-causality 测试。截至 2026-07-24，仓库全量测试为 `243 passed, 2 skipped, 1 xfailed`；这只证明代码契约通过，不等于 V2 已完成训练或 OOS 验证。
 
-2026 连续 60 日当前 `mean RankIC≈0.0774`、`ICIR≈0.526`、随机约 `0.0033`。该区间已经参与方案形成，只能作为 architecture validation；最终方案需使用新的 untouched 日期测试。
+2026 连续 60 日曾用于信号诊断和本方案形成，但仓库当前没有随本文固化、可由代码和
+artifact 一键追溯的唯一指标快照，因此这里不引用伪精确数值。该区间只能作为
+architecture validation；最终方案需使用冻结配置后的新 untouched 日期测试。
 
 ## 3. 目标架构
 
@@ -121,30 +130,36 @@ model:
   d_model: 1024
   n_layers: 18
   n_heads: 16
-  n_kv_heads: 16          # 首轮保持 MHA；GQA 单独消融
   ffn_hidden: 2816        # 替代当前 SwiGLU 4096
   dropout: 0.05           # 与 0.0 单独消融
   max_seq_len: 2048
-  attention: full
+  rope_theta: 10000.0
+  backbone_moe:
+    enabled: false
 ```
 
-约 231M 参数，相对当前 302M 参数减少约 23%，`L=2048,d=1024` 下理论主干乘加量减少约 19%。第一轮不同时引入 GQA、local attention 和 MoE。
+这与 `config_v2_230m.yaml` 的代码字段一致；配置名表示约 230M 目标档，实际参数以训练日志
+`model parameters` 为准。当前 `OrderFlowFMConfig` 尚无 `n_kv_heads` 或 attention-mode
+字段，GQA/local attention 仍是后续候选，不能把它们写入 YAML 后假设已经生效。
 
 ### 4.2 轻量 Regime-MoE
 
 ```yaml
 regime_moe:
   enabled: true
-  placement: temporal_aggregator
   n_experts: 4
   top_k: 2
-  shared_expert: true
   expert_hidden: 256
   router_hidden: 128
-  router_temperature: 1.0
+  dropout: 0.0
+  temperature: 1.0
+  capacity_factor: 1.25
   load_balance_weight: 0.01
   router_z_loss_weight: 0.001
 ```
+
+这是 `RegimeMoEConfig` 支持的精确字段；当前预训练 YAML parser 尚不读取 `regime_moe`
+节点，需由调用方构造 `RegimeIntradayModel`。shared expert 是实现固定组成，不是配置开关。
 
 ### 4.3 顶部 Sparse-MoE（后续候选）
 
@@ -161,7 +176,7 @@ backbone_moe:
 
 每个 token 激活的 FFN hidden 总量约 `1024+1792=2816`，active FFN 计算接近 Dense V2。
 
-## 5. PR-0：实验契约与基准工具（部分落地）
+## 5. PR-0：实验契约与基准工具（代码已落地，真实基准待采集）
 
 ### 新增文件
 
@@ -196,17 +211,19 @@ warm_inference_latency_p50/p95
 date × exchange × board × liquidity_bucket × activity_bucket
 ```
 
-## 6. PR-1：训练语义与数据吞吐（待实施）
+## 6. PR-1：训练语义与数据吞吐（基础代码已落地，负载均衡待优化）
 
 ### 修改文件
 
 ```text
 quant_fm/pretrain/train.py
 quant_fm/pretrain/dataset.py
+quant_fm/pretrain/dataset_v2.py
+quant_fm/pretrain/sampler.py
 quant_fm/pretrain/config*.yaml
 tests/test_training_schedule.py
-tests/test_gradient_accumulation.py
 tests/test_shard_aware_sampler.py
+tests/test_train_smoke.py
 ```
 
 拆分训练状态：
@@ -225,26 +242,30 @@ class TrainState:
 规则：
 
 - 每个 batch 增加 `micro_step`；
-- 只有 `optimizer.step()` 成功后增加 `update_step`；
+- 只有参数更新成功后增加 `update_step`，FP16 overflow 跳步不增加 update/sample/token；
 - LR、warmup、eval、best checkpoint 基于 `update_step`；
-- 训练终止优先基于 `max_train_tokens`；
-- resume 保存并恢复全部计数器，LR phase 连续；
+- `max_update_steps` 与 `max_train_tokens` 任一到达即停止；token 上限最多越过一个 update；
+- token-budget-only 训练必须提供 `lr_schedule_steps` 作为固定余弦 LR horizon；
+- resume checkpoint 保存并恢复全部计数器，v2 逐项校验模型/fusion/MoE/book/context/pooling metadata；
 - 优先测试 `micro_batch=8, grad_accum=1`，保持 global batch 64；
 - 必须累积时评估 FSDP `no_sync()` 的显存与通信收益。
 
-新增 shard-aware sampler：先打乱 shard，在 shard 内小范围连续消费 window，再按总 token 行数分配 rank；短尾窗口按长度 bucket。DataLoader 开启 `persistent_workers`、合理 `prefetch_factor`、pinned memory，GPU copy 使用 `non_blocking=True`。
+当前 shard-aware sampler 先打乱 shard，再打乱 shard 内 window，最后将等数量的连续索引
+片段分给各 rank；`drop_last=True` 会丢弃不足所有 rank 的尾部。它改善 parquet 文件局部性，
+但**尚未**按 token 行数分配 rank，也没有短尾长度 bucket。DataLoader 已支持
+`persistent_workers`、`prefetch_factor`、pinned memory 和 non-blocking copy。
 
-验收：不同 `grad_accum` 在相同 global batch/token 数下 update 数一致；一个 epoch token 误差 <0.1%；resume LR 连续；sampler 不重复、不遗漏。
+已覆盖 TrainState/旧 checkpoint 转换、shard 分片和真实一步 CPU optimizer update；后者还
+核对 `final_resume.pt`/`final.pt` 的状态差异。尚需真实多卡验证不同 `grad_accum` 的有效
+token 对齐、FSDP `no_sync` 收益、epoch 尾部误差和按长度/token 均衡。
 
-## 7. PR-2：无损注意力与推理性能（待实施）
+## 7. PR-2：无损注意力与推理性能（cache/fast path/checkpoint 已落地）
 
 ### 修改文件
 
 ```text
 quant_fm/pretrain/model.py
 quant_fm/pretrain/train.py
-quant_fm/embedding/extract_hidden.py
-quant_fm/signal/artifact.py
 tests/test_attention_fast_path.py
 tests/test_rope_cache.py
 tests/test_inference_checkpoint.py
@@ -252,15 +273,17 @@ tests/test_inference_checkpoint.py
 
 ### 7.1 RoPE cache
 
-当前 `_rope` 成员未实际使用。改为按 `(device, dtype, max_seq_len)` 惰性缓存：频率使用 FP32 计算，cos/sin 转成 q/k dtype 后复用。cache 不进入 checkpoint，模型 `.to()` 后允许重建。
+当前已按 `(device.type, device.index, dtype)` 惰性缓存：频率使用 FP32 计算，表至少构建到
+`max(length, cfg.max_seq_len)`，再以目标 dtype 复用。cache 不进入 checkpoint，换 device
+或 dtype 时使用独立条目。
 
 ```python
 def _get_rope(self, length, device, dtype):
     key = (device.type, device.index, dtype)
     cached = self._rope.get(key)
-    if cached is None or cached[0].size(0) < length:
-        cos, sin = build_rope_fp32(self.cfg.max_seq_len, ...)
-        self._rope[key] = (cos.to(dtype), sin.to(dtype))
+    required = max(length, self.cfg.max_seq_len)
+    if cached is None or cached[0].size(0) < required:
+        self._rope[key] = _rope_cache(required, ..., device, dtype)
     cos, sin = self._rope[key]
     return cos[:length], sin[:length]
 ```
@@ -279,7 +302,8 @@ else:
     out = padded_causal_attention(q, k, v, key_mask, dropout_p)
 ```
 
-长度分桶后应让绝大多数完整窗口进入 `is_causal=True`，避免每层构造 `B×L×L` mask。必须验证 FP32/BF16 数值等价、padding 有效位一致，以及未来 token 扰动不改变过去输出。
+完整窗口现已进入 `is_causal=True`，含 padding 时仍构造显式 causal + key mask。FP32
+两路径等价已有回归；BF16/GPU kernel、不同长度分布下的实际命中率和吞吐仍需 benchmark。
 
 ### 7.3 fused op 与 compile
 
@@ -295,16 +319,19 @@ else:
 
 ### 7.4 推理 checkpoint
 
-当前 `best.pt` 含完整 AdamW 状态，约 3.6GB。拆分为：
+当前已经拆分为：
 
 ```text
-run/resume_step*.pt       # FP32 model + optimizer + scaler + TrainState
-run/best_model.pt         # model + config + metadata
-run/best_model_bf16.pt    # 可选推理权重
-run/final_model.pt
+run/step<update>.pt       # model + optimizer + scaler + TrainState
+run/final_resume.pt       # 正常结束后的完整续训点
+run/best.pt               # model + config/metadata + TrainState，不含 optimizer
+run/final.pt              # model + config/metadata + TrainState，不含 optimizer
 ```
 
-推理先 `map_location="cpu"`，只读取 model/metadata，再一次性转 device/dtype，使用 `torch.inference_mode()`，并校验 checkpoint/vocab/schema hash。
+训练入口拒绝用 `best.pt/final.pt` resume；`--resume auto` 只选 `step*.pt` 或
+`final_resume.pt`。v2 resume 校验完整模型、fusion/scalar、MoE、book/context/pooling 和
+target metadata；推理 loader 先在 CPU 读取并校验 checkpoint/vocab/schema hash。可选 bf16
+专用文件和 cold/warm load 优化仍未实现。
 
 ## 8. PR-3：跨 chunk 正确池化与时间聚合（代码已落地，实验待做）
 
@@ -316,9 +343,8 @@ run/final_model.pt
 quant_fm/embedding/pool_stock_day.py
 quant_fm/embedding/extract_hidden.py
 quant_fm/embedding/intraday_aggregator.py
-quant_fm/embedding/schema.py
-tests/test_multichunk_pooling.py
 tests/test_hierarchical_pooling.py
+tests/test_intraday_aggregator.py
 ```
 
 正确语义：
@@ -352,13 +378,14 @@ class IntradayAggregator(nn.Module):
         chunk_hidden: Tensor,       # [B, C, D]
         chunk_time: Tensor,         # [B, C]
         chunk_session: Tensor,      # [B, C]
-        chunk_activity: Tensor,     # [B, C, A]
         chunk_mask: Tensor,         # [B, C]
-    ) -> Tensor:
+    ) -> dict[str, Tensor]:
         ...
 ```
 
-首选 1–2 层 gated MLP/GRU，小规模对照 1 层 Transformer。聚合计算控制在 FM backbone 的 2% 以内。
+当前实现为 1–2 层 GRUCell，并输出 `full_day_summary/close_summary/`
+`intraday_trend_summary/activity_summary`。它已通过 padding/逐位置因果测试，但尚未接统一
+dataset、训练/checkpoint 或 embedding CLI；“计算低于 backbone 2%”仍是待测目标。
 
 ## 9. PR-4：订单簿、Schema V2 与 Tokenizer V2（核心代码已落地）
 
@@ -442,11 +469,14 @@ quant_fm/tokenizer/vocab_v2.py
 @dataclass(frozen=True, slots=True)
 class TargetSpec:
     name: str
-    loss_type: str
-    weight: float
-    train_entropy: float
+    loss_type: str = "ce"
+    weight: float = 1.0
+    entropy: float = 1.0
     ordinal_weight: float = 0.0
-    applicable_events: tuple[str, ...] = ()
+    ordinal_start_id: int = 0
+    applicable_event_ids: tuple[int, ...] = ()
+    ignore_ids: tuple[int, ...] = (0,)
+    mask_field: str | None = None
 ```
 
 ```yaml
@@ -458,12 +488,11 @@ loss:
     tok_price_bin:   {type: ordinal_ce, weight: 1.0, ordinal_weight: 0.5}
     tok_volume_bin:  {type: ordinal_ce, weight: 0.5, ordinal_weight: 0.25}
     tok_delta_t_bin: {type: ordinal_ce, weight: 0.5, ordinal_weight: 0.25}
-    tok_session:     {type: ce,         weight: 0.0}
 ```
 
 每个目标拥有 applicability mask。全 NA 或无适用样本的任务返回零损失，不产生 NaN。
 
-仅作为 target 增加：
+以下只是后续候选，当前代码/配置尚未增加：
 
 ```text
 future_microprice_move_10/50/200_events
@@ -475,7 +504,7 @@ future_realized_vol_30s
 
 不在主预训练直接加入 T+1 日收益；日级目标继续由 Ranker或小规模 fine-tuning 学习。
 
-## 11. PR-6：轻量 Regime-MoE（待实施）
+## 11. PR-6：轻量 Regime-MoE（独立代码已落地，主流程/实验待做）
 
 第一版放在 chunk/stock-day temporal aggregator 或 Ranker，不放在逐事件 FFN。
 
@@ -487,10 +516,9 @@ quant_fm/moe/router.py
 quant_fm/moe/regime_features.py
 quant_fm/moe/temporal_moe.py
 quant_fm/moe/telemetry.py
+quant_fm/moe/artifact.py
 tests/test_moe_router.py
 tests/test_moe_causality.py
-tests/test_moe_load_balance.py
-tests/test_moe_permutation.py
 ```
 
 ### 11.1 因果 Router 输入
@@ -509,16 +537,18 @@ intraday chunk summary and session/time-of-day
 
 禁止使用 T+1 收益定义牛熊、全样本/OOS 统计量、未来行业成分或未来相关图。
 
+`RegimeFeatureSpec.availability_lag` 与 normalizer `fit_end` 已可写入 artifact，但当前实现
+只把它们作为审计元数据，不会自动做 lag、PIT join 或训练日期过滤；这些必须在上游完成。
+
 ### 11.2 接口
 
 ```python
 @dataclass(slots=True)
 class MoEOutput:
     hidden: torch.Tensor
-    router_probs: torch.Tensor
-    topk_indices: torch.Tensor
-    load_balance_loss: torch.Tensor
-    router_z_loss: torch.Tensor
+    router: RouterOutput
+    auxiliary_loss: torch.Tensor
+    overflow_rate: torch.Tensor
 
 
 class TemporalRegimeMoE(nn.Module):
@@ -540,32 +570,44 @@ output = hidden + shared + routed
 
 必须保留 residual 和 shared expert，避免行情边界硬切换。
 
+`RegimeIntradayModel` 已能把 `IntradayAggregator.full_day_summary` 接到
+`TemporalRegimeMoE`，但没有标准 dataset、训练 loop、embedding CLI 或 score 入口。
+训练模式按 capacity 裁剪 assignment，可能出现 batch 容量竞争；评估/推理模式不裁剪，
+已有低 capacity 下的 batch-size independence 测试。
+
 ### 11.3 Router 正则与遥测
 
 ```text
 L = L_task
   + λ_balance × L_load_balance
   + λ_z × L_router_z
-  + λ_entropy × L_entropy_floor
 ```
 
-记录：
+`TopKRouter` 已计算 load-balance、router z-loss 和归一化 entropy；当前配置/训练目标没有
+entropy-floor 权重。`summarize_moe()` 已提供：
 
 ```text
-expert_fraction / by_date / by_regime_bucket
-router_entropy and top1_probability
-expert_output_cosine_similarity
+expert_fraction
+normalized_entropy
+mean_top1_probability
 overflow_rate
-expert_rankic_by_regime
 ```
+
+by-date/by-regime、expert output cosine 和 expert RankIC 仍需在训练/评估编排中实现。当前
+FM train loop 也不会自动调用此 telemetry。`save_regime_moe_artifact()` 已保存 model state、
+config、normalizer、data cutoff 和 base-model hash，但 loader 只验证版本并返回 payload，
+尚不能独立重建 aggregator/模型维度。
 
 单专家长期超过 80%、专家输出高度相同、router 只学习 board/symbol、收益仅来自单月，均视为失败。负载均衡只防塌缩，不强制每个日期绝对均匀。
 
-当前 15 个 train dates 足以学习事件/流动性专家，不足以证明宏观牛熊专家。宏观 Regime-MoE 正式晋级要求至少 252 个连续交易日，并覆盖不同趋势、波动和流动性状态。
+短窗口也许能学习事件/流动性分工，但不能证明宏观牛熊专家。宏观 Regime-MoE 正式晋级
+建议至少覆盖 252 个连续交易日及不同趋势、波动和流动性状态；这是实验门槛，不是当前
+代码已达到的结果。
 
 ## 12. PR-7：O(N) 市场/行业上下文与 Ranker（独立模块已落地）
 
-先比较现有 `use_attention=False/True` 的 3–5 seeds；没有稳定增量时，替换 O(N²) dense attention：
+当前 `quant_fm/cross_asset/` 已直接实现同步时钟上的线性复杂度上下文；它尚未接默认
+Ranker，也没有完成 3–5 seeds 对照：
 
 ```text
 market_mean = sum(stock_hidden) / count
@@ -577,24 +619,25 @@ ranker_input = concat(
     industry_mean_loo,
     own - market_mean,
     own - industry_mean_loo,
-    regime_router_probs,
 )
 ```
 
 修改/新增：
 
 ```text
-quant_fm/downstream/train_ranker.py
-quant_fm/downstream/context.py
-quant_fm/downstream/regime_ranker.py
-tests/test_cross_section_permutation.py
-tests/test_leave_one_out_context.py
-tests/test_ranker_no_future.py
+quant_fm/cross_asset/clock_grid.py
+quant_fm/cross_asset/context_pool.py
+quant_fm/cross_asset/dataset.py
+quant_fm/cross_asset/model.py
+tests/test_cross_asset_causality.py
+tests/test_cross_asset_dataset_model.py
 ```
 
-要求股票顺序置换后 score 同步置换；leave-one-out 不包含自身；行业使用 PIT effective-date join；Router/Ranker artifact 固化特征列和统计量。
+当前回归覆盖未来 interval 不改变过去表示、leave-one-out 不包含自身和 PIT effective-date
+join。Router probabilities 尚未并入 cross-asset 输入，统一 Ranker artifact、训练目标和生产
+score 适配仍待实现。
 
-## 13. PR-8：顶部 Sparse Backbone-MoE（待实施）
+## 13. PR-8：顶部 Sparse Backbone-MoE（实验代码已落地，实证闸门不变）
 
 只有轻量 Regime-MoE 在 80–120M、多个 seeds 下稳定通过后才执行。
 
@@ -604,15 +647,22 @@ tests/test_ranker_no_future.py
 - 顶部 4–6 层将 SwiGLU FFN 替换为 `SharedExpert + RoutedExperts`；
 - attention 保持共享；
 - 第一轮采用 Top-1 routed expert + shared expert；
-- Router 输入为 token hidden 加 causal regime conditioning。
+- 当前 Router 输入是 token hidden；causal regime conditioning 仍是后续候选。
 
-纯 token router 通常先按 `EXEC/ADD/CANCEL`、流动性或 session 分工。若目标是行情专家，应使用：
+纯 token router 通常先按 `EXEC/ADD/CANCEL`、流动性或 session 分工。若目标是行情专家，
+后续可消融：
 
 ```text
 router_input = token_hidden + project(causal_regime_context)
 ```
 
 并分别报告按事件类型、日期和 regime 的专家使用率；控制事件类型后，专家仍应体现行情差异。
+
+已实现的 `BackboneMoEConfig` 可指定 `layer_indices/n_routed_experts/top_k/`
+`shared_expert_hidden/routed_expert_hidden/capacity_factor` 和两个 router loss 权重；
+`config_v2_backbone_moe.yaml` 选择顶部 4 层、4 experts、Top-1。模型只路由有效 token，
+汇总各层 auxiliary loss。训练模式使用容量裁剪，评估/推理模式不裁剪并已通过 padding 与
+batch-size independence 测试。训练 loop 当前只写合计 `train/moe_aux`，未接逐层 telemetry。
 
 ### 13.2 分布式策略
 
@@ -646,10 +696,12 @@ expert GEMM utilization
 schema_version: cn_l2_v2
 vocab_version: 2.0
 fm_artifact_version: 2.0
-embedding_schema_version: 2.0
-ranker_artifact_version: 2.0
-moe_router_version: 1.0
+ranker_artifact_version: 1.0     # 当前 quant_fm.signal
+regime_moe_artifact: regime_moe_v1
 ```
+
+仓库当前没有独立的 `embedding_schema_version=2.0` 常量，也没有 Ranker v2 artifact；这些
+若后续引入必须作为新版本迁移，不能在现阶段文档中当成已落地。
 
 checkpoint 至少保存：
 
@@ -659,13 +711,13 @@ checkpoint 至少保存：
   "vocab_sha256": "...",
   "field_specs": [],
   "target_specs": [],
-  "field_fusion": {},
-  "attention_config": {},
-  "pooling_config": {},
-  "regime_feature_specs": [],
-  "moe_config": {},
+  "field_fusion": "gated_sum",
+  "ffn_hidden": 2816,
+  "backbone_moe": {},
   "continuous_normalizers": {},
   "book_state_timing": "post_event",
+  "context_horizon": 2048,
+  "pooling_version": "hierarchical_v1",
   "train_state": {
     "micro_step": 0,
     "update_step": 0,
@@ -679,14 +731,20 @@ checkpoint 至少保存：
 
 ```text
 quant_fm/runs/medium_300m/       # v1，只读
-quant_fm/runs/v2_dense_25m/
-quant_fm/runs/v2_dense_100m/
-quant_fm/runs/v2_dense_230m/
-quant_fm/runs/v2_regime_moe/
-quant_fm/runs/v2_backbone_moe/
+quant_fm/runs/v2_25m/run/
+quant_fm/runs/v2_100m/run/
+quant_fm/runs/v2_dense_230m/run/
+quant_fm/runs/v2_backbone_moe/run/
 ```
 
-v1 loader 继续通过 `EventFieldFusion(method="legacy_sum")` 保持原始直接求和语义。V2 resume/load 会校验 schema、vocab hash、field order 和 target specs，不匹配必须报错，禁止静默兼容。
+v1 loader 继续通过 `EventFieldFusion(method="legacy_sum")` 保持原始直接求和语义。V2
+resume 会完整核对 field/model/fusion/scalar/book/context/pooling/Backbone-MoE/target metadata；
+推理 load 会核对 artifact、vocab hash/schema/FieldSpec 和字段顺序。不匹配必须报错。
+Vocab V2 还从实际 shard 收集 `observed_dates`：显式 `fit_dates` 必须与之完全相等，artifact
+始终写 observed dates，禁止只改声明日期掩盖拟合数据。
+
+Temporal Regime-MoE 使用单独 serializer，记录 model state、Regime config、normalizer、
+data cutoff 与 base-model SHA-256；它尚无完整模型重建 loader，也没有默认 run 目录。
 
 ## 15. 消融实验矩阵
 
@@ -729,7 +787,7 @@ v1 loader 继续通过 `EventFieldFusion(method="legacy_sum")` 保持原始直�
 ### Stage 1：25M 筛选
 
 ```text
-d_model=256, n_layers=6
+d_model=384, n_layers=10, n_heads=8, ffn_hidden=1056
 固定相同有效 token 或 5k update steps
 每个候选 2 seeds
 ```
@@ -739,7 +797,7 @@ d_model=256, n_layers=6
 ### Stage 2：80–120M 复验
 
 ```text
-d_model=512, n_layers=10
+d_model=768, n_layers=10, n_heads=12, ffn_hidden=2112
 20k update steps
 3 seeds
 ```
@@ -776,38 +834,40 @@ correct training/runtime
 
 ```text
 tests/test_training_schedule.py
-tests/test_gradient_accumulation.py
 tests/test_shard_aware_sampler.py
 tests/test_attention_fast_path.py
 tests/test_rope_cache.py
 tests/test_inference_checkpoint.py
+tests/test_train_smoke.py
 ```
 
 ### 数据与因果性
 
 ```text
 tests/test_book_state_causality.py
-tests/test_orderbook_consistency.py
+tests/test_order_book_cancel_consistency.py
 tests/test_tokenizer_v2.py
 tests/test_fit_bins_stratified.py
-tests/test_target_applicability.py
+tests/test_pretrain_v2_integration.py
 ```
 
 ### 表征与 MoE
 
 ```text
-tests/test_multichunk_pooling.py
 tests/test_hierarchical_pooling.py
+tests/test_intraday_aggregator.py
 tests/test_field_fusion.py
 tests/test_multitask_loss_v2.py
 tests/test_moe_router.py
 tests/test_moe_causality.py
-tests/test_moe_load_balance.py
-tests/test_cross_section_permutation.py
-tests/test_leave_one_out_context.py
+tests/test_backbone_moe.py
+tests/test_cross_asset_causality.py
+tests/test_cross_asset_dataset_model.py
 ```
 
-每个 causal 测试都必须验证：修改未来记录，不改变当前及过去输出。
+当前全量结果为 `243 passed, 2 skipped, 1 xfailed`。每个 causal 测试都应验证：修改未来
+记录，不改变当前及过去输出。尚未独立覆盖的 gradient-accumulation 等价、训练期 MoE
+overflow/负载塌缩、FSDP resume 和真实 GPU 性能应作为后续测试新增，不能列成已有文件。
 
 ## 18. 推荐 PR 依赖图
 
@@ -826,19 +886,20 @@ PR-3 + PR-5
            └── PR-8 sparse backbone MoE
 ```
 
-PR-1、PR-2、PR-3 可并行开发，但合并后必须重建统一 baseline。PR-4 是盘口 V2 的硬前置；PR-8 不得绕过 PR-6 的实证闸门。
+PR-0 至 PR-8 的基础模块已存在，但依赖图仍代表实验/集成顺序，而不是已完成的收益验证。
+PR-4 是盘口 V2 的硬前置；PR-8 不得绕过 PR-6 的实证闸门。
 
 ## 19. 完成定义
 
-- training state 正确区分 micro/update/token 计数；
-- 一个 epoch 的有效 token 数可复核；
+- training state 正确区分 micro/update/token 计数，FP16 跳步不误计；
+- token-only LR 使用固定 horizon，单步 CPU train smoke 通过；
 - 全量订单簿一致性测试通过；
 - 新盘口输入通过 prefix causality；
 - Tokenizer V2 不混淆 NA 与 0；
 - fast attention 与旧路径数值等价；
 - 多 chunk `last/last-k` 语义正确；
 - V1/V2 artifact 严格隔离；
-- 推理 checkpoint 不携带 optimizer state；
+- 推理 checkpoint 不携带 optimizer state且不能被训练入口 resume；
 - 至少一个 Dense V2 在 80–120M、3 seeds 下稳定提高 paired OOS IC；
 - Regime-MoE 无专家塌缩，并在多个市场状态下产生可解释增量；
 - 最终方案通过新的 untouched OOS；

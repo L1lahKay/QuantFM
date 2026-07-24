@@ -8,6 +8,8 @@
 
 `quant_fm/manifest/build_manifest.py`
 
+Manifest 的 shard 结构被 V1/V2 共用，但它**不会从 parquet 列自动推断 schema 版本**。当前 `build_manifest()` 默认产生 `cn_l2_v1`；V2 批量编排在保存前必须显式设置 `manifest.schema_version = vocab.schema_version`，并把 `vocab_path` 指向同批 `vocab_v2.json`。这一步尚未接入现有 V1 MinIO 一键脚本。
+
 目录扫描约定：
 
 ```text
@@ -86,6 +88,8 @@ manifest = build_manifest(
     markets=("SZ", "SH"),
     vocab_path=str(vocab_path),
 )
+# 仅 V2 产物链需要；V1 保持默认值
+# manifest.schema_version = vocab.schema_version
 manifest.save(data_dir / "manifest.json")
 ```
 
@@ -96,6 +100,9 @@ manifest.save(data_dir / "manifest.json")
 - `rows` 与 parquet metadata 一致；
 - 重新计算的 SHA-256 与记录一致；
 - `vocab_path` 指向生成这些 token 的冻结词表。
+- V2 manifest 的 `schema_version` 与 `vocab_v2.json` 一致，且分片实际包含冻结 `FieldSpec` 派生的全部 `tok_*` / `val_*` 列。
+
+V2 checkpoint 会固化并在加载时校验 `schema_version`、vocab SHA-256、字段顺序和 target specs；但这不替代生成 manifest 时的数据列审计。
 
 ## 可迁移性注意
 

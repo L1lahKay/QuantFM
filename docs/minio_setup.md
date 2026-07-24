@@ -2,6 +2,8 @@
 
 本文档说明 quant_fm 如何从 MinIO **读原始 L2**、如何将 **events/tokens 写回 MinIO**，以及相关配置与命令。
 
+> 版本边界：本文的一键命令当前只编排 V1 产物。V2 `BookState/cn_l2_v2/vocab_v2/token+scalar` API 虽已落地，原始 MinIO 回放到 V2 分片仍需显式捕获事件前/后状态，尚未接入 `run_pilot.py` / `run_medium.py`。V1/V2 词表、tokens、manifest 和 checkpoint 必须使用独立路径。
+
 ---
 
 ## 1. 读写分离总览

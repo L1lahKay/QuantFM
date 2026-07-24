@@ -546,9 +546,18 @@ def fit_vocab_v2(
         )
         for name in categorical_vocab
     }
-    effective_fit_dates = tuple(
-        str(value) for value in (fit_dates or sorted(observed_dates))
-    )
+    if not observed_dates:
+        msg = "v2 vocab fitting requires a non-null date column for leakage auditing"
+        raise ValueError(msg)
+    declared_fit_dates = {str(value) for value in fit_dates}
+    if declared_fit_dates and declared_fit_dates != observed_dates:
+        msg = (
+            "fit_dates must exactly match dates observed in the fitted parquet shards; "
+            f"declared_only={sorted(declared_fit_dates - observed_dates)}, "
+            f"observed_only={sorted(observed_dates - declared_fit_dates)}"
+        )
+        raise ValueError(msg)
+    effective_fit_dates = tuple(sorted(observed_dates))
     return VocabV2(
         field_specs=field_specs,
         categorical=categorical_vocab,

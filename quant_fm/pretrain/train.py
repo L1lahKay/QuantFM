@@ -227,11 +227,31 @@ def _validate_resume_metadata(
             msg = "v2 checkpoint is missing fm_artifact_version=2.0"
             raise ValueError(msg)
         checks = {
+            "field_sizes": expected.field_sizes,
             "schema_version": expected.schema_version,
             "vocab_sha256": expected.vocab_sha256,
             "input_fields": list(expected.input_fields),
             "target_fields": list(expected.target_fields),
             "field_specs": list(expected.field_specs),
+            "d_model": expected.d_model,
+            "n_layers": expected.n_layers,
+            "n_heads": expected.n_heads,
+            "ffn_mult": expected.ffn_mult,
+            "ffn_hidden": expected.ffn_hidden,
+            "dropout": expected.dropout,
+            "max_seq_len": expected.max_seq_len,
+            "rope_theta": expected.rope_theta,
+            "field_fusion": expected.field_fusion,
+            "field_dim": expected.field_dim,
+            "field_dropout": expected.field_dropout,
+            "field_input_norm": expected.field_input_norm,
+            "scalar_fields": expected.scalar_fields,
+            "standalone_scalar_fields": list(expected.standalone_scalar_fields),
+            "continuous_normalizers": expected.continuous_normalizers,
+            "book_state_timing": expected.book_state_timing,
+            "context_horizon": expected.context_horizon,
+            "pooling_version": expected.pooling_version,
+            "backbone_moe": expected.backbone_moe.to_dict(),
         }
         for key, expected_value in checks.items():
             if saved.get(key) != expected_value:
@@ -563,6 +583,12 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
     resume_ckpt = None
     if resume_path is not None:
         resume_ckpt = torch.load(resume_path, map_location="cpu", weights_only=False)
+        if "optimizer_state" not in resume_ckpt:
+            msg = (
+                f"checkpoint {resume_path} is inference-only and cannot resume "
+                "training; use step*.pt or final_resume.pt"
+            )
+            raise ValueError(msg)
         _validate_resume_metadata(resume_ckpt, model_cfg, target_specs)
         model.load_state_dict(resume_ckpt["model_state"])
         if is_main_process(rank):
@@ -620,6 +646,13 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
     if max_update_steps < 1 and max_train_tokens < 1:
         msg_0 = "optim requires max_update_steps/max_steps or max_train_tokens"
         raise ValueError(msg_0)
+    schedule_update_steps = int(opt.get("lr_schedule_steps", max_update_steps))
+    if schedule_update_steps < 1:
+        msg_1 = (
+            "token-budget-only training requires optim.lr_schedule_steps so the "
+            "cosine schedule has a fixed horizon"
+        )
+        raise ValueError(msg_1)
     model.train()  # 训练模式（启用 dropout 等）
     optimizer.zero_grad(set_to_none=True)
     data_epoch = 0
@@ -643,7 +676,7 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
             lr = cosine_lr(
                 state.update_step,
                 warmup=opt["warmup_steps"],
-                max_steps=max(max_update_steps, state.update_step + 1),
+                max_steps=schedule_update_steps,
                 base_lr=opt["lr"],
             )
             for group in optimizer.param_groups:
@@ -685,12 +718,26 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
                     FSDP.clip_grad_norm_(model, opt["grad_clip"])
                 else:
                     torch.nn.utils.clip_grad_norm_(model.parameters(), opt["grad_clip"])
+                scale_before = scaler.get_scale()
                 scaler.step(optimizer)  # 用梯度更新权重
                 scaler.update()
+                step_succeeded = (
+                    not scaler.is_enabled() or scaler.get_scale() >= scale_before
+                )
                 optimizer.zero_grad(set_to_none=True)  # 清空梯度，准备下一步
+                attempted_samples = pending_samples
+                attempted_tokens = pending_tokens
+                pending_samples = pending_tokens = 0
+                if not step_succeeded:
+                    if is_main_process(rank):
+                        logger.warning(
+                            "skipped fp16 optimizer update after overflow at micro %d",
+                            state.micro_step,
+                        )
+                    continue
                 state.update_step += 1
                 counts = torch.tensor(
-                    [pending_samples, pending_tokens],
+                    [attempted_samples, attempted_tokens],
                     dtype=torch.long,
                     device=device,
                 )
@@ -700,7 +747,6 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
                     dist.all_reduce(counts, op=dist.ReduceOp.SUM)
                 state.samples_seen += int(counts[0].item())
                 state.non_pad_tokens_seen += int(counts[1].item())
-                pending_samples = pending_tokens = 0
             else:
                 continue
 
@@ -1114,11 +1160,14 @@ def _resolve_resume_path(out_dir: Path, resume: Path | str | None) -> Path | Non
     )
     if periodic:
         return periodic[-1]
-    for name in ("final_resume.pt", "final.pt", "best.pt"):
+    for name in ("final_resume.pt",):
         path = out_dir / name
         if path.is_file():
             return path
-    logger.info("resume=auto: no checkpoint found under %s; starting fresh", out_dir)
+    logger.info(
+        "resume=auto: no resumable step*.pt/final_resume.pt under %s; starting fresh",
+        out_dir,
+    )
     return None
 
 

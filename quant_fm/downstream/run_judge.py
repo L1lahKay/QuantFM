@@ -37,7 +37,7 @@ from quant_fm.downstream.evaluate import (
     rank_icir,
 )
 from quant_fm.downstream.make_features import build_features
-from quant_fm.downstream.train_ranker import predict, train_ranker
+from quant_fm.downstream.train_ranker import fit_ranker, predict, train_ranker
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,11 @@ def _run_cpcv(
     seed: int,
     top_k: int | None,
 ) -> dict:
-    """组合式 purged CV：每个 fold 仅用 train 日期拟合 Ranker，再在 test 块上算 RankIC。"""
+    """
+    组合式 purged CV。
+
+    每个 fold 仅用 train 日期拟合 Ranker，再在 test 块上计算 RankIC。
+    """
     dates = sorted(str(d) for d in feat_all["date"].unique().to_list())
     n = len(dates)
     if n < 4:
@@ -256,12 +260,15 @@ def run_judge(
         min_names_per_day=min_names_per_day,
     )
 
-    model, history = train_ranker(
+    training = fit_ranker(
         train_feat,
+        val_features=val_feat,
         epochs=epochs,
         device=device,
         seed=seed,
     )
+    model = training.model
+    history = [float(row["train_ic"] or 0.0) for row in training.history]
 
     rng = np.random.default_rng(0)
     test_pan = panel.filter(pl.col("date").is_in(test_feat["date"].unique().to_list()))
@@ -296,6 +303,10 @@ def run_judge(
             "seed": seed,
             "train_history_ic": history,
             "final_train_ic": history[-1] if history else None,
+            "best_epoch": training.best_epoch,
+            "best_val_ic": training.best_val_ic,
+            "stopped_early": training.stopped_early,
+            "training_history": training.history,
         },
         "in_sample_train": _eval_split(
             "train", model, train_feat, panel, device=device, top_k=top_k

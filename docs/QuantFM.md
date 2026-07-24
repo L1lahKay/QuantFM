@@ -8,6 +8,13 @@
 
 一句话：**把 A 股 Level-2 订单流变成整数序列，用 Transformer 做「预测下一个市场事件」的预训练，再抽出 embedding 给下游选股模型用。**
 
+当前同时保留两条路径：
+
+- **V1 稳定主链**：`cn_l2_v1` + `vocab.json` + 直接字段 embedding 求和，现有 MinIO / smoke / 302M 产物继续使用该路径。
+- **V2 研究链**：加入因果盘口状态、版本化 `FieldSpec`、token+scalar、可配置字段融合、entropy-normalized/ordinal loss、多尺度聚合和股票间上下文模块。底层代码、训练性能改造、25M/100M/230M dense 配置，以及实验性的 Regime/Backbone-MoE 模块与配置已经入库；这些只代表工程候选已就绪，尚未完成多 seed 训练和新的 untouched OOS 验收。
+
+详细的实施边界见 [模型底层 V2 代码改造指导](./模型底层v2代码改造指导.md)；严格研究评估见 [严格 OOS 研究回测](./严格OOS研究回测.md)。
+
 项目由两个 workspace 子项目组成：
 
 
@@ -116,6 +123,7 @@ python -m quant_fm.scripts.smoke --workdir quant_fm/runs/my_smoke
 | `docs/minio_setup.md`                         | **MinIO 读写完整文档**                 |
 | `quant_fm/pretrain/train.py`                  | 预训练（含 FSDP、checkpoint 续训）        |
 | `examples/run_zeus_clean.py`                  | 只负责 pylob 清洗                     |
+| `quant_fm/scripts/run_oos2026_research.sh`    | **RESEARCH ONLY**：构建 execution panel 并评估冻结 score |
 
 
 
@@ -130,6 +138,11 @@ python -m quant_fm.scripts.smoke --workdir quant_fm/runs/my_smoke
 | `quant_fm/tokenizer/fit_bins.py`        | **只在训练集**拟合分箱  |
 | `quant_fm/tokenizer/tokenize_events.py` | 事件 → tok_* 整数列 |
 | `quant_fm/manifest/build_manifest.py`   | 训练文件清单 + 时间切分  |
+| `order_book/pylob/book_state.py`        | 事件前/后因果盘口快照       |
+| `quant_fm/schema/cn_l2_v2.py`           | 带紧凑盘口特征的 V2 schema    |
+| `quant_fm/tokenizer/field_spec.py`      | V2 字段顺序、语义与用途契约    |
+| `quant_fm/tokenizer/vocab_v2.py`        | V2 特殊 ID、分箱与标准化 artifact |
+| `quant_fm/tokenizer/tokenize_events_v2.py` | V2 事件 → token + scalar 列    |
 
 
 
@@ -145,6 +158,17 @@ python -m quant_fm.scripts.smoke --workdir quant_fm/runs/my_smoke
 | `quant_fm/pretrain/train.py`    | 训练循环（优化器、存盘、`--resume`） |
 | `quant_fm/pretrain/config.yaml` | 超参数配置              |
 | `quant_fm/pretrain/config_medium_300m_8gpu.yaml` | ~302M 正式 8 卡配置 |
+| `quant_fm/pretrain/dataset_v2.py` | 从 V2 artifact 派生 token/scalar/mask 批次 |
+| `quant_fm/pretrain/field_fusion.py` | legacy/scaled/gated/concat 字段融合 |
+| `quant_fm/pretrain/validation_sampler.py` | 冻结、分层的验证窗口清单 |
+| `quant_fm/pretrain/sampler.py` | shard-aware 分布式训练采样 |
+| `quant_fm/pretrain/config_v2_25m.yaml` | V2 Stage-1 小模型消融配置 |
+| `quant_fm/pretrain/config_v2_100m.yaml` | V2 Stage-2 复验配置 |
+| `quant_fm/pretrain/config_v2_230m.yaml` | V2 dense 放大候选配置（未正式训练验收） |
+| `quant_fm/pretrain/config_v2_backbone_moe.yaml` | 顶部 Backbone-MoE 实验配置（未正式训练验收） |
+| `quant_fm/benchmark/` | 模型与 embedding 性能基准库 |
+| `quant_fm/experiments/registry.py` | 实验配置、环境和结果登记 |
+| `quant_fm/moe/` | Temporal Regime-MoE 与 Backbone-MoE 研究实现 |
 
 
 
@@ -157,6 +181,10 @@ python -m quant_fm.scripts.smoke --workdir quant_fm/runs/my_smoke
 | `quant_fm/embedding/extract_hidden.py` | 冻结模型，抽 embedding |
 | `quant_fm/downstream/train_ranker.py`  | 截面排序模型           |
 | `quant_fm/downstream/backtest_topk.py` | Top-K 回测         |
+| `quant_fm/embedding/pool_stock_day.py` | 跨 chunk 正确池化与多尺度统计 |
+| `quant_fm/embedding/intraday_aggregator.py` | 可训练的日内时间聚合器（研究模块） |
+| `quant_fm/cross_asset/` | 5 分钟对齐、PIT 行业上下文与 O(N) 股票间模型 |
+| `quant_fm/downstream/run_score_evaluation.py` | 冻结 `date,symbol,score` 的独立研究评估 |
 
 
 ---
@@ -188,11 +216,11 @@ tok_price_bin=15  # 价格在第 15 个箱子里
 ...
 ```
 
-模型对**每个字段**分别 embedding，再**相加**成一个向量（见 `model.py` 的 `encode`）。
+V1 对**每个字段**分别 embedding，再直接相加。V2 仍保留该模式用于兼容，同时可选择 `scaled_sum`、`gated_sum` 或 `concat_mlp`，并将标准化连续 scalar 投影到对应字段。实现见 `pretrain/field_fusion.py` 和 `model.py` 的 `encode()`。
 
 ### 4.3 训练任务：next-event
 
-给定前 t 个事件，预测第 t+1 个事件的各字段 —— 类似 GPT 预测下一个词，但是**6 个头**各预测一个字段（见 `heads.py`）。
+给定前 t 个事件，预测第 t+1 个事件的各字段 —— 类似 GPT 预测下一个词。V1 使用 6 个头的等权 CE；V2 由 `loss.targets` 显式冻结目标、权重、适用性 mask、训练集熵归一化和 ordinal 辅助损失。
 
 ---
 
@@ -205,10 +233,18 @@ tok_price_bin=15  # 价格在第 15 个箱子里
 1. 读 `config.yaml`
 2. `Manifest.load` → 知道读哪些 parquet
 3. `Vocab.load` → 知道每个字段有多少个 id
-4. `EventWindowDataset` + `DataLoader` → 按批取数据
-5. `OrderFlowFM` → 建模型；若 `--resume`/`auto` 则加载权重与优化器状态
+4. V1 用 `EventWindowDataset`，V2 用 `EventWindowDatasetV2`，再由 `DataLoader` 按批取数据
+5. `OrderFlowFM` → 建模型；若指定 `--resume`/`auto`，只接受含 optimizer state 的
+   `step*.pt` / `final_resume.pt` 并恢复训练状态
 6. 循环：`logits = model(batch)` → `loss = next_event_loss(...)` → `backward` → `optimizer.step`
-7. 定期 `evaluate`，保存 `best.pt` / `step*.pt` / `final.pt`（含 optimizer/scaler/step）
+7. 定期 `evaluate`，保存两类 checkpoint：`step*.pt` / `final_resume.pt` 含
+   optimizer、scaler 与训练计数，用于续训；`best.pt` / `final.pt` 只保留模型、配置、
+   元数据与训练计数，面向评估和推理
+
+`best.pt` / `final.pt` 是 inference-only；显式传给 `--resume` 会直接报错，不能用于续训。
+`--resume auto` 会先选择编号最大的 `step*.pt`，没有定期 checkpoint 时再尝试
+`final_resume.pt`；二者都不存在便记录日志并从头训练。已正常结束的 run 若要续训，建议
+显式指定 `final_resume.pt`。
 
 **有效 batch 大小** = `batch_size × grad_accum × world_size`（多卡时）。
 
@@ -224,6 +260,8 @@ tok_price_bin=15  # 价格在第 15 个箱子里
 
 `attention_mask`：True 表示真实事件，False 表示 padding，模型和 loss 都会忽略 padding。
 
+V2 额外读取 `val_*` 连续列，并为每个目标生成 `mask_tok_*`；`PAD_ID=0` 与 `NA_ID=2` 含义不同，不得混用。
+
 ---
 
 
@@ -231,9 +269,9 @@ tok_price_bin=15  # 价格在第 15 个箱子里
 ## 7. 读懂 `model.py`：数据怎么流过网络
 
 ```
-batch["tok_evt_type"] 等整数
-    → Embedding(d_model)  # 每个字段一张查表
-    → 各字段 embedding 相加
+batch["tok_evt_type"] 等整数（V2 可同时含 val_* scalar）
+    → 每字段 Embedding + 可选 scalar projection
+    → legacy/scaled/gated/concat 字段融合
     → N 层 Transformer（只能看过去，不能看未来 = 因果）
     → 每个预测字段一个 Linear 头
     → logits["tok_evt_type"]: [B, L, 词表大小]
@@ -281,6 +319,8 @@ quant_fm/runs/pilot/
     config.snapshot.yaml
 ```
 
+V2 必须使用独立目录，例如 `quant_fm/runs/v2_shared/data/` 与 `quant_fm/runs/v2_25m/run/`。不能用 V2 tokenizer 覆盖 V1 `vocab.json`/tokens，也不能用新字段顺序静默加载 V1 checkpoint。
+
 ---
 
 
@@ -311,6 +351,7 @@ A：`make smoke` 可在 CPU 上跑；真实训练建议 GPU，`config.yaml` 里 
 | Day 1 | 跑通 `make smoke`；读 `smoke.py` + `cn_l2_v1.py` + `tokenize_events.py` |
 | Day 2 | 读 `dataset.py` → `model.py` → `heads.py`；对照本指南第 5–7 节               |
 | Day 3 | 读 `train.py`；改 `config.yaml` 里 `max_steps` 做小规模实验                   |
+| Day 4 | 对照 V2 指导读 `field_spec.py` → `dataset_v2.py` → `field_fusion.py` → `heads.py` |
 
 
 ---
