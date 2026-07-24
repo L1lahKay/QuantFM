@@ -156,6 +156,7 @@ quant_fm/runs/<experiment>/run/
 
 ## 文档入口
 
+- [当前分支工作说明](docs/BRANCH_WORK.md)
 - [项目与阅读指南](docs/QuantFM.md)
 - [Pipeline 逐阶段文档](docs/pipeline/README.md)
 - [复现与验证指南](docs/REPRODUCIBILITY.md)
