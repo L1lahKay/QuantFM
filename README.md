@@ -1,6 +1,10 @@
-# QuantFM
+# QuantFM V2
 
-面向 A 股 Level-2 订单流的端到端基础模型研发框架。项目将沪深逐笔委托与成交数据重建为统一市场事件，使用 Decoder-only Transformer 进行多字段 next-event 自监督预训练，并由冻结截面 Ranker 生成可交付的日频 `score` 信号。当前默认生产链路继续兼容 `cn_l2_v1`；新增的模型底层 v2 以独立 schema、词表和 checkpoint artifact 演进，不会静默覆盖 v1。
+> 当前分支：[`V2`](https://github.com/zeusamc/quant-fm/tree/V2)
+>
+> 最近核验：2026-07-31；全仓回归为 `503 passed, 2 skipped, 1 xfailed`。
+
+面向 A 股 Level-2 订单流的端到端基础模型研发框架。项目将沪深逐笔委托与成交数据重建为统一市场事件，使用 Decoder-only Transformer 进行多字段 next-event 自监督预训练，并由冻结截面 Ranker 生成可交付的日频 `score` 信号。V2 分支在保持 `cn_l2_v1` 兼容性的同时，引入独立的 `cn_l2_v2` schema、词表、存储编码和 checkpoint artifact；两代产物必须显式匹配，不允许静默混用。
 
 ## 核心能力
 
@@ -10,6 +14,8 @@
 - **训练与推理性能语义**：严格区分 micro-batch、optimizer update 和全 rank non-pad token；支持 shard-local 采样、RoPE 缓存、无 padding causal SDPA 快路径，以及 resume/inference checkpoint 分离。
 - **可选 MoE 研究组件**：已实现股日级 `TemporalRegimeMoE` 和顶部层 `BackboneMoE`，但尚未完成真实训练、路由稳定性、吞吐或生产验收，不是默认 score 路径。
 - **分层表征**：支持跨 chunk 正确的 `mean/last/last-k`、交易阶段多尺度池化、因果日内聚合，以及同步 interval 上 O(T×N) 的市场/行业 leave-one-out 上下文。
+- **Artifact 合约与血缘**：校验 manifest、vocab、token 物理编码、事件顺序、checkpoint、embedding 和预训练验收文件，严格入口默认 fail closed。
+- **训练监控与验收**：提供实时训练看板、训练完成后的 val/test 串行评估、基线非劣门禁和严格 OOS 下游入口。
 - **分布式训练**：支持单卡与 8 卡 FSDP、bf16、梯度累积、余弦学习率、TensorBoard、best/final checkpoint。
 - **稳定信号接口**：生产侧仅交付 `date, symbol, score` 与版本清单；研究回测与交付链路隔离。
 - **MinIO 读写分离**：从 `zeus-cn-quote` 读取原始 L2，将 tokens、词表和 manifest 备份到 `model-cache`。
@@ -31,6 +37,9 @@ cn_l2_v1（稳定）/ cn_l2_v2（显式启用）规范事件流
   ▼
 Manifest 与时间切分
   │  train / val / test + sha256
+  ▼
+V2 Artifact 合约审计
+  │  schema / vocab / storage / ordering
   ▼
 OrderFlow FM v1 / v2 预训练
   │  best.pt / final.pt
@@ -69,7 +78,62 @@ uv run python -m quant_fm.scripts.smoke --workdir /tmp/quantfm-smoke
 uv run python -m pytest -q
 ```
 
-当前分支基线（2026-07-24）：`243 passed, 2 skipped, 1 xfailed`。
+当前 V2 分支基线（2026-07-31）：`503 passed, 2 skipped, 1 xfailed`。
+
+## V2 推荐工作流
+
+V2 不接受 V1 tokens 或只复制权重的半套产物。训练前至少需要同一 artifact 根目录下的 `data/manifest.json`、`data/vocab_v2.json` 和 manifest 引用的 token shards，并先完成契约审计：
+
+```bash
+uv run python -m quant_fm.scripts.audit_v2_artifacts \
+  --root quant_fm/runs/v2_backbone_moe_300d \
+  --sample-shards 12 \
+  --full-path-check \
+  --out quant_fm/runs/v2_backbone_moe_300d/artifact_audit.json
+```
+
+审计返回非零时不得进入训练。它验证 schema/vocab 版本、字段顺序、物理 dtype、Q16/legacy 存储契约、事件顺序、路径完整性和抽样 token 内容；真实订单簿 coverage 与快照一致性仍需单独验收。
+
+当前训练配置分为三组：
+
+| 组别 | 配置 | 用途 |
+|------|------|------|
+| Dense 消融 | `config_v2_25m.yaml`、`config_v2_100m.yaml`、`config_v2_230m.yaml` | 从小规模消融到 Dense 候选复验 |
+| Backbone-MoE 严格基准 | `config_v2_backbone_moe_300d.yaml` | 300 train / 60 validation / 100 test 日的一次完整数据遍历 |
+| 2026Q1 adaptation | `config_v2_backbone_moe_adapt_2026q1_dev.yaml`、`config_v2_backbone_moe_adapt_2026q1_refit.yaml` | 开发期选参和最终 refit 分离 |
+
+以 8 卡 Backbone-MoE 严格基准为例：
+
+```bash
+uv run torchrun --standalone --nproc_per_node=8 \
+  -m quant_fm.pretrain.train \
+  --config quant_fm/pretrain/config_v2_backbone_moe_300d.yaml
+```
+
+对于带 `optim.max_update_steps` 的训练配置，可只读查看一次状态，或去掉 `--once` 持续刷新：
+
+```bash
+uv run python -m quant_fm.scripts.watch_training_live \
+  --config quant_fm/pretrain/config_v2_230m.yaml \
+  --once
+```
+
+`config_v2_backbone_moe_300d.yaml` 使用 `max_data_epochs: 1`，当前看板需要 update 上限，因此该配置应使用训练日志、checkpoint 和集群 Job 状态监控。
+
+训练结束后先生成评估计划；只有显式添加 `--execute`，且训练进程已经退出、`final.pt` 与 `final_resume.pt` 均存在时，才会串行执行 validation 和 test：
+
+```bash
+uv run python -m quant_fm.scripts.posttrain_evaluation \
+  --config quant_fm/pretrain/config_v2_backbone_moe_300d.yaml
+
+# 确认计划后再执行
+uv run python -m quant_fm.scripts.posttrain_evaluation \
+  --config quant_fm/pretrain/config_v2_backbone_moe_300d.yaml \
+  --baseline-checkpoint /path/to/frozen-baseline.pt \
+  --execute
+```
+
+严格 OOS/交付入口还要求 `pretrain_acceptance.json` 为显式 PASS，并重新核对 checkpoint、manifest/vocab 与 embedding 血缘。完整入口见 [`run_dense230m_strict_oos.sh`](quant_fm/scripts/run_dense230m_strict_oos.sh)。
 
 ## 真实数据运行
 
@@ -108,10 +172,11 @@ QuantFM/
 ├── quant_fm/                 # FM 主工程
 │   ├── schema/               # cn_l2_v1 / cn_l2_v2 统一事件协议
 │   ├── tokenizer/            # v1/v2 因果变换、分箱、字段级词表
-│   ├── manifest/             # 分片哈希与时间切分
+│   ├── manifest/             # 分片哈希、时间切分与数据验证
 │   ├── pretrain/             # Transformer、Dataset、训练与评估
 │   ├── embedding/            # checkpoint → stock-day embedding
 │   ├── moe/                  # temporal Regime-MoE 与可选顶部稀疏 FFN
+│   ├── monitoring/           # 训练完成状态与非劣验收契约
 │   ├── benchmark/            # non-pad token、延迟和显存指标
 │   ├── experiments/          # 版本化消融实验登记
 │   ├── cross_asset/          # PIT 对齐、同步上下文与线性复杂度跨股票模型
@@ -132,6 +197,7 @@ QuantFM/
 │   └── README.md             # 全部文档索引
 ├── examples/                 # 数据清洗与 notebook 示例
 ├── tests/                    # 撮合、数据管线与 FM 回归测试
+├── k8s/                      # GPU Job、PVC 与调度评估清单
 ├── Makefile                  # 常用操作入口
 ├── pyproject.toml            # QuantFM + uv workspace
 └── uv.lock                   # 锁定依赖
@@ -160,6 +226,8 @@ v2 保留相同 Transformer 骨干，但字段由 `vocab_v2.json` 内冻结的 `
 - [`config_v2_100m.yaml`](quant_fm/pretrain/config_v2_100m.yaml)：约 100M 的 Stage-2 复验配置，面向 8 卡 FSDP；
 - [`config_v2_230m.yaml`](quant_fm/pretrain/config_v2_230m.yaml)：显式 `ffn_hidden=2816` 的 Dense V2 候选；
 - [`config_v2_backbone_moe.yaml`](quant_fm/pretrain/config_v2_backbone_moe.yaml)：仅顶部 4 层使用 shared + Top-1 routed expert 的实验配置，不是生产默认值。
+- [`config_v2_backbone_moe_300d.yaml`](quant_fm/pretrain/config_v2_backbone_moe_300d.yaml)：严格日期计划下的 Backbone-MoE 基准配置；
+- [`config_v2_backbone_moe_adapt_2026q1_dev.yaml`](quant_fm/pretrain/config_v2_backbone_moe_adapt_2026q1_dev.yaml) / [`config_v2_backbone_moe_adapt_2026q1_refit.yaml`](quant_fm/pretrain/config_v2_backbone_moe_adapt_2026q1_refit.yaml)：将 adaptation 选参与最终 refit 分离。
 
 在 `quant_fm/runs/v2_shared/data/` 下准备好 v2 manifest 与 `vocab_v2.json` 后，可执行：
 
@@ -196,13 +264,12 @@ quant_fm/runs/<experiment>/run/
 
 `quant_fm/runs/` 已被 `.gitignore` 排除，不应上传 checkpoint、tokens 或 TensorBoard 日志。
 
-当前 v2/MoE 状态是“代码路径和回归测试完成、真实重训与生产验收尚未完成”。现有 MinIO 一键脚本仍生成 v1 events/tokens；v2 数据准备需调用 `cn_l2_v2`、`fit_vocab_v2()` 和 `tokenize_path_v2()` 库接口。25M/100M/230M checkpoint、Regime/Backbone MoE 的稳定路由与吞吐、真实 OOS 收益改善，以及跨股票模块对生产 score 的增益均需后续实验验证。
+当前 V2 已具备数据合约审计、25M/100M/230M Dense 配置、Backbone-MoE 严格日期配置、adaptation dev/refit 配置、训练监控、预训练非劣门禁和严格 OOS 血缘检查。仓库中的配置、代码和回归测试不等同于真实训练完成或收益验收；checkpoint、路由稳定性、吞吐和 OOS 结论必须以外部运行产物及 PASS 验收文件为准。现有 MinIO 一键脚本仍默认生成 v1 events/tokens；v2 数据准备尚未封装为同等的一键入口。
 
 MoE 仍有待实证的训练边界：训练模式发生 capacity overflow 时，专家裁剪会在整个 batch（Backbone 中为全部有效 token）上竞争容量，形成 batch 依赖；评估/推理模式不执行容量裁剪，已覆盖 batch-size independence。该 train/eval 差异、路由健康度和真实吞吐尚未验证，因此仍只能作为研究候选。
 
 ## 文档入口
 
-- [当前分支工作说明](docs/project/BRANCH_WORK.md)
 - [项目与阅读指南](docs/QuantFM.md)
 - [Pipeline 逐阶段文档](docs/pipeline/README.md)
 - [复现与验证指南](docs/REPRODUCIBILITY.md)
