@@ -1,0 +1,447 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "apps/v1",
+            "kind": "Deployment",
+            "metadata": {
+                "annotations": {
+                    "deployment.kubernetes.io/revision": "1",
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"labels\":{\"app\":\"volcano-admission\"},\"name\":\"volcano-admission\",\"namespace\":\"volcano-system\"},\"spec\":{\"replicas\":1,\"selector\":{\"matchLabels\":{\"app\":\"volcano-admission\"}},\"template\":{\"metadata\":{\"annotations\":{\"rollme/helm-revision\":\"1\"},\"labels\":{\"app\":\"volcano-admission\"}},\"spec\":{\"containers\":[{\"args\":[\"--enabled-admission=/jobs/mutate,/jobs/validate,/podgroups/validate,/queues/mutate,/queues/validate,/hypernodes/validate,/cronjobs/validate\",\"--tls-cert-file=/admission.local.config/certificates/tls.crt\",\"--tls-private-key-file=/admission.local.config/certificates/tls.key\",\"--ca-cert-file=/admission.local.config/certificates/ca.crt\",\"--admission-conf=/admission.local.config/configmap/volcano-admission.conf\",\"--webhook-namespace=volcano-system\",\"--webhook-service-name=volcano-admission-service\",\"--enable-healthz=true\",\"--logtostderr\",\"--port=8443\",\"-v=4\",\"2\\u003e\\u00261\"],\"image\":\"docker.io/volcanosh/vc-webhook-manager:v1.15.1\",\"imagePullPolicy\":\"Always\",\"name\":\"admission\",\"securityContext\":{\"allowPrivilegeEscalation\":false,\"capabilities\":{\"add\":[\"DAC_OVERRIDE\"],\"drop\":[\"ALL\"]},\"runAsNonRoot\":true,\"runAsUser\":1000},\"volumeMounts\":[{\"mountPath\":\"/admission.local.config/certificates\",\"name\":\"admission-certs\",\"readOnly\":true},{\"mountPath\":\"/admission.local.config/configmap\",\"name\":\"admission-config\"}]}],\"priorityClassName\":\"system-cluster-critical\",\"securityContext\":{\"seLinuxOptions\":{\"level\":\"s0:c123,c456\"},\"seccompProfile\":{\"type\":\"RuntimeDefault\"}},\"serviceAccount\":\"volcano-admission\",\"volumes\":[{\"name\":\"admission-certs\",\"secret\":{\"defaultMode\":420,\"secretName\":\"volcano-admission-secret\"}},{\"configMap\":{\"name\":\"volcano-admission-configmap\"},\"name\":\"admission-config\"}]}}}}\n"
+                },
+                "creationTimestamp": "2026-07-31T07:16:27Z",
+                "generation": 1,
+                "labels": {
+                    "app": "volcano-admission"
+                },
+                "name": "volcano-admission",
+                "namespace": "volcano-system",
+                "resourceVersion": "27876036",
+                "uid": "ab15d7db-8224-4f44-8d32-ba4cf84ef582"
+            },
+            "spec": {
+                "progressDeadlineSeconds": 600,
+                "replicas": 1,
+                "revisionHistoryLimit": 10,
+                "selector": {
+                    "matchLabels": {
+                        "app": "volcano-admission"
+                    }
+                },
+                "strategy": {
+                    "rollingUpdate": {
+                        "maxSurge": "25%",
+                        "maxUnavailable": "25%"
+                    },
+                    "type": "RollingUpdate"
+                },
+                "template": {
+                    "metadata": {
+                        "annotations": {
+                            "rollme/helm-revision": "1"
+                        },
+                        "labels": {
+                            "app": "volcano-admission"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "args": [
+                                    "--enabled-admission=/jobs/mutate,/jobs/validate,/podgroups/validate,/queues/mutate,/queues/validate,/hypernodes/validate,/cronjobs/validate",
+                                    "--tls-cert-file=/admission.local.config/certificates/tls.crt",
+                                    "--tls-private-key-file=/admission.local.config/certificates/tls.key",
+                                    "--ca-cert-file=/admission.local.config/certificates/ca.crt",
+                                    "--admission-conf=/admission.local.config/configmap/volcano-admission.conf",
+                                    "--webhook-namespace=volcano-system",
+                                    "--webhook-service-name=volcano-admission-service",
+                                    "--enable-healthz=true",
+                                    "--logtostderr",
+                                    "--port=8443",
+                                    "-v=4",
+                                    "2\u003e\u00261"
+                                ],
+                                "image": "docker.io/volcanosh/vc-webhook-manager:v1.15.1",
+                                "imagePullPolicy": "Always",
+                                "name": "admission",
+                                "resources": {},
+                                "securityContext": {
+                                    "allowPrivilegeEscalation": false,
+                                    "capabilities": {
+                                        "add": [
+                                            "DAC_OVERRIDE"
+                                        ],
+                                        "drop": [
+                                            "ALL"
+                                        ]
+                                    },
+                                    "runAsNonRoot": true,
+                                    "runAsUser": 1000
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File",
+                                "volumeMounts": [
+                                    {
+                                        "mountPath": "/admission.local.config/certificates",
+                                        "name": "admission-certs",
+                                        "readOnly": true
+                                    },
+                                    {
+                                        "mountPath": "/admission.local.config/configmap",
+                                        "name": "admission-config"
+                                    }
+                                ]
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "priorityClassName": "system-cluster-critical",
+                        "restartPolicy": "Always",
+                        "schedulerName": "default-scheduler",
+                        "securityContext": {
+                            "seLinuxOptions": {
+                                "level": "s0:c123,c456"
+                            },
+                            "seccompProfile": {
+                                "type": "RuntimeDefault"
+                            }
+                        },
+                        "serviceAccount": "volcano-admission",
+                        "serviceAccountName": "volcano-admission",
+                        "terminationGracePeriodSeconds": 30,
+                        "volumes": [
+                            {
+                                "name": "admission-certs",
+                                "secret": {
+                                    "defaultMode": 420,
+                                    "secretName": "volcano-admission-secret"
+                                }
+                            },
+                            {
+                                "configMap": {
+                                    "defaultMode": 420,
+                                    "name": "volcano-admission-configmap"
+                                },
+                                "name": "admission-config"
+                            }
+                        ]
+                    }
+                }
+            },
+            "status": {
+                "availableReplicas": 1,
+                "conditions": [
+                    {
+                        "lastTransitionTime": "2026-07-31T07:16:45Z",
+                        "lastUpdateTime": "2026-07-31T07:16:45Z",
+                        "message": "Deployment has minimum availability.",
+                        "reason": "MinimumReplicasAvailable",
+                        "status": "True",
+                        "type": "Available"
+                    },
+                    {
+                        "lastTransitionTime": "2026-07-31T07:16:27Z",
+                        "lastUpdateTime": "2026-07-31T07:16:45Z",
+                        "message": "ReplicaSet \"volcano-admission-569b8b4545\" has successfully progressed.",
+                        "reason": "NewReplicaSetAvailable",
+                        "status": "True",
+                        "type": "Progressing"
+                    }
+                ],
+                "observedGeneration": 1,
+                "readyReplicas": 1,
+                "replicas": 1,
+                "terminatingReplicas": 0,
+                "updatedReplicas": 1
+            }
+        },
+        {
+            "apiVersion": "apps/v1",
+            "kind": "Deployment",
+            "metadata": {
+                "annotations": {
+                    "deployment.kubernetes.io/revision": "1",
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"labels\":{\"app\":\"volcano-controller\"},\"name\":\"volcano-controllers\",\"namespace\":\"volcano-system\"},\"spec\":{\"replicas\":1,\"selector\":{\"matchLabels\":{\"app\":\"volcano-controller\"}},\"template\":{\"metadata\":{\"labels\":{\"app\":\"volcano-controller\"}},\"spec\":{\"containers\":[{\"args\":[\"--logtostderr\",\"--enable-healthz=true\",\"--enable-metrics=true\",\"--leader-elect=false\",\"--kube-api-qps=50\",\"--kube-api-burst=100\",\"--worker-threads=3\",\"--worker-threads-for-gc=5\",\"--worker-threads-for-podgroup=5\",\"--sharding-configmap=volcano-sharding-configmap\",\"--sharding-configmap-namespace=volcano-system\",\"-v=4\",\"2\\u003e\\u00261\"],\"env\":[{\"name\":\"KUBE_POD_NAMESPACE\",\"value\":\"volcano-system\"},{\"name\":\"HELM_RELEASE_NAME\",\"value\":\"volcano\"}],\"image\":\"docker.io/volcanosh/vc-controller-manager:v1.15.1\",\"imagePullPolicy\":\"Always\",\"name\":\"volcano-controllers\",\"securityContext\":{\"allowPrivilegeEscalation\":false,\"capabilities\":{\"add\":[\"DAC_OVERRIDE\"],\"drop\":[\"ALL\"]},\"runAsNonRoot\":true,\"runAsUser\":1000}}],\"priorityClassName\":\"system-cluster-critical\",\"securityContext\":{\"seLinuxOptions\":{\"level\":\"s0:c123,c456\"},\"seccompProfile\":{\"type\":\"RuntimeDefault\"}},\"serviceAccount\":\"volcano-controllers\"}}}}\n"
+                },
+                "creationTimestamp": "2026-07-31T07:16:27Z",
+                "generation": 1,
+                "labels": {
+                    "app": "volcano-controller"
+                },
+                "name": "volcano-controllers",
+                "namespace": "volcano-system",
+                "resourceVersion": "27875995",
+                "uid": "0f1c1cc4-a76f-4fd9-a427-a46fbbdd5227"
+            },
+            "spec": {
+                "progressDeadlineSeconds": 600,
+                "replicas": 1,
+                "revisionHistoryLimit": 10,
+                "selector": {
+                    "matchLabels": {
+                        "app": "volcano-controller"
+                    }
+                },
+                "strategy": {
+                    "rollingUpdate": {
+                        "maxSurge": "25%",
+                        "maxUnavailable": "25%"
+                    },
+                    "type": "RollingUpdate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "volcano-controller"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "args": [
+                                    "--logtostderr",
+                                    "--enable-healthz=true",
+                                    "--enable-metrics=true",
+                                    "--leader-elect=false",
+                                    "--kube-api-qps=50",
+                                    "--kube-api-burst=100",
+                                    "--worker-threads=3",
+                                    "--worker-threads-for-gc=5",
+                                    "--worker-threads-for-podgroup=5",
+                                    "--sharding-configmap=volcano-sharding-configmap",
+                                    "--sharding-configmap-namespace=volcano-system",
+                                    "-v=4",
+                                    "2\u003e\u00261"
+                                ],
+                                "env": [
+                                    {
+                                        "name": "KUBE_POD_NAMESPACE",
+                                        "value": "volcano-system"
+                                    },
+                                    {
+                                        "name": "HELM_RELEASE_NAME",
+                                        "value": "volcano"
+                                    }
+                                ],
+                                "image": "docker.io/volcanosh/vc-controller-manager:v1.15.1",
+                                "imagePullPolicy": "Always",
+                                "name": "volcano-controllers",
+                                "resources": {},
+                                "securityContext": {
+                                    "allowPrivilegeEscalation": false,
+                                    "capabilities": {
+                                        "add": [
+                                            "DAC_OVERRIDE"
+                                        ],
+                                        "drop": [
+                                            "ALL"
+                                        ]
+                                    },
+                                    "runAsNonRoot": true,
+                                    "runAsUser": 1000
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "priorityClassName": "system-cluster-critical",
+                        "restartPolicy": "Always",
+                        "schedulerName": "default-scheduler",
+                        "securityContext": {
+                            "seLinuxOptions": {
+                                "level": "s0:c123,c456"
+                            },
+                            "seccompProfile": {
+                                "type": "RuntimeDefault"
+                            }
+                        },
+                        "serviceAccount": "volcano-controllers",
+                        "serviceAccountName": "volcano-controllers",
+                        "terminationGracePeriodSeconds": 30
+                    }
+                }
+            },
+            "status": {
+                "availableReplicas": 1,
+                "conditions": [
+                    {
+                        "lastTransitionTime": "2026-07-31T07:16:41Z",
+                        "lastUpdateTime": "2026-07-31T07:16:41Z",
+                        "message": "Deployment has minimum availability.",
+                        "reason": "MinimumReplicasAvailable",
+                        "status": "True",
+                        "type": "Available"
+                    },
+                    {
+                        "lastTransitionTime": "2026-07-31T07:16:27Z",
+                        "lastUpdateTime": "2026-07-31T07:16:41Z",
+                        "message": "ReplicaSet \"volcano-controllers-7c87f8cb95\" has successfully progressed.",
+                        "reason": "NewReplicaSetAvailable",
+                        "status": "True",
+                        "type": "Progressing"
+                    }
+                ],
+                "observedGeneration": 1,
+                "readyReplicas": 1,
+                "replicas": 1,
+                "terminatingReplicas": 0,
+                "updatedReplicas": 1
+            }
+        },
+        {
+            "apiVersion": "apps/v1",
+            "kind": "Deployment",
+            "metadata": {
+                "annotations": {
+                    "deployment.kubernetes.io/revision": "1",
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"labels\":{\"app\":\"volcano-scheduler\"},\"name\":\"volcano-scheduler\",\"namespace\":\"volcano-system\"},\"spec\":{\"replicas\":1,\"selector\":{\"matchLabels\":{\"app\":\"volcano-scheduler\"}},\"template\":{\"metadata\":{\"labels\":{\"app\":\"volcano-scheduler\"}},\"spec\":{\"containers\":[{\"args\":[\"--logtostderr\",\"--scheduler-conf=/volcano.scheduler/volcano-scheduler.conf\",\"--enable-healthz=true\",\"--enable-metrics=true\",\"--leader-elect=false\",\"--kube-api-qps=2000\",\"--kube-api-burst=2000\",\"--schedule-period=1s\",\"--node-worker-threads=20\",\"-v=3\",\"2\\u003e\\u00261\"],\"env\":[{\"name\":\"DEBUG_SOCKET_DIR\",\"value\":\"/tmp/klog-socks\"}],\"image\":\"docker.io/volcanosh/vc-scheduler:v1.15.1\",\"imagePullPolicy\":\"Always\",\"name\":\"volcano-scheduler\",\"securityContext\":{\"allowPrivilegeEscalation\":false,\"capabilities\":{\"add\":[\"DAC_OVERRIDE\"],\"drop\":[\"ALL\"]},\"runAsNonRoot\":true,\"runAsUser\":1000},\"volumeMounts\":[{\"mountPath\":\"/volcano.scheduler\",\"name\":\"scheduler-config\"},{\"mountPath\":\"/tmp/klog-socks\",\"name\":\"klog-sock\"}]}],\"priorityClassName\":\"system-cluster-critical\",\"securityContext\":{\"seLinuxOptions\":{\"level\":\"s0:c123,c456\"},\"seccompProfile\":{\"type\":\"RuntimeDefault\"}},\"serviceAccount\":\"volcano-scheduler\",\"volumes\":[{\"configMap\":{\"name\":\"volcano-scheduler-configmap\"},\"name\":\"scheduler-config\"},{\"emptyDir\":{},\"name\":\"klog-sock\"}]}}}}\n"
+                },
+                "creationTimestamp": "2026-07-31T07:16:27Z",
+                "generation": 1,
+                "labels": {
+                    "app": "volcano-scheduler"
+                },
+                "name": "volcano-scheduler",
+                "namespace": "volcano-system",
+                "resourceVersion": "27875999",
+                "uid": "46ef6eec-9116-4a08-bf42-677bca57c235"
+            },
+            "spec": {
+                "progressDeadlineSeconds": 600,
+                "replicas": 1,
+                "revisionHistoryLimit": 10,
+                "selector": {
+                    "matchLabels": {
+                        "app": "volcano-scheduler"
+                    }
+                },
+                "strategy": {
+                    "rollingUpdate": {
+                        "maxSurge": "25%",
+                        "maxUnavailable": "25%"
+                    },
+                    "type": "RollingUpdate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "volcano-scheduler"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "args": [
+                                    "--logtostderr",
+                                    "--scheduler-conf=/volcano.scheduler/volcano-scheduler.conf",
+                                    "--enable-healthz=true",
+                                    "--enable-metrics=true",
+                                    "--leader-elect=false",
+                                    "--kube-api-qps=2000",
+                                    "--kube-api-burst=2000",
+                                    "--schedule-period=1s",
+                                    "--node-worker-threads=20",
+                                    "-v=3",
+                                    "2\u003e\u00261"
+                                ],
+                                "env": [
+                                    {
+                                        "name": "DEBUG_SOCKET_DIR",
+                                        "value": "/tmp/klog-socks"
+                                    }
+                                ],
+                                "image": "docker.io/volcanosh/vc-scheduler:v1.15.1",
+                                "imagePullPolicy": "Always",
+                                "name": "volcano-scheduler",
+                                "resources": {},
+                                "securityContext": {
+                                    "allowPrivilegeEscalation": false,
+                                    "capabilities": {
+                                        "add": [
+                                            "DAC_OVERRIDE"
+                                        ],
+                                        "drop": [
+                                            "ALL"
+                                        ]
+                                    },
+                                    "runAsNonRoot": true,
+                                    "runAsUser": 1000
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File",
+                                "volumeMounts": [
+                                    {
+                                        "mountPath": "/volcano.scheduler",
+                                        "name": "scheduler-config"
+                                    },
+                                    {
+                                        "mountPath": "/tmp/klog-socks",
+                                        "name": "klog-sock"
+                                    }
+                                ]
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "priorityClassName": "system-cluster-critical",
+                        "restartPolicy": "Always",
+                        "schedulerName": "default-scheduler",
+                        "securityContext": {
+                            "seLinuxOptions": {
+                                "level": "s0:c123,c456"
+                            },
+                            "seccompProfile": {
+                                "type": "RuntimeDefault"
+                            }
+                        },
+                        "serviceAccount": "volcano-scheduler",
+                        "serviceAccountName": "volcano-scheduler",
+                        "terminationGracePeriodSeconds": 30,
+                        "volumes": [
+                            {
+                                "configMap": {
+                                    "defaultMode": 420,
+                                    "name": "volcano-scheduler-configmap"
+                                },
+                                "name": "scheduler-config"
+                            },
+                            {
+                                "emptyDir": {},
+                                "name": "klog-sock"
+                            }
+                        ]
+                    }
+                }
+            },
+            "status": {
+                "availableReplicas": 1,
+                "conditions": [
+                    {
+                        "lastTransitionTime": "2026-07-31T07:16:41Z",
+                        "lastUpdateTime": "2026-07-31T07:16:41Z",
+                        "message": "Deployment has minimum availability.",
+                        "reason": "MinimumReplicasAvailable",
+                        "status": "True",
+                        "type": "Available"
+                    },
+                    {
+                        "lastTransitionTime": "2026-07-31T07:16:27Z",
+                        "lastUpdateTime": "2026-07-31T07:16:41Z",
+                        "message": "ReplicaSet \"volcano-scheduler-786498f9db\" has successfully progressed.",
+                        "reason": "NewReplicaSetAvailable",
+                        "status": "True",
+                        "type": "Progressing"
+                    }
+                ],
+                "observedGeneration": 1,
+                "readyReplicas": 1,
+                "replicas": 1,
+                "terminatingReplicas": 0,
+                "updatedReplicas": 1
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

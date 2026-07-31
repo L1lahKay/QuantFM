@@ -1,0 +1,16 @@
+CUDA_SMOKE_QUEUE_CREATE_BEGIN utc=2026-07-31T07:48:00.609Z monotonic_ns=2780066905830500
+queue.scheduling.volcano.sh/khalil-volcano-smoke created (server dry run)
+queue.scheduling.volcano.sh/khalil-volcano-smoke created
+CUDA_SMOKE_QUEUE_CREATE_RETURN utc=2026-07-31T07:48:01.197Z monotonic_ns=2780067492737695
+CUDA_SMOKE_JOB_CREATE_BEGIN utc=2026-07-31T07:48:01.875Z monotonic_ns=2780068172464293
+queue.scheduling.volcano.sh/khalil-volcano-smoke unchanged
+podgroup.scheduling.volcano.sh/khalil-volcano-smoke-pg created
+job.batch/khalil-volcano-smoke created
+CUDA_SMOKE_JOB_CREATE_RETURN utc=2026-07-31T07:48:02.560Z monotonic_ns=2780068856172795
+job.batch/khalil-volcano-smoke condition met
+CUDA_SMOKE_COMPLETE_OBSERVED utc=2026-07-31T07:48:16.074Z monotonic_ns=2780082372514813
+CUDA_SMOKE_ASSERTIONS visible_gpu=1 torch_cuda=true tensor_result=42
+job.batch "khalil-volcano-smoke" deleted from gpu-dev namespace
+podgroup.scheduling.volcano.sh "khalil-volcano-smoke-pg" deleted from gpu-dev namespace
+queue.scheduling.volcano.sh "khalil-volcano-smoke" deleted
+CUDA_SMOKE_CLEANUP_COMPLETE utc=2026-07-31T07:48:18.667Z monotonic_ns=2780084965194520

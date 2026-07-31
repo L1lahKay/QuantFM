@@ -1,0 +1,5 @@
+NAME                              STATUS     COMPLETIONS   DURATION   AGE   CONTAINERS   IMAGES                                      SELECTOR
+job.batch/dylan-trainer-ac4218e   Complete   1/1           33s        93m   trainer      registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=110bfe69-6575-4ca9-9ef2-fc52756683bb
+
+NAME                              READY   STATUS      RESTARTS   AGE   IP           NODE         NOMINATED NODE   READINESS GATES
+pod/dylan-trainer-ac4218e-f5sjk   0/1     Completed   0          93m   10.52.0.91   gpu-dev-01   <none>           <none>

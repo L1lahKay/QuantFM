@@ -13,6 +13,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
+from pylob.event_ordering import (
+    DEFAULT_EVENT_ORDERING_VERSION,
+    LEGACY_LOCAL_TIME_V1,
+    validate_event_ordering_version,
+)
 
 from quant_fm.schema.cn_l2_v1 import (
     BOARDS,
@@ -21,6 +26,11 @@ from quant_fm.schema.cn_l2_v1 import (
     ORDER_TYPES,
     SESSIONS,
     SIDES,
+)
+from quant_fm.tokenizer.transforms import (
+    DEFAULT_FEATURE_TRANSFORM_VERSION,
+    FEATURE_TRANSFORM_LEGACY_V1,
+    validate_feature_transform_version,
 )
 
 PAD_ID = 0
@@ -61,6 +71,24 @@ class Vocab:
     edges: dict[str, list[float]] = field(default_factory=dict)
     schema_version: str = "cn_l2_v1"
     fit_dates: tuple[str, ...] = ()
+    event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION
+    feature_transform_version: str = DEFAULT_FEATURE_TRANSFORM_VERSION
+    data_semantics_explicit: bool = field(default=True, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        """Validate the versioned event-order and derived-feature semantics."""
+        self.event_ordering_version = validate_event_ordering_version(
+            self.event_ordering_version
+        )
+        self.feature_transform_version = validate_feature_transform_version(
+            self.feature_transform_version
+        )
+        if not self.data_semantics_explicit and (
+            self.event_ordering_version != LEGACY_LOCAL_TIME_V1
+            or self.feature_transform_version != FEATURE_TRANSFORM_LEGACY_V1
+        ):
+            msg = "implicit data semantics are reserved for legacy vocab artifacts"
+            raise ValueError(msg)
 
     # -- 规模 -----------------------------------------------------------
     def size(self, field_name: str) -> int:
@@ -105,17 +133,21 @@ class Vocab:
     # -- 读写 --------------------------------------------------------------
     def to_json(self) -> str:
         """序列化为稳定的 JSON 字符串。"""
-        return json.dumps(
-            {
-                "schema_version": self.schema_version,
-                "n_bins": self.n_bins,
-                "fit_dates": list(self.fit_dates),
-                "categorical": {k: list(v) for k, v in self.categorical.items()},
-                "edges": {k: list(v) for k, v in self.edges.items()},
-            },
-            indent=2,
-            sort_keys=True,
-        )
+        payload = {
+            "schema_version": self.schema_version,
+            "n_bins": self.n_bins,
+            "fit_dates": list(self.fit_dates),
+            "categorical": {k: list(v) for k, v in self.categorical.items()},
+            "edges": {k: list(v) for k, v in self.edges.items()},
+        }
+        if self.data_semantics_explicit:
+            payload.update(
+                {
+                    "event_ordering_version": self.event_ordering_version,
+                    "feature_transform_version": self.feature_transform_version,
+                }
+            )
+        return json.dumps(payload, indent=2, sort_keys=True)
 
     def save(self, path: Path) -> None:
         """将 ``vocab.json`` 写入 ``path``。"""
@@ -125,19 +157,39 @@ class Vocab:
     def load(cls, path: Path) -> Vocab:
         """从 ``vocab.json`` 加载词表。"""
         data = json.loads(Path(path).read_text(encoding="utf-8"))
+        ordering_explicit = "event_ordering_version" in data
+        transform_explicit = "feature_transform_version" in data
+        if ordering_explicit != transform_explicit:
+            msg = "vocab data-semantics contract must contain both version fields"
+            raise ValueError(msg)
+        semantics_explicit = ordering_explicit and transform_explicit
         return cls(
             n_bins=int(data["n_bins"]),
             categorical={k: tuple(v) for k, v in data["categorical"].items()},
             edges={k: list(v) for k, v in data["edges"].items()},
             schema_version=data.get("schema_version", "cn_l2_v1"),
             fit_dates=tuple(data.get("fit_dates", [])),
+            event_ordering_version=data.get(
+                "event_ordering_version", LEGACY_LOCAL_TIME_V1
+            ),
+            feature_transform_version=data.get(
+                "feature_transform_version", FEATURE_TRANSFORM_LEGACY_V1
+            ),
+            data_semantics_explicit=semantics_explicit,
         )
 
 
-def default_vocab(n_bins: int = 32) -> Vocab:
+def default_vocab(
+    n_bins: int = 32,
+    *,
+    event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION,
+    feature_transform_version: str = DEFAULT_FEATURE_TRANSFORM_VERSION,
+) -> Vocab:
     """返回含固定类别、空（未拟合）边界的词表。"""
     return Vocab(
         n_bins=n_bins,
         categorical=dict(CATEGORICAL_FIELDS),
         edges={f: [] for f in CONTINUOUS_FIELDS},
+        event_ordering_version=event_ordering_version,
+        feature_transform_version=feature_transform_version,
     )

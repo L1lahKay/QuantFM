@@ -1,0 +1,50 @@
+# Queue prerequisites are repeated here so the admission webhook can resolve
+# PodGroup.spec.queue during the subsequent server-side dry-run. Creating an
+# empty Queue does not create Pods or consume resources.
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+  name: khalil-volcano-smoke
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  weight: 1
+  reclaimable: true
+  capability: {cpu: "2", memory: 4Gi, nvidia.com/gpu: "1"}
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+  name: khalil-volcano-quota
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  weight: 1
+  reclaimable: true
+  capability: {cpu: "2", memory: 4Gi, nvidia.com/gpu: "1"}
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+  name: khalil-volcano-gang
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  weight: 1
+  reclaimable: true
+  capability: {cpu: "2", memory: 4Gi, nvidia.com/gpu: "1"}
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+  name: khalil-volcano-preempt
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  weight: 1
+  reclaimable: true
+  capability: {cpu: "4", memory: 8Gi, nvidia.com/gpu: "3"}

@@ -22,11 +22,15 @@ import json
 import logging
 import multiprocessing as mp
 import os
+import re
+import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import TYPE_CHECKING
 
 import polars as pl
+from pylob.event_ordering import DEFAULT_EVENT_ORDERING_VERSION
 from pylob.pipeline.config import PipelineConfig
+from pylob.pipeline.events import event_stream_contract_matches
 from pylob.pipeline.s3_io import PolarsS3Reader
 
 if TYPE_CHECKING:
@@ -46,6 +50,63 @@ from pylob.pipeline.workflow import (
 
 logger = logging.getLogger(__name__)
 
+_RETRYABLE_OBJECT_STATUS = re.compile(r"\b(?:429|500|502|503|504)\b")
+_RETRYABLE_OBJECT_ERRORS = (
+    "bad gateway",
+    "gateway timeout",
+    "service unavailable",
+    "temporarily unavailable",
+    "timed out",
+    "timeout",
+    "connection reset",
+    "connection refused",
+)
+
+
+def _is_retryable_object_error(exc: Exception) -> bool:
+    """Return whether an object-store failure is plausibly transient."""
+    message = str(exc).lower()
+    return bool(_RETRYABLE_OBJECT_STATUS.search(message)) or any(
+        fragment in message for fragment in _RETRYABLE_OBJECT_ERRORS
+    )
+
+
+def _scan_projected_object(
+    reader: PolarsS3Reader,
+    uri: str,
+    key: str,
+    sym_filter: tuple[str, ...],
+    *,
+    project: bool,
+) -> pl.DataFrame:
+    """Build and collect one lazy object scan."""
+    lf = pl.scan_parquet(uri, storage_options=reader.storage_options)
+    symbol_dtype = None
+    if project:
+        try:
+            schema = lf.collect_schema()
+            avail = set(schema.names())
+            symbol_dtype = schema.get("symbol")
+            cols = [c for c in REQUIRED_COLUMNS if c in avail]
+            if "symbol" in avail and cols:
+                lf = lf.select(cols)
+        except Exception as exc:
+            # Network errors must be retried around the complete object scan.  A
+            # local schema/projection incompatibility can still use all columns.
+            if _is_retryable_object_error(exc):
+                raise
+            logger.warning("列投影失败，退回全列读取: %s (%s)", key, exc)
+    if sym_filter:
+        # Keep the native string column in the predicate so parquet/object_store
+        # can push it into row-group filtering. cast+zfill forces a full scan.
+        if symbol_dtype == pl.String:
+            lf = lf.filter(pl.col("symbol").is_in(sym_filter))
+        else:
+            lf = lf.filter(
+                pl.col("symbol").cast(pl.String).str.zfill(6).is_in(sym_filter)
+            )
+    return lf.collect()
+
 
 def _read_one_projected(
     reader: PolarsS3Reader,
@@ -54,34 +115,40 @@ def _read_one_projected(
     symbols: tuple[str, ...],
     *,
     project: bool,
+    max_attempts: int = 4,
+    base_delay_seconds: float = 2.0,
 ) -> pl.DataFrame:
-    """读一组 object key，按 symbol 过滤 + 可选列投影，一次 ``collect``。"""
+    """读一组 object key，按 symbol 过滤并有限重试瞬时对象存储故障。"""
+    if max_attempts < 1:
+        msg = f"max_attempts must be >= 1, got {max_attempts}"
+        raise ValueError(msg)
     sym_filter = tuple(s.zfill(6) for s in symbols)
     frames: list[pl.DataFrame] = []
     for key in keys:
         uri = f"s3://{bucket}/{key.lstrip('/')}"
-        lf = pl.scan_parquet(uri, storage_options=reader.storage_options)
-        symbol_dtype = None
-        if project:
+        for attempt in range(1, max_attempts + 1):
             try:
-                schema = lf.collect_schema()
-                avail = set(schema.names())
-                symbol_dtype = schema.get("symbol")
-                cols = [c for c in REQUIRED_COLUMNS if c in avail]
-                if "symbol" in avail and cols:
-                    lf = lf.select(cols)
-            except Exception:
-                logger.warning("列投影失败，退回全列读取: %s", key)
-        if sym_filter:
-            # Keep the native string column in the predicate so parquet/object_store
-            # can push it into row-group filtering. cast+zfill forces a full scan.
-            if symbol_dtype == pl.String:
-                lf = lf.filter(pl.col("symbol").is_in(sym_filter))
-            else:
-                lf = lf.filter(
-                    pl.col("symbol").cast(pl.String).str.zfill(6).is_in(sym_filter)
+                collected = _scan_projected_object(
+                    reader,
+                    uri,
+                    key,
+                    sym_filter,
+                    project=project,
                 )
-        collected = lf.collect()
+                break
+            except Exception as exc:
+                if attempt >= max_attempts or not _is_retryable_object_error(exc):
+                    raise
+                delay = base_delay_seconds * (2 ** (attempt - 1))
+                logger.warning(
+                    "MinIO 瞬时读取失败，%.1fs 后重试 %d/%d: %s (%s)",
+                    delay,
+                    attempt + 1,
+                    max_attempts,
+                    key,
+                    exc,
+                )
+                time.sleep(delay)
         logger.info("read %d rows from %s", collected.height, key)
         frames.append(collected)
     return pl.concat(frames, how="diagonal_relaxed")
@@ -120,7 +187,9 @@ def _load_raw_once(
         return pl.read_parquet(trade_cache), pl.read_parquet(order_cache)
 
     reader = PolarsS3Reader(minio_config)
-    logger.info("单次读取 MinIO（union=%d 只，列投影=%s）", len(symbols), project_columns)
+    logger.info(
+        "单次读取 MinIO（union=%d 只，列投影=%s）", len(symbols), project_columns
+    )
     raw_trade = _read_one_projected(
         reader, bucket, trade_keys, symbols, project=project_columns
     )
@@ -152,6 +221,7 @@ def clean_day_fast(
     project_columns: bool = True,
     cut_time: int = 151000000,
     cut_serial: int | None = None,
+    event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION,
 ) -> dict[str, int | list[str]]:
     """
     单日清洗：读一次原始数据，SZ+SH 共用内存帧，在同一进程池里并行清洗。
@@ -188,8 +258,23 @@ def clean_day_fast(
     for sym in union:
         out = clean_dir / market_of[sym] / sym / "events.parquet"
         if skip_existing and out.exists():
-            skipped += 1
-            continue
+            try:
+                compatible = event_stream_contract_matches(
+                    out,
+                    version=event_ordering_version,
+                )
+            except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
+                compatible = False
+                logger.warning("invalid event contract %s: %s", out, exc)
+            if compatible:
+                skipped += 1
+                continue
+            msg = (
+                f"refusing to overwrite incompatible clean event artifact during "
+                f"resume: {out}; requested ordering={event_ordering_version}. "
+                "Use a new clean root or set skip_existing=False explicitly."
+            )
+            raise RuntimeError(msg)
         pending.append(sym)
     if skipped:
         logger.info("skip_existing: 复用 %d/%d 只", skipped, len(union))
@@ -219,6 +304,7 @@ def clean_day_fast(
             "cut_time": cut_time,
             "cut_serial": cut_serial,
             "write_debug_artifacts": False,
+            "event_ordering_version": event_ordering_version,
         }
         for sym in pending
     ]
@@ -247,7 +333,11 @@ def clean_day_fast(
             if i % 50 == 0 or i == total or (total - i) <= 20:
                 logger.info(
                     "clean progress %d/%d written=%d empty=%d errors=%d",
-                    i, total, written, empty, errors,
+                    i,
+                    total,
+                    written,
+                    empty,
+                    errors,
                 )
 
     # Retry only the failed tail once while the already-downloaded frames are alive.
@@ -288,7 +378,11 @@ def clean_day_fast(
         failed_symbols = sorted(still_failed)
     logger.info(
         "clean done(fast) date=%s written=%d empty=%d errors=%d skipped=%d",
-        date, written, empty, errors, skipped,
+        date,
+        written,
+        empty,
+        errors,
+        skipped,
     )
     failure_dir = clean_dir.parents[1] / "data" / ".failed"
     failure_path = failure_dir / f"{date}.json"

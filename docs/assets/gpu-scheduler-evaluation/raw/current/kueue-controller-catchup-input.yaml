@@ -1,0 +1,51 @@
+# Historical input captured for the 2026-07-31 controller catch-up diagnostic.
+# It intentionally omitted spec.suspend and MUST NOT be re-applied. The safe,
+# reproducible probe is k8s/scheduler-evaluation/gpu-dev/kueue-probe.yaml.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: khalil-kueue-probe-
+  namespace: gpu-dev
+  labels:
+    owner: khalil
+    experiment: gpu-scheduler-evaluation
+    kueue.x-k8s.io/queue-name: gpu-dev
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 180
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        owner: khalil
+        experiment: gpu-scheduler-evaluation
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      runtimeClassName: nvidia
+      nodeSelector:
+        accelerator: nvidia
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: probe
+          image: registry.zs/gpu-dev/dylan-trainer:ac4218e
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-ceu"]
+          args:
+            - |
+              echo "PROBE_START $(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+              nvidia-smi --query-gpu=name --format=csv,noheader
+              sleep 10
+              echo "PROBE_END $(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: 200m
+              memory: 128Mi
+              nvidia.com/gpu: "1"

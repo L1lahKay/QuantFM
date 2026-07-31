@@ -27,6 +27,9 @@ VOCAB="${VOCAB:-$TRAIN_WORKDIR/data/vocab.json}"
 TRAIN_EMB_DIR="${TRAIN_EMB_DIR:-$TRAIN_WORKDIR/embeddings}"
 TRAIN_EMB="${TRAIN_EMB:-$TRAIN_EMB_DIR/all.parquet}"
 TRAIN_PANEL="${TRAIN_PANEL:-$TRAIN_WORKDIR/panel/daily_panel.parquet}"
+TRAIN_CALENDAR="${TRAIN_CALENDAR:-}"
+TRAIN_UNIVERSE="${TRAIN_UNIVERSE:-}"
+OOS_UNIVERSE="${OOS_UNIVERSE:-}"
 SIGNAL_ARTIFACT="${SIGNAL_ARTIFACT:-$TRAIN_WORKDIR/signal_artifact}"
 TOKENS_DIR="${TOKENS_DIR:-$OOS_WORKDIR/tokens}"
 PIPELINE_LOG="${PIPELINE_LOG:-$OOS_WORKDIR/pipeline2.log}"
@@ -40,6 +43,9 @@ DELIVERY="${DELIVERY:-$OOS_WORKDIR/delivery_oos}"
 NPROC="${NPROC:-8}"
 BATCH="${BATCH:-16}"
 DTYPE="${DTYPE:-bf16}"
+CONTEXT="${CONTEXT-}"
+POOLING="${POOLING-}"
+STRIDE="${STRIDE-}"
 MIN_DAYS="${MIN_DAYS:-1}"           # 至少一个完整信号日即可开始打分
 INTERVAL="${INTERVAL:-600}"          # 巡检间隔（秒）
 TOTAL_DAYS="$(grep -cve '^[[:space:]]*$' "$DATES_FILE" 2>/dev/null || echo 61)"
@@ -84,6 +90,7 @@ score_now() {
     --ranker-metadata "$SIGNAL_ARTIFACT/ranker_metadata.json" \
     --fm-checkpoint "$CKPT" \
     --vocab "$VOCAB" \
+    --universe "$OOS_UNIVERSE" \
     --out-dir "$DELIVERY" \
     --device cuda:0 \
     && log "✅ 交付更新 → $DELIVERY（覆盖 $n_days 天）" \
@@ -94,7 +101,7 @@ log "======== 增量编排启动 (total=$TOTAL_DAYS, min_days=$MIN_DAYS, interva
 log "训练侧: emb=$TRAIN_EMB_DIR panel=$TRAIN_PANEL ckpt=$CKPT"
 log "OOS 侧: tokens=$TOKENS_DIR（生产打分不读取未来收益 panel）"
 
-for f in "$CKPT" "$VOCAB" "$TRAIN_EMB" "$TRAIN_PANEL"; do
+for f in "$CKPT" "$VOCAB" "$TRAIN_EMB" "$TRAIN_PANEL" "$TRAIN_CALENDAR" "$TRAIN_UNIVERSE" "$OOS_UNIVERSE"; do
   [[ -e "$f" ]] || { log "❌ 缺少必要输入: $f；退出。"; exit 1; }
 done
 
@@ -103,6 +110,8 @@ if [[ ! -f "$SIGNAL_ARTIFACT/ranker.pt" ]]; then
   uv run python -m quant_fm.signal.train \
     --embeddings "$TRAIN_EMB" \
     --panel "$TRAIN_PANEL" \
+    --calendar "$TRAIN_CALENDAR" \
+    --universe "$TRAIN_UNIVERSE" \
     --out-dir "$SIGNAL_ARTIFACT" \
     --device cuda:0 || exit 1
 fi
@@ -134,22 +143,39 @@ while true; do
     log "多卡抽 embedding（$n_new 新天）…"
     if WORKDIR="$OOS_WORKDIR" CKPT="$CKPT" MANIFEST="$cycle/manifest.json" \
        EMB_DIR="$cycle" SPLIT=test NPROC="$NPROC" BATCH="$BATCH" DTYPE="$DTYPE" \
+       CONTEXT="$CONTEXT" POOLING="$POOLING" STRIDE="$STRIDE" \
        bash quant_fm/scripts/extract_embeddings_parallel.sh; then
       # 3) 累积进 oos_all.parquet（去重保最新）+ 记账
       uv run python - "$cycle/test.parquet" "$OOS_ALL" <<'PY'
 import sys
 from pathlib import Path
 import polars as pl
+from quant_fm.embedding.contract import (
+    load_compatible_embedding_contracts,
+    validate_embedding_columns,
+    write_embedding_contract,
+)
 new_p, all_p = Path(sys.argv[1]), Path(sys.argv[2])
 new = pl.read_parquet(new_p)
+contract_sources = [new_p]
 if all_p.exists():
     old = pl.read_parquet(all_p)
+    contract_sources.insert(0, all_p)
     merged = pl.concat([old, new], how="vertical_relaxed")
     merged = merged.unique(subset=["date", "symbol"], keep="last")
 else:
     merged = new
 merged = merged.sort(["date", "symbol"])
+contract = load_compatible_embedding_contracts(
+    contract_sources,
+    required=True,
+    context="incremental OOS embeddings",
+)
+if contract is None:
+    raise SystemExit("missing incremental OOS embedding representation contract")
 merged.write_parquet(all_p)
+validate_embedding_columns(merged.columns, contract, context=str(all_p))
+write_embedding_contract(all_p, contract)
 print(f"oos_all rows={merged.height} days={merged['date'].n_unique()}")
 PY
       cat "$new_tmp" >> "$EMBEDDED_DATES"

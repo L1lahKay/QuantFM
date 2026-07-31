@@ -12,7 +12,7 @@
 
 随后运行 ``python -m quant_fm.pretrain.train --config ...`` 进行预训练。
 
-MinIO 凭据见 ``docs/minio_setup.md`` 与 ``quant_fm/scripts/minio_env.example.sh``：
+MinIO 凭据见 ``docs/data/minio_setup.md`` 与 ``quant_fm/scripts/minio_env.example.sh``：
 
 - 读原始 L2：``zeus-cn-quote`` @ ``192.168.2.11:9000``（代码默认，无需配）
 - 写产物：``model-cache`` @ ``192.168.2.11:9100``（上传脚本自动用）

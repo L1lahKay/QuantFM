@@ -1,0 +1,65 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: khalil-bare-quota-holder
+  namespace: gpu-dev
+  labels:
+    owner: khalil
+    experiment: bare-current-quota
+    role: holder
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 120
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        owner: khalil
+        experiment: bare-current-quota
+        role: holder
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      schedulerName: default-scheduler
+      runtimeClassName: nvidia
+      nodeSelector:
+        accelerator: nvidia
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      terminationGracePeriodSeconds: 0
+      containers:
+        - name: holder
+          image: registry.zs/gpu-dev/dylan-trainer:ac4218e
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-ceu"]
+          args:
+            - |
+              python - <<'PY'
+              import datetime
+              import time
+              import torch
+
+              print(f"APP_START_UTC={datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')}", flush=True)
+              count = torch.cuda.device_count()
+              print(f"VISIBLE_GPU_COUNT={count}", flush=True)
+              assert count == 4, count
+              values = []
+              for index in range(count):
+                  value = torch.ones(1024, device=f"cuda:{index}").sum()
+                  values.append(int(value.item()))
+              torch.cuda.synchronize()
+              print(f"CUDA_DEVICE_RESULTS={values}", flush=True)
+              time.sleep(18)
+              print(f"APP_FINISH_UTC={datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')}", flush=True)
+              PY
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+              nvidia.com/gpu: "4"
+            limits:
+              cpu: "2"
+              memory: 2Gi
+              nvidia.com/gpu: "4"

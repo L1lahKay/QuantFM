@@ -1,0 +1,14 @@
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+  name: khalil-volcano-smoke
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  weight: 1
+  reclaimable: true
+  capability:
+    cpu: "2"
+    memory: 4Gi
+    nvidia.com/gpu: "1"

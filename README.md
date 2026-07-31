@@ -83,7 +83,7 @@ source ~/.minio_fm_env.sh
 make check-minio
 ```
 
-凭据文件不得提交到仓库。配置说明见 [MinIO 读写指南](docs/minio_setup.md)。
+凭据文件不得提交到仓库。配置说明见 [MinIO 读写指南](docs/data/minio_setup.md)。
 
 ### 2. Pilot 数据准备与训练
 
@@ -123,6 +123,12 @@ QuantFM/
 │   └── pylob/                # 撮合、回放与 MinIO 清洗子项目
 ├── docs/
 │   ├── pipeline/             # Pipeline 逐阶段文档
+│   ├── architecture/         # 模型、Tokenizer 与 Loss 设计
+│   ├── data/                 # MinIO 与数据加工流程
+│   ├── evaluation/           # OOS、信号与回测契约
+│   ├── operations/           # 集群、存储与训练运维
+│   ├── project/              # 进展、分支说明与计划
+│   ├── research/             # 调研和历史方案
 │   └── README.md             # 全部文档索引
 ├── examples/                 # 数据清洗与 notebook 示例
 ├── tests/                    # 撮合、数据管线与 FM 回归测试
@@ -196,11 +202,11 @@ MoE 仍有待实证的训练边界：训练模式发生 capacity overflow 时，
 
 ## 文档入口
 
-- [当前分支工作说明](docs/BRANCH_WORK.md)
+- [当前分支工作说明](docs/project/BRANCH_WORK.md)
 - [项目与阅读指南](docs/QuantFM.md)
 - [Pipeline 逐阶段文档](docs/pipeline/README.md)
 - [复现与验证指南](docs/REPRODUCIBILITY.md)
-- [MinIO 读写配置](docs/minio_setup.md)
+- [MinIO 读写配置](docs/data/minio_setup.md)
 - [文档总索引](docs/README.md)
 - [OrderFlow FM 包说明](quant_fm/README.md)
 - [PyLOB 子项目说明](order_book/README.md)

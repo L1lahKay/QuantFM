@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bare-over-quota-2gpu
+  namespace: khalil-quota-bench
+  labels:
+    owner: khalil
+    experiment: bare-quota
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 60
+  template:
+    metadata:
+      labels:
+        owner: khalil
+        experiment: bare-quota
+    spec:
+      restartPolicy: Never
+      runtimeClassName: nvidia
+      nodeSelector:
+        accelerator: nvidia
+      containers:
+        - name: over-quota
+          image: ubuntu:22.04
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-lc"]
+          args: ["echo SHOULD_NOT_RUN; sleep 5"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+              nvidia.com/gpu: "2"
+            limits:
+              cpu: 500m
+              memory: 256Mi
+              nvidia.com/gpu: "2"

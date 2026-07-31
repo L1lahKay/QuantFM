@@ -1,0 +1,2 @@
+Error from server (NotFound): priorityclasses.scheduling.k8s.io "khalil-volcano-low" not found
+Error from server (NotFound): priorityclasses.scheduling.k8s.io "khalil-volcano-high" not found

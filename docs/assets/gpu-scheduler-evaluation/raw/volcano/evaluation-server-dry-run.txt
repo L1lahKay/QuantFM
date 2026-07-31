@@ -1,0 +1,32 @@
+DRY_RUN 00-queues.yaml
+queue.scheduling.volcano.sh/khalil-volcano-smoke unchanged (server dry run)
+queue.scheduling.volcano.sh/khalil-volcano-quota unchanged (server dry run)
+queue.scheduling.volcano.sh/khalil-volcano-gang unchanged (server dry run)
+queue.scheduling.volcano.sh/khalil-volcano-preempt unchanged (server dry run)
+DRY_RUN 01-smoke.yaml
+queue.scheduling.volcano.sh/khalil-volcano-smoke unchanged (server dry run)
+podgroup.scheduling.volcano.sh/khalil-volcano-smoke-pg created (server dry run)
+job.batch/khalil-volcano-smoke created (server dry run)
+DRY_RUN 02-queue-base.yaml
+queue.scheduling.volcano.sh/khalil-volcano-quota unchanged (server dry run)
+podgroup.scheduling.volcano.sh/khalil-volcano-quota-holder-pg created (server dry run)
+podgroup.scheduling.volcano.sh/khalil-volcano-quota-waiter-pg created (server dry run)
+DRY_RUN 03-queue-holder.yaml
+job.batch/khalil-volcano-quota-holder created (server dry run)
+DRY_RUN 04-queue-waiter.yaml
+job.batch/khalil-volcano-quota-waiter created (server dry run)
+DRY_RUN 05-gang.yaml
+queue.scheduling.volcano.sh/khalil-volcano-gang unchanged (server dry run)
+podgroup.scheduling.volcano.sh/khalil-volcano-gang-pg created (server dry run)
+job.batch/khalil-volcano-gang created (server dry run)
+DRY_RUN 06-priorityclasses.yaml
+priorityclass.scheduling.k8s.io/khalil-volcano-low configured (server dry run)
+priorityclass.scheduling.k8s.io/khalil-volcano-high configured (server dry run)
+DRY_RUN 07-preempt-base.yaml
+queue.scheduling.volcano.sh/khalil-volcano-preempt unchanged (server dry run)
+podgroup.scheduling.volcano.sh/khalil-volcano-preempt-victim-pg created (server dry run)
+podgroup.scheduling.volcano.sh/khalil-volcano-preempt-high-pg created (server dry run)
+DRY_RUN 08-preempt-victim.yaml
+job.batch/khalil-volcano-preempt-victim created (server dry run)
+DRY_RUN 10-preempt-high.yaml
+job.batch/khalil-volcano-preempt-high created (server dry run)

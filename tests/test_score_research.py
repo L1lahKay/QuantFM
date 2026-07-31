@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+from datetime import date as calendar_date
+from datetime import timedelta
 
 import numpy as np
 import polars as pl
@@ -16,8 +18,44 @@ from quant_fm.downstream.portfolio_simulator import (
     PortfolioConfig,
     simulate_buffered_topk,
 )
+from quant_fm.downstream.return_spec import (
+    EXECUTION_CONTRACT_VERSION,
+    trading_calendar_sha256,
+)
 from quant_fm.downstream.risk_attribution import residualize_returns
 from quant_fm.downstream.run_score_evaluation import evaluate_scores
+
+
+def _strict_execution_panel(panel: pl.DataFrame) -> pl.DataFrame:
+    signal_dates = panel["date"].cast(pl.Utf8).to_list()
+    first = min(calendar_date.fromisoformat(value) for value in signal_dates)
+    last = max(calendar_date.fromisoformat(value) for value in signal_dates)
+    calendar = [
+        (first + timedelta(days=offset)).isoformat()
+        for offset in range((last - first).days + 3)
+    ]
+    positions = {value: index for index, value in enumerate(calendar)}
+    signal_indices = [positions[value] for value in signal_dates]
+    entry_indices = [index + 1 for index in signal_indices]
+    exit_indices = [index + 2 for index in signal_indices]
+    entry_dates = [calendar[index] for index in entry_indices]
+    exit_dates = [calendar[index] for index in exit_indices]
+    return panel.with_columns(
+        pl.lit(EXECUTION_CONTRACT_VERSION).alias("execution_contract_version"),
+        pl.lit("vwap_t1_vwap_t2").alias("return_spec"),
+        pl.lit("available_after_signal_date_close").alias("signal_availability"),
+        pl.lit(1).cast(pl.Int32).alias("entry_day_lag"),
+        pl.lit(2).cast(pl.Int32).alias("exit_day_lag"),
+        pl.Series("entry_date", entry_dates),
+        pl.Series("exit_date", exit_dates),
+        pl.lit("vwap").alias("entry_price_field"),
+        pl.lit("vwap").alias("exit_price_field"),
+        pl.lit(trading_calendar_sha256(calendar)).alias("trading_calendar_sha256"),
+        pl.lit(len(calendar)).cast(pl.Int32).alias("calendar_date_count"),
+        pl.Series("signal_calendar_index", signal_indices, dtype=pl.Int32),
+        pl.Series("entry_calendar_index", entry_indices, dtype=pl.Int32),
+        pl.Series("exit_calendar_index", exit_indices, dtype=pl.Int32),
+    )
 
 
 def test_quantiles_and_ic_statistics() -> None:
@@ -129,7 +167,7 @@ def test_newey_west_statistic_is_finite() -> None:
 
 def test_ranker_early_stopping_restores_best_epoch() -> None:
     pytest.importorskip("torch")
-    from quant_fm.downstream.train_ranker import fit_ranker
+    from quant_fm.downstream.train_ranker import RankerObjectiveConfig, fit_ranker
 
     def features(dates: list[str]) -> pl.DataFrame:
         rows = []
@@ -158,6 +196,7 @@ def test_ranker_early_stopping_restores_best_epoch() -> None:
         use_attention=False,
         device="cpu",
         seed=7,
+        objective=RankerObjectiveConfig(aux_huber_weight=0.0),
     )
     assert result.stopped_early
     assert result.best_epoch == 0
@@ -191,11 +230,13 @@ def test_score_evaluation_rejects_missing_horizon_and_writes_report(tmp_path) ->
             for index in range(20)
         ]
     )
-    panel = scores.select(["date", "symbol"]).with_columns(
-        (pl.col("symbol").cast(pl.Int64) / 1000).alias("fwd_ret"),
-        pl.lit(True).alias("eligible_at_signal"),
-        pl.lit(True).alias("entry_fillable"),
-        pl.lit(True).alias("exit_fillable"),
+    panel = _strict_execution_panel(
+        scores.select(["date", "symbol"]).with_columns(
+            (pl.col("symbol").cast(pl.Int64) / 1000).alias("fwd_ret"),
+            pl.lit(True).alias("eligible_at_signal"),
+            pl.lit(True).alias("entry_fillable"),
+            pl.lit(True).alias("exit_fillable"),
+        )
     )
     scores_path = tmp_path / "scores.parquet"
     panel_path = tmp_path / "panel.parquet"
@@ -220,6 +261,11 @@ def test_score_evaluation_rejects_missing_horizon_and_writes_report(tmp_path) ->
     )
     assert metrics.exists()
     assert (tmp_path / "good" / "topk_grid.parquet").exists()
+    assert (tmp_path / "good" / "daily_head_metrics.parquet").exists()
+    report = json.loads(metrics.read_text())
+    assert report["head_ranking"]["ndcg_50"] == pytest.approx(1.0)
+    assert report["head_ranking"]["ndcg_300"] == pytest.approx(1.0)
+    assert report["head_ranking"]["ndcg_350"] == pytest.approx(1.0)
 
 
 def test_strict_evaluation_checks_label_coverage_and_writes_no_nan(tmp_path) -> None:
@@ -230,11 +276,13 @@ def test_strict_evaluation_checks_label_coverage_and_writes_no_nan(tmp_path) -> 
             "score": [float(index) for index in range(5)],
         }
     )
-    panel = scores.select(["date", "symbol"]).with_columns(
-        pl.Series("fwd_ret", [0.0, 0.01, 0.02, 0.03, None]),
-        pl.lit(True).alias("eligible_at_signal"),
-        pl.lit(True).alias("entry_fillable"),
-        pl.lit(True).alias("exit_fillable"),
+    panel = _strict_execution_panel(
+        scores.select(["date", "symbol"]).with_columns(
+            pl.Series("fwd_ret", [0.0, 0.01, 0.02, 0.03, None]),
+            pl.lit(True).alias("eligible_at_signal"),
+            pl.lit(True).alias("entry_fillable"),
+            pl.lit(True).alias("exit_fillable"),
+        )
     )
     scores_path = tmp_path / "scores.parquet"
     panel_path = tmp_path / "panel.parquet"
@@ -282,11 +330,13 @@ def test_strict_evaluation_requires_three_names_and_nonzero_ic_periods(
             "score": [1.0, 2.0],
         }
     )
-    panel = scores.select(["date", "symbol"]).with_columns(
-        pl.Series("fwd_ret", [0.01, 0.02]),
-        pl.lit(True).alias("eligible_at_signal"),
-        pl.lit(True).alias("entry_fillable"),
-        pl.lit(True).alias("exit_fillable"),
+    panel = _strict_execution_panel(
+        scores.select(["date", "symbol"]).with_columns(
+            pl.Series("fwd_ret", [0.01, 0.02]),
+            pl.lit(True).alias("eligible_at_signal"),
+            pl.lit(True).alias("entry_fillable"),
+            pl.lit(True).alias("exit_fillable"),
+        )
     )
     scores_path = tmp_path / "small_scores.parquet"
     panel_path = tmp_path / "small_panel.parquet"
@@ -317,11 +367,13 @@ def test_score_evaluation_rejects_invalid_scores(tmp_path, bad_score) -> None:
             "score": [1.0, 2.0, bad_score],
         }
     )
-    panel = scores.select(["date", "symbol"]).with_columns(
-        pl.Series("fwd_ret", [0.01, 0.02, 0.03]),
-        pl.lit(True).alias("eligible_at_signal"),
-        pl.lit(True).alias("entry_fillable"),
-        pl.lit(True).alias("exit_fillable"),
+    panel = _strict_execution_panel(
+        scores.select(["date", "symbol"]).with_columns(
+            pl.Series("fwd_ret", [0.01, 0.02, 0.03]),
+            pl.lit(True).alias("eligible_at_signal"),
+            pl.lit(True).alias("entry_fillable"),
+            pl.lit(True).alias("exit_fillable"),
+        )
     )
     scores_path = tmp_path / "invalid_scores.parquet"
     panel_path = tmp_path / "panel.parquet"
@@ -333,4 +385,82 @@ def test_score_evaluation_rejects_invalid_scores(tmp_path, bad_score) -> None:
             scores_path=scores_path,
             panel_path=panel_path,
             out_dir=tmp_path / "invalid",
+        )
+
+
+def test_score_evaluation_rejects_unverified_legacy_panel(tmp_path) -> None:
+    scores = pl.DataFrame(
+        {
+            "date": ["2026-01-05"] * 3,
+            "symbol": ["000001", "000002", "000003"],
+            "score": [1.0, 2.0, 3.0],
+        }
+    )
+    panel = scores.select(["date", "symbol"]).with_columns(
+        pl.Series("fwd_ret", [0.01, 0.02, 0.03]),
+        pl.lit(True).alias("eligible_at_signal"),
+    )
+    scores_path = tmp_path / "scores.parquet"
+    panel_path = tmp_path / "legacy_panel.parquet"
+    scores.write_parquet(scores_path)
+    panel.write_parquet(panel_path)
+
+    with pytest.raises(ValueError, match="strict tradable evaluation"):
+        evaluate_scores(
+            scores_path=scores_path,
+            panel_path=panel_path,
+            out_dir=tmp_path / "evaluation",
+        )
+
+
+def test_score_evaluation_reverifies_supplied_execution_calendar(tmp_path) -> None:
+    scores = pl.DataFrame(
+        {
+            "date": ["2026-01-05"] * 3,
+            "symbol": ["000001", "000002", "000003"],
+            "score": [1.0, 2.0, 3.0],
+        }
+    )
+    panel = _strict_execution_panel(
+        scores.select(["date", "symbol"]).with_columns(
+            pl.Series("fwd_ret", [0.01, 0.02, 0.03]),
+            pl.lit(True).alias("eligible_at_signal"),
+            pl.lit(True).alias("entry_fillable"),
+            pl.lit(True).alias("exit_fillable"),
+        )
+    )
+    scores_path = tmp_path / "scores.parquet"
+    panel_path = tmp_path / "panel.parquet"
+    calendar_path = tmp_path / "calendar.txt"
+    scores.write_parquet(scores_path)
+    panel.write_parquet(panel_path)
+    calendar_path.write_text("2026-01-05\n2026-01-06\n2026-01-07\n", encoding="utf-8")
+
+    evaluate_scores(
+        scores_path=scores_path,
+        panel_path=panel_path,
+        calendar_path=calendar_path,
+        out_dir=tmp_path / "verified",
+        top_ks=[3],
+        rebalance_intervals=[1],
+        smoothing_windows=[1],
+        cost_bps=[0.0],
+    )
+    manifest = json.loads(
+        (tmp_path / "verified" / "evaluation_manifest.json").read_text()
+    )
+    assert manifest["execution_contract"]["calendar_reverified"] is True
+    assert manifest["calendar"]["path"] == str(calendar_path.resolve())
+
+    calendar_path.write_text("2026-01-05\n2026-01-06\n2026-01-08\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="does not match the supplied calendar"):
+        evaluate_scores(
+            scores_path=scores_path,
+            panel_path=panel_path,
+            calendar_path=calendar_path,
+            out_dir=tmp_path / "mismatched",
+            top_ks=[3],
+            rebalance_intervals=[1],
+            smoothing_windows=[1],
+            cost_bps=[0.0],
         )

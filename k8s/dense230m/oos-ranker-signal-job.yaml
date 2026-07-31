@@ -1,0 +1,83 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dense230m-oos-signal-20260728
+  namespace: khalil
+  labels:
+    app: quantfm
+    model: dense230m-v1
+    stage: oos-signal
+spec:
+  suspend: true
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 604800
+  template:
+    metadata:
+      labels:
+        app: quantfm
+        model: dense230m-v1
+        stage: oos-signal
+    spec:
+      restartPolicy: Never
+      runtimeClassName: nvidia
+      nodeSelector:
+        accelerator: nvidia
+      securityContext:
+        runAsUser: 1006
+        runAsGroup: 1009
+        fsGroup: 1009
+      containers:
+        - name: oos-signal
+          image: ubuntu:22.04
+          imagePullPolicy: IfNotPresent
+          workingDir: /home/khalil/DataCleaning7.3/QuantFM
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: OMP_NUM_THREADS
+              value: "2"
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              python_bin=/home/khalil/DataCleaning7.3/QuantFM/.venv/bin/python
+              "$python_bin" -m quant_fm.scripts.k8s_dense230m_embeddings \
+                --checkpoint quant_fm/runs/dense_230m_v1/run/best.pt \
+                --manifest quant_fm/runs/oos2026_dense230/data/manifest.json \
+                --emb-dir quant_fm/runs/oos2026_dense230/embeddings \
+                --splits test \
+                --num-gpus 8 \
+                --batch-size 16
+
+              "$python_bin" -m quant_fm.scripts.build_oos_delivery \
+                --train-emb-dir quant_fm/runs/dense_230m_v1/embeddings \
+                --train-panel quant_fm/runs/cont60/panel/daily_panel_cont60.parquet \
+                --test-emb quant_fm/runs/oos2026_dense230/embeddings/all.parquet \
+                --out-dir quant_fm/runs/oos2026_dense230/delivery_oos \
+                --epochs 30 \
+                --seed 42 \
+                --device cuda:0 \
+                --min-names-per-day 20
+          resources:
+            requests:
+              cpu: "16"
+              memory: 64Gi
+              nvidia.com/gpu: "8"
+            limits:
+              cpu: "20"
+              memory: 128Gi
+              nvidia.com/gpu: "8"
+          volumeMounts:
+            - name: project
+              mountPath: /home/khalil/DataCleaning7.3/QuantFM
+            - name: uv-python
+              mountPath: /home/khalil/.local/share/uv/python
+              readOnly: true
+      volumes:
+        - name: project
+          hostPath:
+            path: /home/khalil/DataCleaning7.3/QuantFM
+            type: Directory
+        - name: uv-python
+          hostPath:
+            path: /home/khalil/.local/share/uv/python
+            type: Directory

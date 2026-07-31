@@ -9,7 +9,10 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import polars as pl
+from pylob.event_ordering import validate_order_if_present
 
+from quant_fm.tokenizer.artifact_contract import write_token_contract
+from quant_fm.tokenizer.storage_encoding_v2 import quantize_frame_v2
 from quant_fm.tokenizer.transforms import DERIVED_CONTINUOUS, add_derived_fields
 from quant_fm.tokenizer.vocab_v2 import N_SPECIAL, NA_ID, UNK_ID
 
@@ -38,7 +41,10 @@ def _prepare_frame(events: pl.DataFrame, vocab: VocabV2) -> pl.DataFrame:
     required = {spec.source for spec in vocab.field_specs}
     missing = required - set(events.columns)
     if missing & set(DERIVED_CONTINUOUS):
-        events = add_derived_fields(events)
+        events = add_derived_fields(
+            events,
+            transform_version=vocab.feature_transform_version,
+        )
         missing = required - set(events.columns)
     if missing:
         msg = f"events missing frozen v2 sources: {sorted(missing)}"
@@ -74,6 +80,7 @@ def tokenize_frame_v2(events: pl.DataFrame, vocab: VocabV2) -> pl.DataFrame:
     数值字段同时输出 ``tok_*_bin`` 和冻结标准化的 ``val_*``。缺失标量写 0，
     但对应 token 明确写 ``NA_ID``，因此真实数值 0 不会与缺失混淆。
     """
+    validate_order_if_present(events, version=vocab.event_ordering_version)
     frame = _prepare_frame(events, vocab)
     output: dict[str, np.ndarray] = {}
 
@@ -105,11 +112,24 @@ def tokenize_frame_v2(events: pl.DataFrame, vocab: VocabV2) -> pl.DataFrame:
 
 
 def tokenize_path_v2(src: Path, dst: Path, vocab: VocabV2) -> int:
-    """分词一个 v2 parquet shard 并返回事件数。"""
+    """分词并用窄 token/Q16 scalar 写出一个 v2 parquet shard。"""
     tokens = tokenize_frame_v2(pl.read_parquet(src), vocab)
+    encoded, storage_metadata = quantize_frame_v2(tokens, vocab)
     destination = Path(dst)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    tokens.write_parquet(destination)
+    temporary = destination.with_suffix(".parquet.tmp")
+    encoded.write_parquet(
+        temporary,
+        compression="zstd",
+        compression_level=3,
+        statistics=True,
+    )
+    temporary.replace(destination)
+    write_token_contract(
+        destination,
+        vocab,
+        storage_encoding=storage_metadata.to_dict(),
+    )
     return tokens.height
 
 

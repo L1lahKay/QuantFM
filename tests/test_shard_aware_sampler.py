@@ -43,3 +43,27 @@ def test_sampler_cyclically_pads_when_dataset_is_smaller_than_world() -> None:
 
     assert [len(sampler) for sampler in samplers] == [1, 1, 1, 1]
     assert [list(sampler) for sampler in samplers] == [[0], [0], [0], [0]]
+
+
+def test_sampler_can_pad_each_rank_to_complete_optimizer_updates() -> None:
+    class _TenWindows:
+        def __len__(self) -> int:
+            return 10
+
+        def window_shard_index(self, index: int) -> int:
+            return index // 2
+
+    samplers = [
+        ShardAwareDistributedSampler(
+            _TenWindows(),
+            num_replicas=2,
+            rank=rank,
+            shuffle=False,
+            drop_last=False,
+            samples_per_rank_multiple=4,
+        )
+        for rank in range(2)
+    ]
+    values = [list(sampler) for sampler in samplers]
+    assert [len(items) for items in values] == [8, 8]
+    assert set(values[0] + values[1]) == set(range(len(_TenWindows())))

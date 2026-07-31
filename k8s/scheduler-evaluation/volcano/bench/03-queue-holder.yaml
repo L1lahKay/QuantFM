@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  namespace: gpu-dev
+  name: khalil-volcano-quota-holder
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 120
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        evaluation.quantfm/owner: khalil
+        evaluation.quantfm/suite: volcano-v1-15-1
+        evaluation.quantfm/scenario: queue-holder
+      annotations:
+        scheduling.k8s.io/group-name: khalil-volcano-quota-holder-pg
+    spec:
+      schedulerName: volcano
+      runtimeClassName: nvidia
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 2
+      nodeSelector:
+        accelerator: nvidia
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: holder
+          image: registry.zs/gpu-dev/dylan-trainer:ac4218e
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              echo "APP_START_UTC=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+              echo "VISIBLE_GPU_COUNT=$(nvidia-smi -L | wc -l)"
+              sleep 30
+              echo "APP_FINISH_UTC=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: 250m
+              memory: 256Mi
+              nvidia.com/gpu: "1"

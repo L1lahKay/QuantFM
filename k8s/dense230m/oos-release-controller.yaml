@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dense230m-oos-release
+  namespace: khalil
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: dense230m-oos-release
+  namespace: khalil
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    resourceNames:
+      - dense230m-historical-embeddings-20260728
+      - dense230m-oos-signal-20260728
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dense230m-oos-release
+  namespace: khalil
+subjects:
+  - kind: ServiceAccount
+    name: dense230m-oos-release
+    namespace: khalil
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: dense230m-oos-release
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dense230m-oos-release-v2-20260728
+  namespace: khalil
+  labels:
+    app: quantfm
+    model: dense230m-v1
+    stage: oos-release
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 604800
+  template:
+    metadata:
+      labels:
+        app: quantfm
+        model: dense230m-v1
+        stage: oos-release
+    spec:
+      serviceAccountName: dense230m-oos-release
+      restartPolicy: Never
+      nodeSelector:
+        accelerator: nvidia
+      securityContext:
+        runAsUser: 1006
+        runAsGroup: 1009
+        fsGroup: 1009
+      containers:
+        - name: release
+          image: ubuntu:22.04
+          imagePullPolicy: IfNotPresent
+          workingDir: /home/khalil/DataCleaning7.3/QuantFM
+          env:
+            - name: HOME
+              value: /tmp
+            - name: K3S_DATA_DIR
+              value: /tmp/k3s-data
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              mkdir -p "$K3S_DATA_DIR"
+              expected_days=61
+              done_dir=quant_fm/runs/oos2026_dense230/data/.done
+              manifest=quant_fm/runs/oos2026_dense230/data/manifest.json
+              historical_job=dense230m-historical-embeddings-20260728
+              oos_job=dense230m-oos-signal-20260728
+
+              while true; do
+                historical_complete="$(kubectl -n khalil get job "$historical_job" -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}')"
+                done_days=0
+                if [ -d "$done_dir" ]; then
+                  done_days="$(find "$done_dir" -maxdepth 1 -type f | wc -l)"
+                fi
+                manifest_bytes=0
+                if [ -f "$manifest" ]; then
+                  manifest_bytes="$(wc -c < "$manifest")"
+                fi
+                echo "[$(date -Is)] historical=$historical_complete done_days=$done_days/$expected_days manifest_bytes=$manifest_bytes"
+
+                if [ "$historical_complete" = "True" ] && \
+                   [ "$done_days" -ge "$expected_days" ] && \
+                   [ "$manifest_bytes" -gt 1000 ]; then
+                  kubectl -n khalil patch job "$oos_job" --type=merge -p '{"spec":{"suspend":false}}'
+                  echo "[$(date -Is)] released $oos_job"
+                  exit 0
+                fi
+                sleep 120
+              done
+          resources:
+            requests:
+              cpu: "100m"
+              memory: 128Mi
+            limits:
+              cpu: "500m"
+              memory: 512Mi
+          volumeMounts:
+            - name: project
+              mountPath: /home/khalil/DataCleaning7.3/QuantFM
+              readOnly: true
+            - name: kubectl
+              mountPath: /usr/local/bin/kubectl
+              readOnly: true
+      volumes:
+        - name: project
+          hostPath:
+            path: /home/khalil/DataCleaning7.3/QuantFM
+            type: Directory
+        - name: kubectl
+          hostPath:
+            path: /usr/local/bin/k3s
+            type: File

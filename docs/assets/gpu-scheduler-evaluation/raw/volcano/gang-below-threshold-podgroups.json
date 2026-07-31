@@ -1,0 +1,50 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "scheduling.volcano.sh/v1beta1",
+            "kind": "PodGroup",
+            "metadata": {
+                "annotations": {
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"scheduling.volcano.sh/v1beta1\",\"kind\":\"PodGroup\",\"metadata\":{\"annotations\":{},\"labels\":{\"evaluation.quantfm/owner\":\"khalil\",\"evaluation.quantfm/suite\":\"volcano-v1-15-1\"},\"name\":\"khalil-volcano-gang-pg\",\"namespace\":\"gpu-dev\"},\"spec\":{\"minMember\":2,\"minResources\":{\"cpu\":\"200m\",\"memory\":\"256Mi\",\"nvidia.com/gpu\":\"2\"},\"queue\":\"khalil-volcano-gang\"}}\n"
+                },
+                "creationTimestamp": "2026-07-31T07:41:42Z",
+                "generation": 3,
+                "labels": {
+                    "evaluation.quantfm/owner": "khalil",
+                    "evaluation.quantfm/suite": "volcano-v1-15-1"
+                },
+                "name": "khalil-volcano-gang-pg",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27882267",
+                "uid": "aef2dd3a-fe24-4f9e-b985-66e27b964a6c"
+            },
+            "spec": {
+                "minMember": 2,
+                "minResources": {
+                    "cpu": "200m",
+                    "memory": "256Mi",
+                    "nvidia.com/gpu": "2"
+                },
+                "queue": "khalil-volcano-gang"
+            },
+            "status": {
+                "conditions": [
+                    {
+                        "lastTransitionTime": "2026-07-31T07:41:43Z",
+                        "message": "2/2 tasks in gang unschedulable: pod group is not ready, 2 Pending, 2 minAvailable; Pending: 2 Unschedulable",
+                        "reason": "NotEnoughResources",
+                        "status": "True",
+                        "transitionID": "aed1030f-1da0-4f6e-8fec-f85e68a1b465",
+                        "type": "Unschedulable"
+                    }
+                ],
+                "phase": "Pending"
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

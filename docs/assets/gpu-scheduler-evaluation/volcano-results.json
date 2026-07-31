@@ -1,0 +1,318 @@
+{
+  "captured_at_utc": "2026-07-31T07:48:18.667Z",
+  "evidence_scope": "N=1 functional evaluation on the live single-node GPU cluster",
+  "access": {
+    "kubeconfig_path": "/etc/rancher/k3s/k3s.yaml",
+    "context": "default",
+    "namespace": "gpu-dev",
+    "credential_content_captured_or_committed": false,
+    "authorization_scope": "User-authorized Volcano maintenance evaluation only"
+  },
+  "cluster": {
+    "kubernetes": "v1.35.4+k3s1",
+    "node": "gpu-dev-01",
+    "node_gpu_allocatable": 8,
+    "node_accelerator_label": "nvidia",
+    "namespace_gpu_quota_hard": 4,
+    "preflight_running_gpu_request_total": 0
+  },
+  "installation": {
+    "version": "v1.15.1",
+    "manifest": "k8s/scheduler-evaluation/volcano/upstream/volcano-development-v1.15.1.yaml",
+    "manifest_sha256": "b5fb45a57bcd1132be7055354999d244266873710609afd1f162005772d15c41",
+    "server_side_dry_run_object_count": 43,
+    "install_begin_at": "2026-07-31T07:16:25.769Z",
+    "kubectl_apply_return_at": "2026-07-31T07:16:28.274Z",
+    "kubectl_apply_rtt_seconds": 2.505,
+    "last_deployment_available_at": "2026-07-31T07:16:45Z",
+    "install_begin_to_last_deployment_available_seconds": 19.231,
+    "time_precision_note": "Deployment condition timestamps have one-second precision",
+    "volcano_crds_established": 11,
+    "volcano_webhook_configurations_with_ca_bundle": 7,
+    "volcano_endpoint_slices": 3,
+    "volcano_ready_endpoint_addresses": 3,
+    "deployments": {
+      "volcano-admission": {
+        "image": "docker.io/volcanosh/vc-webhook-manager:v1.15.1",
+        "ready": "1/1",
+        "created_at": "2026-07-31T07:16:27Z",
+        "available_at": "2026-07-31T07:16:45Z"
+      },
+      "volcano-controllers": {
+        "image": "docker.io/volcanosh/vc-controller-manager:v1.15.1",
+        "ready": "1/1",
+        "created_at": "2026-07-31T07:16:27Z",
+        "available_at": "2026-07-31T07:16:41Z"
+      },
+      "volcano-scheduler": {
+        "image": "docker.io/volcanosh/vc-scheduler:v1.15.1",
+        "ready": "1/1",
+        "created_at": "2026-07-31T07:16:27Z",
+        "available_at": "2026-07-31T07:16:41Z"
+      }
+    },
+    "admission_init_job": "Complete",
+    "default_scheduler_actions": [
+      "enqueue",
+      "allocate",
+      "backfill"
+    ],
+    "kueue_coexistence": {
+      "deployment": "kueue-controller-manager",
+      "image": "k8s.m.daocloud.io/kueue/kueue:v0.19.0",
+      "ready": "1/1"
+    }
+  },
+  "gpu_cuda_smoke": {
+    "effective": true,
+    "job": "khalil-volcano-smoke",
+    "job_uid": "65bbe070-ad97-44d3-b8bc-f55eb35653c4",
+    "pod": "khalil-volcano-smoke-zs4w9",
+    "pod_uid": "61ec6c20-6b9b-41ff-b504-1a80e72217fd",
+    "podgroup": "khalil-volcano-smoke-pg",
+    "podgroup_uid": "7f283a80-6a8e-4936-81d1-224fcee48304",
+    "queue": "khalil-volcano-smoke",
+    "scheduler_name": "volcano",
+    "scheduled_event_reporting_component": "volcano",
+    "node": "gpu-dev-01",
+    "gpu_request": 1,
+    "gpu_model": "NVIDIA GeForce RTX 5090",
+    "visible_gpu_count": 1,
+    "torch_version": "2.13.0+cu130",
+    "torch_cuda_available": true,
+    "cuda_tensor_result": 42,
+    "times": {
+      "client_create_begin": "2026-07-31T07:48:01.875Z",
+      "client_create_return": "2026-07-31T07:48:02.560Z",
+      "job_created": "2026-07-31T07:48:02Z",
+      "pod_created": "2026-07-31T07:48:02Z",
+      "pod_scheduled": "2026-07-31T07:48:03Z",
+      "container_started": "2026-07-31T07:48:05Z",
+      "application_started": "2026-07-31T07:48:05.736Z",
+      "application_finished": "2026-07-31T07:48:13.634Z",
+      "container_finished": "2026-07-31T07:48:13Z",
+      "job_completed": "2026-07-31T07:48:16Z",
+      "client_complete_observed": "2026-07-31T07:48:16.074Z"
+    },
+    "metrics_seconds": {
+      "client_create_rtt": 0.684,
+      "api_job_create_to_pod_scheduled": 1.0,
+      "api_job_create_to_container_start": 3.0,
+      "application_runtime": 7.898,
+      "container_runtime": 8.0,
+      "api_job_wall_clock": 14.0,
+      "client_create_to_complete_observed": 14.2
+    },
+    "quota_gpu_hard": 4,
+    "quota_gpu_used_before": 0,
+    "quota_gpu_used_after_cleanup": 0,
+    "event_filter": "Job, Pod, and PodGroup metadata.uid"
+  },
+  "queue_capability": {
+    "effective": true,
+    "queue": "khalil-volcano-quota",
+    "queue_gpu_capability": 1,
+    "queue_gpu_allocated_during_snapshot": 1,
+    "holder": "khalil-volcano-quota-holder",
+    "waiter": "khalil-volcano-quota-waiter",
+    "holder_gpu_request": 1,
+    "waiter_gpu_request": 1,
+    "waiter_during_snapshot": {
+      "pod_phase": "Pending",
+      "node_name": null,
+      "podgroup_phase": "Pending",
+      "event_reason": "Unschedulable",
+      "event_message": "queue resource quota insufficient: insufficient nvidia.com/gpu",
+      "event_reporting_component": "volcano"
+    },
+    "node_gpu_allocatable": 8,
+    "running_pod_gpu_requests_cluster_snapshot": 1,
+    "node_request_headroom_during_wait": 7,
+    "headroom_interpretation": "Kubernetes Running-Pod request headroom, not direct device-utilization telemetry",
+    "namespace_quota_gpu_used_during_snapshot": 2,
+    "times": {
+      "waiter_client_create_begin": "2026-07-31T07:40:54.064Z",
+      "waiter_job_created": "2026-07-31T07:40:54Z",
+      "holder_container_finished": "2026-07-31T07:41:24Z",
+      "waiter_pod_scheduled": "2026-07-31T07:41:26Z",
+      "waiter_container_started": "2026-07-31T07:41:29Z",
+      "waiter_container_finished": "2026-07-31T07:41:35Z",
+      "waiter_job_completed": "2026-07-31T07:41:38Z",
+      "waiter_complete_observed": "2026-07-31T07:41:38.254Z"
+    },
+    "metrics_seconds": {
+      "client_create_rtt": 0.344,
+      "api_job_create_to_pod_scheduled": 32.0,
+      "api_job_create_to_container_start": 35.0,
+      "holder_finish_to_waiter_schedule": 2.0,
+      "holder_finish_to_waiter_start": 5.0,
+      "waiter_container_runtime": 6.0,
+      "api_waiter_job_wall_clock": 44.0,
+      "client_create_to_complete_observed": 44.19
+    }
+  },
+  "gang": {
+    "effective": true,
+    "job": "khalil-volcano-gang",
+    "podgroup": "khalil-volcano-gang-pg",
+    "queue": "khalil-volcano-gang",
+    "min_member": 2,
+    "min_resources_gpu": 2,
+    "initial_queue_gpu_capability": 1,
+    "initial_snapshot": {
+      "pod_count": 2,
+      "pending_pods": 2,
+      "bound_pods": 0,
+      "podgroup_phase": "Pending",
+      "event_reason": "Unschedulable",
+      "event_message": "queue resource quota insufficient: insufficient nvidia.com/gpu",
+      "event_reporting_component": "volcano"
+    },
+    "patched_queue_gpu_capability": 2,
+    "final": {
+      "scheduled_pods": 2,
+      "succeeded_pods": 2,
+      "scheduled_event_reporting_components": [
+        "volcano",
+        "volcano"
+      ]
+    },
+    "times": {
+      "client_create_begin": "2026-07-31T07:41:42.041Z",
+      "job_created": "2026-07-31T07:41:42Z",
+      "below_threshold_snapshot": "2026-07-31T07:41:47.768Z",
+      "capability_patch_return": "2026-07-31T07:41:51.129Z",
+      "pod_scheduled": [
+        "2026-07-31T07:41:51Z",
+        "2026-07-31T07:41:51Z"
+      ],
+      "container_started": [
+        "2026-07-31T07:41:55Z",
+        "2026-07-31T07:41:55Z"
+      ],
+      "application_started": [
+        "2026-07-31T07:41:55.690Z",
+        "2026-07-31T07:41:55.789Z"
+      ],
+      "application_finished": [
+        "2026-07-31T07:42:03.946Z",
+        "2026-07-31T07:42:04.047Z"
+      ],
+      "job_completed": "2026-07-31T07:42:06Z",
+      "client_complete_observed": "2026-07-31T07:42:06.403Z"
+    },
+    "metrics_seconds": {
+      "client_create_rtt": 0.671,
+      "api_job_create_to_both_scheduled": 9.0,
+      "api_job_create_to_both_container_started": 13.0,
+      "api_scheduled_spread": 0.0,
+      "api_container_start_spread": 0.0,
+      "application_start_spread": 0.099,
+      "application_finish_spread": 0.101,
+      "api_job_wall_clock": 24.0,
+      "client_create_to_complete_observed": 24.362
+    },
+    "patch_to_schedule_precision": "Both Scheduled events are in the patch-return second; API timestamps cannot resolve sub-second latency"
+  },
+  "preemption": {
+    "effective": true,
+    "scope": "same Queue preempt action triggered by Queue capability, not physical node exhaustion",
+    "default_scheduler_actions": [
+      "enqueue",
+      "allocate",
+      "backfill"
+    ],
+    "temporary_test_scheduler_actions": [
+      "allocate",
+      "backfill",
+      "preempt"
+    ],
+    "restored_scheduler_actions": [
+      "enqueue",
+      "allocate",
+      "backfill"
+    ],
+    "queue": "khalil-volcano-preempt",
+    "queue_gpu_capability": 3,
+    "queue_gpu_allocated_before": 3,
+    "victim": {
+      "job": "khalil-volcano-preempt-victim",
+      "pod": "khalil-volcano-preempt-victim-g6qgz",
+      "priority": 100,
+      "gpu_request": 3,
+      "started_at": "2026-07-31T07:42:22Z",
+      "evict_at": "2026-07-31T07:42:26Z",
+      "evict_reporting_component": "volcano",
+      "evict_message": "Pod is evicted, because of preempt",
+      "killing_at": "2026-07-31T07:42:26Z",
+      "job_result": "Failed/BackoffLimitExceeded"
+    },
+    "preemptor": {
+      "job": "khalil-volcano-preempt-high",
+      "pod": "khalil-volcano-preempt-high-mkfxh",
+      "priority": 1000,
+      "gpu_request": 1,
+      "job_created_at": "2026-07-31T07:42:26Z",
+      "scheduled_at": "2026-07-31T07:42:27Z",
+      "started_at": "2026-07-31T07:42:31Z",
+      "finished_at": "2026-07-31T07:42:39Z",
+      "job_completed_at": "2026-07-31T07:42:42Z"
+    },
+    "node_gpu_allocatable": 8,
+    "node_request_headroom_before_preemption": 5,
+    "namespace_gpu_quota_hard": 4,
+    "combined_test_gpu_requests": 4,
+    "namespace_gpu_quota_used_before_high_submission": 3,
+    "metrics_seconds": {
+      "client_config_patch_to_scheduler_ready": 3.879,
+      "client_high_create_rtt": 0.34,
+      "api_high_job_create_to_scheduled": 1.0,
+      "api_high_job_create_to_container_start": 5.0,
+      "client_high_create_to_ready_observed": 4.992,
+      "victim_api_runtime_before_evict": 4.0,
+      "preemptor_container_runtime": 8.0,
+      "api_high_job_wall_clock": 16.0,
+      "client_high_create_to_complete_observed": 16.071,
+      "client_scheduler_restore_to_ready": 3.469
+    },
+    "precision_note": "Event and API object timestamps have one-second precision",
+    "checkpoint_resume_tested": false
+  },
+  "reclaim": {
+    "tested": false,
+    "effective": null,
+    "reason": "A controlled cross-Queue physical-pressure test could not be produced safely inside the shared gpu-dev quota of 4 GPUs on an 8-GPU node",
+    "default_enabled": false
+  },
+  "restoration_cleanup": {
+    "effective": true,
+    "scheduler_config_restored": true,
+    "restored_actions": [
+      "enqueue",
+      "allocate",
+      "backfill"
+    ],
+    "test_jobs_absent": 6,
+    "test_podgroups_absent": 6,
+    "test_queues_absent": 4,
+    "test_priorityclasses_absent": 2,
+    "namespace_gpu_quota_used_after": 0,
+    "volcano_deployments_ready": "3/3 (each 1/1)",
+    "kueue_deployment_ready": "1/1",
+    "volcano_left_installed": true
+  },
+  "limitations": [
+    "Each scenario was run once; these are functional observations, not stable performance statistics.",
+    "The cluster has one GPU node, so multi-node topology behavior was not evaluated.",
+    "Volcano preempt was enabled temporarily for the controlled test and is disabled in the restored default actions.",
+    "Victim checkpoint/resume and training wall-clock penalty were not evaluated.",
+    "Cross-Queue reclaim, capacity deserved borrowing, and long-run fairness were not tested.",
+    "API object and core Event timestamps are generally one-second precision; sub-second values come only from app logs or the client monotonic clock."
+  ],
+  "evidence_refs": {
+    "raw": "docs/assets/gpu-scheduler-evaluation/raw/volcano/",
+    "manifests": "k8s/scheduler-evaluation/volcano/bench/",
+    "runner": "k8s/scheduler-evaluation/run_volcano_gpu_evaluation.sh",
+    "cuda_runner": "k8s/scheduler-evaluation/run_volcano_cuda_smoke.sh"
+  }
+}

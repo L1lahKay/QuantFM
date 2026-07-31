@@ -32,9 +32,27 @@ pipeline_pid() {
 }
 
 done_days() {
-  local n
-  n="$(grep -ac 'day done (tokenized)' "$PIPELINE_LOG" 2>/dev/null || true)"
-  echo "${n:-0}"
+  local dir="$WORKDIR/data/.done" n=0
+  [[ -d "$dir" ]] || { echo 0; return; }
+  while IFS= read -r date; do
+    [[ -f "$dir/$date" ]] && grep -q '^tokenized' "$dir/$date" 2>/dev/null && n=$((n+1))
+  done < <(grep -ve '^[[:space:]]*$' "$DATES_FILE")
+  echo "$n"
+}
+
+manifest_ready() {
+  python3 - "$WORKDIR/data/manifest.json" "$DATES_FILE" <<'PY' >/dev/null 2>&1
+import json
+import sys
+from pathlib import Path
+
+manifest_path, dates_path = map(Path, sys.argv[1:3])
+payload = json.loads(manifest_path.read_text())
+shards = payload.get("shards", [])
+expected = {line.strip() for line in dates_path.read_text().splitlines() if line.strip()}
+actual = {item.get("date") for item in shards}
+raise SystemExit(0 if shards and expected <= actual else 1)
+PY
 }
 
 start_pipeline() {
@@ -64,9 +82,9 @@ log "======== 看门狗启动 (total_days=$TOTAL_DAYS, check=${CHECK_EVERY}s, st
 restarts=0
 while true; do
   done_now="$(done_days)"
-  # 完成（manifest 出现，或全部天数 tokenize 完毕）→ 退出
-  if [[ -f "$WORKDIR/data/manifest.json" ]] || [[ "$done_now" -ge "$TOTAL_DAYS" ]]; then
-    log "✅ tokenize 全部完成 (done=$done_now/$TOTAL_DAYS, manifest=$([[ -f $WORKDIR/data/manifest.json ]] && echo yes || echo no))；看门狗退出。"
+  # marker 与 manifest 内容都完整才算完成；空/旧 manifest 不再误报成功。
+  if [[ "$done_now" -ge "$TOTAL_DAYS" ]] && manifest_ready; then
+    log "✅ tokenize 全部完成 (done=$done_now/$TOTAL_DAYS, manifest=valid)；看门狗退出。"
     exit 0
   fi
 

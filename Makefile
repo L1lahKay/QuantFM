@@ -1,4 +1,4 @@
-.PHONY: help install install-fm smoke signal signal-smoke pilot medium medium-try medium-pipeline medium-estimate medium-smoke judge-medium-try judge-300m research-score research-oos2026 watch-300m baselines-300m tensorboard-medium train train-pilot train-8gpu train-medium-8gpu check-minio upload-pilot upload-medium download-medium minio-pipeline minio-pipeline-full minio-full-pipeline minio-full-pipeline-full test lint
+.PHONY: help install install-fm smoke signal signal-smoke backtest-contract-fixture dense230-finalize pilot medium medium-try medium-pipeline medium-estimate medium-smoke judge-medium-try judge-300m research-score research-oos2026 watch-300m baselines-300m tensorboard-medium train train-pilot train-8gpu train-medium-8gpu check-minio upload-pilot upload-medium download-medium minio-pipeline minio-pipeline-full minio-full-pipeline minio-full-pipeline-full test lint
 
 PY ?= python
 WORKDIR ?= quant_fm/runs/pilot
@@ -13,6 +13,8 @@ help:
 	@echo "  make smoke        在合成数据上跑通全流程（CPU，无需 MinIO）"
 	@echo "  make signal       用冻结 Ranker 生成 date/symbol/score 生产信号"
 	@echo "  make signal-smoke 验证无标签 score 生成链路"
+	@echo "  make backtest-contract-fixture 生成隔离的合成回测联调包"
+	@echo "  make dense230-finalize 等待真实信号并自动审计、门禁和打包"
 	@echo "  make pilot        清洗并 tokenize（读 MinIO :9000，凭据见 minio_setup.md）"
 	@echo "  make upload-pilot 上传 tokens 到 model-cache（写 MinIO :9100）"
 	@echo "  make check-minio  检查 MinIO 读写 endpoint 连通性"
@@ -50,6 +52,13 @@ signal:
 		--ranker $(SIGNAL_ARTIFACT)/ranker.pt \
 		--ranker-metadata $(SIGNAL_ARTIFACT)/ranker_metadata.json \
 		--out-dir $(SIGNAL_OUT)
+
+backtest-contract-fixture:
+	$(PY) -m quant_fm.scripts.build_backtest_contract_fixture \
+		--out-root "$${OUT_ROOT:-quant_fm/runs/backtest_contract_fixture_$$(date +%Y%m%dT%H%M%S)}"
+
+dense230-finalize:
+	WAIT="$${WAIT:-1}" bash quant_fm/scripts/finalize_dense230m_delivery.sh
 
 # 真实试点：先设置 MINIO_* 环境变量，下方为示例日期/股票
 pilot:

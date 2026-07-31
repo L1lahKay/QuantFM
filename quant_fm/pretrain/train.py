@@ -10,7 +10,6 @@ OrderFlow FM 的可复现预训练循环。
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import logging
 import math
@@ -19,6 +18,7 @@ import random
 import shutil
 from contextlib import nullcontext
 from dataclasses import asdict, dataclass
+from datetime import date as calendar_date
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -28,7 +28,17 @@ import yaml
 from torch.utils.data import DataLoader
 
 from quant_fm.manifest.build_manifest import Manifest
+from quant_fm.manifest.validation import (
+    validate_manifest_shards,
+    validate_manifest_vocab_contract,
+)
 from quant_fm.moe.config import BackboneMoEConfig
+from quant_fm.pretrain.data_contract import (
+    build_pretrain_data_contract,
+    load_checkpoint_contract,
+    validate_checkpoint_data_contract,
+    write_checkpoint_contract,
+)
 from quant_fm.pretrain.dataset import (
     DEFAULT_TARGET_FIELDS,
     FIELD_ORDER,
@@ -56,6 +66,7 @@ from quant_fm.pretrain.validation_sampler import (
     ValidationSamplePlan,
     build_validation_sample_plan,
 )
+from quant_fm.tokenizer.artifact_contract import stable_vocab_sha256
 from quant_fm.tokenizer.vocab import Vocab
 from quant_fm.tokenizer.vocab_v2 import N_SPECIAL as V2_N_SPECIAL
 from quant_fm.tokenizer.vocab_v2 import NA_ID as V2_NA_ID
@@ -74,6 +85,174 @@ def _load_vocab(path: Path) -> Vocab | VocabV2:
     if payload.get("vocab_version") == VocabV2.VOCAB_VERSION:
         return VocabV2.load(path)
     return Vocab.load(path)
+
+
+def _canonical_split_date(value: object, *, context: str) -> str:
+    """Reject non-ISO and non-zero-padded dates before lexical comparisons."""
+    if not isinstance(value, str) or not value:
+        msg = f"{context} must be a canonical YYYY-MM-DD string"
+        raise ValueError(msg)
+    try:
+        parsed = calendar_date.fromisoformat(value)
+    except ValueError as exc:
+        msg = f"{context} must be a canonical YYYY-MM-DD date: {value!r}"
+        raise ValueError(msg) from exc
+    if parsed.isoformat() != value:
+        msg = f"{context} must be a canonical YYYY-MM-DD date: {value!r}"
+        raise ValueError(msg)
+    return value
+
+
+def validate_pretrain_split_contract(
+    manifest: Manifest,
+    vocab: Vocab | VocabV2,
+    *,
+    require_validation: bool,
+    min_validation_dates: int = 5,
+    min_test_dates: int = 5,
+    expected_dates: dict[str, set[str]] | None = None,
+) -> dict[str, object]:
+    """在训练开始前校验整日时间切分与 vocab 拟合边界。"""
+    if min_validation_dates < 1 or min_test_dates < 1:
+        msg = "minimum validation/test date counts must be positive"
+        raise ValueError(msg)
+    issues: list[str] = []
+    dates: dict[str, set[str]] = {split: set() for split in ("train", "val", "test")}
+    for index, shard in enumerate(manifest.shards):
+        canonical = _canonical_split_date(
+            shard.date,
+            context=f"manifest shard[{index}] date",
+        )
+        if shard.split not in dates:
+            issues.append(f"unknown manifest split: {shard.split}")
+            continue
+        dates[shard.split].add(canonical)
+    for field in ("train_end", "val_end"):
+        boundary = getattr(manifest, field)
+        if boundary is not None:
+            _canonical_split_date(boundary, context=f"manifest {field}")
+    canonical_expected_dates: dict[str, set[str]] = {}
+    for split, expected in (expected_dates or {}).items():
+        canonical_expected_dates[split] = {
+            _canonical_split_date(value, context=f"expected {split} date")
+            for value in expected
+        }
+    fit_dates = {
+        _canonical_split_date(value, context=f"vocab fit_dates[{index}]")
+        for index, value in enumerate(vocab.fit_dates)
+    }
+    if not dates["train"]:
+        issues.append("train split is empty")
+    overlap = (
+        (dates["train"] & dates["val"])
+        | (dates["train"] & dates["test"])
+        | (dates["val"] & dates["test"])
+    )
+    if overlap:
+        issues.append(f"dates occur in multiple splits: {sorted(overlap)}")
+    if dates["train"] and dates["val"] and max(dates["train"]) >= min(dates["val"]):
+        issues.append("validation dates are not strictly after training dates")
+    prior = dates["val"] or dates["train"]
+    if prior and dates["test"] and max(prior) >= min(dates["test"]):
+        issues.append("test dates are not strictly after train/validation dates")
+    if require_validation and len(dates["val"]) < min_validation_dates:
+        issues.append(
+            "validation split is too short for checkpoint selection: "
+            f"have={len(dates['val'])}, need={min_validation_dates}"
+        )
+    if dates["test"] and len(dates["test"]) < min_test_dates:
+        issues.append(
+            f"test split is too short: have={len(dates['test'])}, need={min_test_dates}"
+        )
+    for split, canonical_expected in canonical_expected_dates.items():
+        if split not in dates:
+            issues.append(f"unknown expected split: {split}")
+            continue
+        missing = sorted(canonical_expected - dates[split])
+        extra = sorted(dates[split] - canonical_expected)
+        if missing or extra:
+            issues.append(
+                f"{split} dates differ from frozen plan: "
+                f"missing={missing[:10]}, extra={extra[:10]}"
+            )
+    leaked = fit_dates & (dates["val"] | dates["test"])
+    if leaked:
+        issues.append(f"vocab was fitted on validation/test dates: {sorted(leaked)}")
+    outside_training_manifest = fit_dates - dates["train"]
+    if outside_training_manifest:
+        issues.append(
+            "vocab fit dates are not contained in the manifest training split: "
+            f"{sorted(outside_training_manifest)}"
+        )
+    semantic_pairs = {
+        "event_ordering_version": (
+            manifest.event_ordering_version,
+            vocab.event_ordering_version,
+        ),
+        "feature_transform_version": (
+            manifest.feature_transform_version,
+            vocab.feature_transform_version,
+        ),
+    }
+    for name, (manifest_value, vocab_value) in semantic_pairs.items():
+        if vocab.data_semantics_explicit and manifest_value is None:
+            issues.append(f"manifest is missing required {name}")
+        elif manifest_value is not None and manifest_value != vocab_value:
+            issues.append(
+                f"manifest {name}={manifest_value!r} does not match "
+                f"vocab={vocab_value!r}"
+            )
+    if issues:
+        msg = "invalid pretraining split contract: " + "; ".join(issues)
+        raise ValueError(msg)
+    return {
+        "train_dates": len(dates["train"]),
+        "validation_dates": len(dates["val"]),
+        "test_dates": len(dates["test"]),
+        "train_start": min(dates["train"]) if dates["train"] else None,
+        "train_end": max(dates["train"]) if dates["train"] else None,
+        "validation_start": min(dates["val"]) if dates["val"] else None,
+        "validation_end": max(dates["val"]) if dates["val"] else None,
+        "test_start": min(dates["test"]) if dates["test"] else None,
+        "test_end": max(dates["test"]) if dates["test"] else None,
+        "vocab_fit_dates": len(fit_dates),
+        "event_ordering_version": vocab.event_ordering_version,
+        "feature_transform_version": vocab.feature_transform_version,
+    }
+
+
+def _validate_training_shards(
+    manifest: Manifest,
+    vocab: Vocab | VocabV2,
+    *,
+    rank: int,
+    world_size: int,
+) -> dict[str, int] | None:
+    """Validate live train/validation bytes once and broadcast any failure."""
+    result: dict[str, int] | None = None
+    error: str | None = None
+    if rank == 0:
+        try:
+            selected = [*manifest.split("train"), *manifest.split("val")]
+            result = validate_manifest_shards(
+                manifest,
+                vocab,
+                shards=selected,
+                context="pretraining",
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            error = f"{type(exc).__name__}: {exc}"
+    if world_size > 1:
+        import torch.distributed as dist
+
+        payload: list[object] = [error, result]
+        dist.broadcast_object_list(payload, src=0)
+        error = payload[0] if isinstance(payload[0], str) else None
+        result = payload[1] if isinstance(payload[1], dict) else None
+    if error is not None:
+        msg = f"pretraining token provenance validation failed: {error}"
+        raise ValueError(msg)
+    return result
 
 
 def set_seed(seed: int) -> None:
@@ -129,6 +308,7 @@ class TrainState:
     update_step: int = 0
     samples_seen: int = 0
     non_pad_tokens_seen: int = 0
+    data_epochs_completed: int = 0
     best_val: float = float("inf")
     best_update_step: int = -1
 
@@ -156,6 +336,7 @@ def _restore_train_state(
             update_step=int(saved.get("update_step", 0)),
             samples_seen=int(saved.get("samples_seen", 0)),
             non_pad_tokens_seen=int(saved.get("non_pad_tokens_seen", 0)),
+            data_epochs_completed=int(saved.get("data_epochs_completed", 0)),
             best_val=float(saved.get("best_val", float("inf"))),
             best_update_step=int(saved.get("best_update_step", -1)),
         )
@@ -212,6 +393,8 @@ def _validate_resume_metadata(
     checkpoint: dict,
     expected: OrderFlowFMConfig,
     target_specs: tuple[TargetSpec, ...] | None,
+    *,
+    require_explicit_data_contract: bool = False,
 ) -> None:
     """禁止在 resume 时混用 v1/v2 vocab、schema 或字段顺序。"""
     saved = checkpoint.get("config", {})
@@ -222,14 +405,32 @@ def _validate_resume_metadata(
             f"current vocab_version={expected.vocab_version}"
         )
         raise ValueError(msg)
+    if (
+        require_explicit_data_contract
+        or expected.vocab_version == VocabV2.VOCAB_VERSION
+    ):
+        common_checks = {
+            "schema_version": expected.schema_version,
+            "vocab_sha256": expected.vocab_sha256,
+            "event_ordering_version": expected.event_ordering_version,
+            "feature_transform_version": expected.feature_transform_version,
+        }
+        for key, expected_value in common_checks.items():
+            legacy_default = {
+                "schema_version": "cn_l2_v1",
+                "vocab_sha256": "",
+                "event_ordering_version": "local_time_v1",
+                "feature_transform_version": "ew_vwap_future_backfill_v1",
+            }[key]
+            if saved.get(key, legacy_default) != expected_value:
+                msg = f"checkpoint metadata mismatch for {key}"
+                raise ValueError(msg)
     if expected.vocab_version == VocabV2.VOCAB_VERSION:
         if checkpoint.get("fm_artifact_version") != "2.0":
             msg = "v2 checkpoint is missing fm_artifact_version=2.0"
             raise ValueError(msg)
         checks = {
             "field_sizes": expected.field_sizes,
-            "schema_version": expected.schema_version,
-            "vocab_sha256": expected.vocab_sha256,
             "input_fields": list(expected.input_fields),
             "target_fields": list(expected.target_fields),
             "field_specs": list(expected.field_specs),
@@ -251,6 +452,9 @@ def _validate_resume_metadata(
             "book_state_timing": expected.book_state_timing,
             "context_horizon": expected.context_horizon,
             "pooling_version": expected.pooling_version,
+            "pooling_method": expected.pooling_method,
+            "pooling_outputs": list(expected.pooling_outputs),
+            "pooling_stride": expected.pooling_stride,
             "backbone_moe": expected.backbone_moe.to_dict(),
         }
         for key, expected_value in checks.items():
@@ -296,6 +500,10 @@ def _build_dataloaders(
             **dataset_options,
         )
         collate_fn = collate_windows
+    batch_size = int(
+        cfg["optim"].get("micro_batch_size", cfg["optim"].get("batch_size", 1))
+    )
+    drop_last = bool(data.get("drop_last", True))
     train_sampler = None
     shuffle = True
     if world_size > 1 or bool(data.get("shard_aware_sampler", False)):
@@ -305,7 +513,10 @@ def _build_dataloaders(
             rank=rank,
             shuffle=True,
             seed=seed,
-            drop_last=True,
+            drop_last=drop_last,
+            samples_per_rank_multiple=(
+                1 if drop_last else batch_size * int(cfg["optim"].get("grad_accum", 1))
+            ),
         )
         shuffle = False
     generator = torch.Generator()
@@ -316,9 +527,6 @@ def _build_dataloaders(
             "persistent_workers": bool(data.get("persistent_workers", True)),
             "prefetch_factor": int(data.get("prefetch_factor", 2)),
         }
-    batch_size = int(
-        cfg["optim"].get("micro_batch_size", cfg["optim"].get("batch_size", 1))
-    )
     train_dl = DataLoader(
         train_ds,
         batch_size=batch_size,
@@ -326,7 +534,7 @@ def _build_dataloaders(
         sampler=train_sampler,
         collate_fn=collate_fn,
         num_workers=data["num_workers"],
-        drop_last=True,
+        drop_last=drop_last,
         generator=generator if train_sampler is None else None,
         pin_memory=torch.cuda.is_available(),
         **worker_options,
@@ -489,9 +697,54 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
             logger.warning("tensorboard unavailable; skipping scalar logging")
 
     # [导读] manifest 告诉 DataLoader 读哪些 parquet；vocab 告诉模型每个字段词表多大
-    manifest = Manifest.load(Path(cfg["data"]["manifest"]))
+    manifest_path = Path(cfg["data"]["manifest"])
+    manifest = Manifest.load(manifest_path)
     vocab_path = Path(cfg["data"]["vocab"])
     vocab = _load_vocab(vocab_path)
+    validate_manifest_vocab_contract(
+        manifest,
+        vocab,
+        context="pretraining",
+    )
+    expected_dates: dict[str, set[str]] = {}
+    for split, key in (
+        ("train", "train_dates_file"),
+        ("val", "validation_dates_file"),
+        ("test", "test_dates_file"),
+    ):
+        if configured_path := cfg["data"].get(key):
+            expected_dates[split] = {
+                value.strip()
+                for value in Path(configured_path)
+                .read_text(encoding="utf-8")
+                .splitlines()
+                if value.strip()
+            }
+    split_contract = validate_pretrain_split_contract(
+        manifest,
+        vocab,
+        require_validation=bool(cfg["runtime"].get("save_best", True)),
+        min_validation_dates=int(cfg["data"].get("min_validation_dates", 5)),
+        min_test_dates=int(cfg["data"].get("min_test_dates", 5)),
+        expected_dates=expected_dates,
+    )
+    if is_main_process(rank):
+        logger.info("pretraining split contract: %s", split_contract)
+    shard_contract = _validate_training_shards(
+        manifest,
+        vocab,
+        rank=rank,
+        world_size=world_size,
+    )
+    pretrain_data_contract = build_pretrain_data_contract(
+        manifest_path=manifest_path,
+        manifest=manifest,
+        vocab_path=vocab_path,
+        vocab=vocab,
+    )
+    if is_main_process(rank):
+        logger.info("pretraining shard contract: %s", shard_contract)
+        logger.info("pretraining data contract: %s", pretrain_data_contract)
 
     train_dl, val_dl = _build_dataloaders(
         manifest,
@@ -551,6 +804,7 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
         vocab_version = "1.0"
         frozen_field_specs = ()
         continuous_normalizers = {}
+    pooling_cfg = cfg.get("pooling", {})
     model_cfg = OrderFlowFMConfig(
         field_sizes=field_sizes,
         input_fields=input_fields,
@@ -569,12 +823,25 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
         standalone_scalar_fields=standalone_scalar_fields,
         schema_version=schema_version,
         vocab_version=vocab_version,
-        vocab_sha256=hashlib.sha256(vocab_path.read_bytes()).hexdigest(),
+        vocab_sha256=stable_vocab_sha256(vocab),
         field_specs=frozen_field_specs,
         continuous_normalizers=continuous_normalizers,
         book_state_timing=str(cfg.get("book", {}).get("state_timing", "none")),
         context_horizon=int(cfg["data"]["context"]),
-        pooling_version=str(cfg.get("pooling", {}).get("version", "flat_v1")),
+        pooling_version=str(pooling_cfg.get("version", "flat_v1")),
+        pooling_method=str(pooling_cfg.get("method", "mean")),
+        pooling_outputs=tuple(str(value) for value in pooling_cfg.get("outputs", ())),
+        pooling_stride=int(pooling_cfg.get("stride", cfg["data"]["context"])),
+        event_ordering_version=str(
+            getattr(vocab, "event_ordering_version", "local_time_v1")
+        ),
+        feature_transform_version=str(
+            getattr(
+                vocab,
+                "feature_transform_version",
+                "ew_vwap_future_backfill_v1",
+            )
+        ),
         backbone_moe=BackboneMoEConfig.from_dict(mcfg.get("backbone_moe")),
         **_fusion_options(mcfg),
     )
@@ -589,7 +856,22 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
                 "training; use step*.pt or final_resume.pt"
             )
             raise ValueError(msg)
-        _validate_resume_metadata(resume_ckpt, model_cfg, target_specs)
+        resume_contract = load_checkpoint_contract(
+            resume_path,
+            required=vocab.data_semantics_explicit,
+        )
+        validate_checkpoint_data_contract(
+            resume_contract,
+            checkpoint_payload=resume_ckpt,
+            vocab=vocab,
+            expected_pretrain_data_contract=pretrain_data_contract,
+        )
+        _validate_resume_metadata(
+            resume_ckpt,
+            model_cfg,
+            target_specs,
+            require_explicit_data_contract=vocab.data_semantics_explicit,
+        )
         model.load_state_dict(resume_ckpt["model_state"])
         if is_main_process(rank):
             logger.info("loaded model checkpoint %s", resume_path)
@@ -643,8 +925,12 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
 
     max_update_steps = int(opt.get("max_update_steps", opt.get("max_steps", 0)))
     max_train_tokens = int(opt.get("max_train_tokens", 0))
-    if max_update_steps < 1 and max_train_tokens < 1:
-        msg_0 = "optim requires max_update_steps/max_steps or max_train_tokens"
+    max_data_epochs = int(opt.get("max_data_epochs", 0))
+    if max_update_steps < 1 and max_train_tokens < 1 and max_data_epochs < 1:
+        msg_0 = (
+            "optim requires max_update_steps/max_steps, max_train_tokens, "
+            "or max_data_epochs"
+        )
         raise ValueError(msg_0)
     schedule_update_steps = int(opt.get("lr_schedule_steps", max_update_steps))
     if schedule_update_steps < 1:
@@ -655,7 +941,6 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
         raise ValueError(msg_1)
     model.train()  # 训练模式（启用 dropout 等）
     optimizer.zero_grad(set_to_none=True)
-    data_epoch = 0
     pending_samples = 0
     pending_tokens = 0
 
@@ -664,13 +949,15 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
         tokens_done = (
             max_train_tokens > 0 and state.non_pad_tokens_seen >= max_train_tokens
         )
-        return updates_done or tokens_done
+        epochs_done = (
+            max_data_epochs > 0 and state.data_epochs_completed >= max_data_epochs
+        )
+        return updates_done or tokens_done or epochs_done
 
     # 调度、日志、验证与存盘统一使用 optimizer update 计数。
     while not training_complete():
         if hasattr(train_dl.sampler, "set_epoch"):
-            train_dl.sampler.set_epoch(data_epoch)
-        data_epoch += 1
+            train_dl.sampler.set_epoch(state.data_epochs_completed)
         for batch in train_dl:
             batch = {k: v.to(device, non_blocking=True) for k, v in batch.items()}
             lr = cosine_lr(
@@ -817,6 +1104,7 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
                         state,
                         val_loss=val_loss,
                         target_specs=target_specs,
+                        pretrain_data_contract=pretrain_data_contract,
                         rank=rank,
                         writer=writer,
                     )
@@ -830,12 +1118,24 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
                     scaler=scaler,
                     train_state=state,
                     target_specs=target_specs,
+                    pretrain_data_contract=pretrain_data_contract,
                     rank=rank,
                     step=state.update_step,
                 )
 
             if training_complete():
                 break
+        else:
+            # 只有自然耗尽整个 DataLoader 才记为完整 epoch。中途按 token/update
+            # 预算停止或从 checkpoint 恢复时不会伪造全量覆盖；恢复会确定性重放
+            # 未完成 epoch，宁可有少量重复，也不遗漏 shard。
+            state.data_epochs_completed += 1
+            if is_main_process(rank):
+                logger.info(
+                    "completed data epoch %d/%s",
+                    state.data_epochs_completed,
+                    max_data_epochs if max_data_epochs > 0 else "unbounded",
+                )
 
     # 训练结束：再跑一轮验证，保证 best.pt 覆盖「最后一段未踩到 eval_every」的改进
     if val_dl is not None and cfg["runtime"].get("save_best", True):
@@ -864,6 +1164,7 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
             state,
             val_loss=val_loss,
             target_specs=target_specs,
+            pretrain_data_contract=pretrain_data_contract,
             rank=rank,
             writer=writer,
         )
@@ -876,6 +1177,7 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
         scaler=scaler,
         train_state=state,
         target_specs=target_specs,
+        pretrain_data_contract=pretrain_data_contract,
         rank=rank,
         step=state.update_step,
         val_loss=state.best_val if state.best_update_step >= 0 else None,
@@ -886,6 +1188,7 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
         out_dir / "final.pt",
         train_state=state,
         target_specs=target_specs,
+        pretrain_data_contract=pretrain_data_contract,
         rank=rank,
         step=state.update_step,
         val_loss=state.best_val if state.best_update_step >= 0 else None,
@@ -934,6 +1237,7 @@ def _maybe_save_best(
     optimizer: torch.optim.Optimizer | None = None,
     scaler: torch.amp.GradScaler | None = None,
     target_specs: tuple[TargetSpec, ...] | None = None,
+    pretrain_data_contract: dict[str, object] | None = None,
     val_loss: float,
     rank: int,
     writer=None,
@@ -951,6 +1255,7 @@ def _maybe_save_best(
             out_dir / "best.pt",
             train_state=state,
             target_specs=target_specs,
+            pretrain_data_contract=pretrain_data_contract,
             rank=rank,
             step=state.update_step,
             val_loss=val_loss,
@@ -979,6 +1284,7 @@ def _save_checkpoint(
     scaler: torch.amp.GradScaler | None = None,
     train_state: TrainState | None = None,
     target_specs: tuple[TargetSpec, ...] | None = None,
+    pretrain_data_contract: dict[str, object] | None = None,
     rank: int = 0,
     step: int | None = None,
     val_loss: float | None = None,
@@ -1033,11 +1339,18 @@ def _save_checkpoint(
             "book_state_timing": cfg.book_state_timing,
             "context_horizon": cfg.context_horizon,
             "pooling_version": cfg.pooling_version,
+            "pooling_method": cfg.pooling_method,
+            "pooling_outputs": list(cfg.pooling_outputs),
+            "pooling_stride": cfg.pooling_stride,
+            "event_ordering_version": cfg.event_ordering_version,
+            "feature_transform_version": cfg.feature_transform_version,
             "backbone_moe": cfg.backbone_moe.to_dict(),
         },
     }
     if target_specs is not None:
         payload["target_specs"] = [asdict(spec) for spec in target_specs]
+    if pretrain_data_contract is not None:
+        payload["pretrain_data_contract"] = dict(pretrain_data_contract)
     if optimizer_state is not None:
         payload["optimizer_state"] = optimizer_state
     if scaler is not None:
@@ -1048,6 +1361,7 @@ def _save_checkpoint(
             "update_step": train_state.update_step,
             "samples_seen": train_state.samples_seen,
             "non_pad_tokens_seen": train_state.non_pad_tokens_seen,
+            "data_epochs_completed": train_state.data_epochs_completed,
             "best_val": train_state.best_val,
             "best_update_step": train_state.best_update_step,
         }
@@ -1058,7 +1372,15 @@ def _save_checkpoint(
     if is_best:
         payload["is_best"] = True
     path.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(payload, path)
+    temporary = path.with_name(f".{path.name}.tmp")
+    torch.save(payload, temporary)
+    temporary.replace(path)
+    if pretrain_data_contract is not None:
+        write_checkpoint_contract(
+            path,
+            config=payload["config"],
+            pretrain_data_contract=pretrain_data_contract,
+        )
     logger.info("saved checkpoint %s", path)
 
 
@@ -1067,8 +1389,21 @@ def load_checkpoint(
     device: torch.device,
     *,
     vocab_path: Path | None = None,
+    expected_pretrain_data_contract: dict[str, object] | None = None,
+    checkpoint_sha256: str | None = None,
+    allow_missing_pretrain_data_contract: bool = False,
 ) -> OrderFlowFM:
     """重建模型；v2 必须提供词表并验证 hash/schema/字段顺序。"""
+    provided_vocab = _load_vocab(vocab_path) if vocab_path is not None else None
+    checkpoint_contract = load_checkpoint_contract(
+        path,
+        expected_checkpoint_sha256=checkpoint_sha256,
+        required=(
+            provided_vocab is not None
+            and provided_vocab.data_semantics_explicit
+            and not allow_missing_pretrain_data_contract
+        ),
+    )
     ckpt = torch.load(path, map_location="cpu", weights_only=False)
     c = ckpt["config"]
     if str(c.get("vocab_version", "1.0")) == VocabV2.VOCAB_VERSION:
@@ -1078,19 +1413,26 @@ def load_checkpoint(
         if vocab_path is None:
             msg = "loading a v2 checkpoint requires vocab_path for compatibility checks"
             raise ValueError(msg)
-        vocab = _load_vocab(vocab_path)
+        vocab = provided_vocab
         if not isinstance(vocab, VocabV2):
             msg = "a v2 checkpoint cannot be loaded with a v1 vocab"
             raise ValueError(msg)
-        vocab_hash = hashlib.sha256(Path(vocab_path).read_bytes()).hexdigest()
+        vocab_hash = stable_vocab_sha256(vocab)
         layout = field_layout_from_vocab(vocab)
         checks = {
             "schema_version": vocab.schema_version,
             "vocab_sha256": vocab_hash,
             "field_specs": [spec.to_dict() for spec in vocab.field_specs],
+            "event_ordering_version": vocab.event_ordering_version,
+            "feature_transform_version": vocab.feature_transform_version,
         }
         for key, expected_value in checks.items():
-            if c.get(key) != expected_value:
+            legacy_default = {
+                "event_ordering_version": "local_time_v1",
+                "feature_transform_version": "ew_vwap_future_backfill_v1",
+            }.get(key)
+            actual_value = c.get(key, legacy_default)
+            if actual_value != expected_value:
                 msg = f"v2 checkpoint/vocab mismatch for {key}"
                 raise ValueError(msg)
         for key, available in (
@@ -1105,6 +1447,36 @@ def load_checkpoint(
             if selected != expected_order:
                 msg = f"v2 checkpoint has invalid {key} order or unknown fields"
                 raise ValueError(msg)
+    elif provided_vocab is not None:
+        if not isinstance(provided_vocab, Vocab):
+            msg = "a v1 checkpoint cannot be loaded with a v2 vocab"
+            raise ValueError(msg)
+        if provided_vocab.data_semantics_explicit:
+            v1_checks = {
+                "schema_version": provided_vocab.schema_version,
+                "vocab_sha256": stable_vocab_sha256(provided_vocab),
+                "event_ordering_version": provided_vocab.event_ordering_version,
+                "feature_transform_version": provided_vocab.feature_transform_version,
+            }
+            for key, expected_value in v1_checks.items():
+                if c.get(key) != expected_value:
+                    msg = f"v1 checkpoint/vocab mismatch for {key}"
+                    raise ValueError(msg)
+    if provided_vocab is not None:
+        if checkpoint_contract is None and allow_missing_pretrain_data_contract:
+            logger.warning(
+                "loading checkpoint without pretrain data contract for explicit "
+                "legacy/diagnostic use only: %s",
+                path,
+            )
+        else:
+            validate_checkpoint_data_contract(
+                checkpoint_contract,
+                checkpoint_payload=ckpt,
+                vocab=provided_vocab,
+                expected_pretrain_data_contract=expected_pretrain_data_contract,
+            )
+    pooling_version = str(c.get("pooling_version", "flat_v1"))
     cfg = OrderFlowFMConfig(
         field_sizes=c["field_sizes"],
         input_fields=tuple(c["input_fields"]),
@@ -1133,7 +1505,22 @@ def load_checkpoint(
         continuous_normalizers=dict(c.get("continuous_normalizers", {})),
         book_state_timing=str(c.get("book_state_timing", "none")),
         context_horizon=int(c.get("context_horizon", 0)),
-        pooling_version=str(c.get("pooling_version", "flat_v1")),
+        pooling_version=pooling_version,
+        pooling_method=str(
+            c.get(
+                "pooling_method",
+                "multi_scale" if pooling_version == "hierarchical_v1" else "mean",
+            )
+        ),
+        pooling_outputs=tuple(c.get("pooling_outputs", ())),
+        pooling_stride=int(c.get("pooling_stride", c.get("context_horizon", 0))),
+        event_ordering_version=str(c.get("event_ordering_version", "local_time_v1")),
+        feature_transform_version=str(
+            c.get(
+                "feature_transform_version",
+                "ew_vwap_future_backfill_v1",
+            )
+        ),
         backbone_moe=BackboneMoEConfig.from_dict(c.get("backbone_moe")),
     )
     model = OrderFlowFM(cfg)

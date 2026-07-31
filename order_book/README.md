@@ -75,5 +75,5 @@ uv run python -m pytest tests/test_call_auction.py \
 完整流水线说明见：
 
 - [订单簿重建阶段](../docs/pipeline/02_order_book_rebuild.md)
-- [原始 L2 到 events/tokens](../docs/raw_to_events_tokens.md)
+- [原始 L2 到 events/tokens](../docs/data/raw_to_events_tokens.md)
 - [QuantFM 文档索引](../docs/README.md)

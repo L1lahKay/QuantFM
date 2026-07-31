@@ -1,0 +1,18 @@
+NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS            IMAGES                                              SELECTOR
+deployment.apps/volcano-admission     1/1     1            1           20s   admission             docker.io/volcanosh/vc-webhook-manager:v1.15.1      app=volcano-admission
+deployment.apps/volcano-controllers   1/1     1            1           20s   volcano-controllers   docker.io/volcanosh/vc-controller-manager:v1.15.1   app=volcano-controller
+deployment.apps/volcano-scheduler     1/1     1            1           20s   volcano-scheduler     docker.io/volcanosh/vc-scheduler:v1.15.1            app=volcano-scheduler
+
+NAME                               STATUS     COMPLETIONS   DURATION   AGE   CONTAINERS   IMAGES                                           SELECTOR
+job.batch/volcano-admission-init   Complete   1/1           16s        20s   main         docker.io/volcanosh/vc-webhook-manager:v1.15.1   batch.kubernetes.io/controller-uid=8d093b2e-bc5d-4bb3-9a6f-62ca74a87901
+
+NAME                                       READY   STATUS      RESTARTS   AGE   IP           NODE         NOMINATED NODE   READINESS GATES
+pod/volcano-admission-569b8b4545-hd7fz     1/1     Running     0          20s   10.52.0.96   gpu-dev-01   <none>           <none>
+pod/volcano-admission-init-kj6s5           0/1     Completed   0          20s   10.52.0.93   gpu-dev-01   <none>           <none>
+pod/volcano-controllers-7c87f8cb95-lcmqv   1/1     Running     0          20s   10.52.0.94   gpu-dev-01   <none>           <none>
+pod/volcano-scheduler-786498f9db-kfhms     1/1     Running     0          20s   10.52.0.95   gpu-dev-01   <none>           <none>
+
+NAME                                  TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE   SELECTOR
+service/volcano-admission-service     ClusterIP   10.53.41.198   <none>        443/TCP    20s   app=volcano-admission
+service/volcano-controllers-service   ClusterIP   10.53.163.36   <none>        8081/TCP   20s   app=volcano-controller
+service/volcano-scheduler-service     ClusterIP   10.53.81.31    <none>        8080/TCP   20s   app=volcano-scheduler

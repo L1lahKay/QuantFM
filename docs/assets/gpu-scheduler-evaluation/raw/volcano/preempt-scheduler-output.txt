@@ -1,0 +1,179 @@
+Found 2 pods, using pod/volcano-scheduler-7d5c9bb94f-st784
+2026/07/31 07:42:13 maxprocs: Leaving GOMAXPROCS=64: CPU quota undefined
+I0731 07:42:13.577731       1 flags.go:57] FLAG: --add-dir-header="false"
+I0731 07:42:13.577782       1 flags.go:57] FLAG: --alsologtostderr="false"
+I0731 07:42:13.577795       1 flags.go:57] FLAG: --alsologtostderrthreshold="0"
+I0731 07:42:13.577803       1 flags.go:57] FLAG: --ca-cert-file=""
+I0731 07:42:13.577812       1 flags.go:57] FLAG: --cache-dump-dir="/tmp"
+I0731 07:42:13.577819       1 flags.go:57] FLAG: --cache-dumper="true"
+I0731 07:42:13.577828       1 flags.go:57] FLAG: --csi-storage="false"
+I0731 07:42:13.577835       1 flags.go:57] FLAG: --default-queue="default"
+I0731 07:42:13.577842       1 flags.go:57] FLAG: --disable-default-scheduler-config="false"
+I0731 07:42:13.577848       1 flags.go:57] FLAG: --enable-healthz="true"
+I0731 07:42:13.577855       1 flags.go:57] FLAG: --enable-metrics="true"
+I0731 07:42:13.577863       1 flags.go:57] FLAG: --enable-pprof="false"
+I0731 07:42:13.577869       1 flags.go:57] FLAG: --feature-gates=""
+I0731 07:42:13.577887       1 flags.go:57] FLAG: --gate-removal-worker-num="5"
+I0731 07:42:13.577895       1 flags.go:57] FLAG: --healthz-address=":11251"
+I0731 07:42:13.577902       1 flags.go:57] FLAG: --ignored-provisioners="[]"
+I0731 07:42:13.577919       1 flags.go:57] FLAG: --kube-api-burst="2000"
+I0731 07:42:13.577925       1 flags.go:57] FLAG: --kube-api-qps="2000"
+I0731 07:42:13.577955       1 flags.go:57] FLAG: --kubeconfig=""
+I0731 07:42:13.577963       1 flags.go:57] FLAG: --leader-elect="false"
+I0731 07:42:13.577969       1 flags.go:57] FLAG: --leader-elect-lease-duration="15s"
+I0731 07:42:13.577988       1 flags.go:57] FLAG: --leader-elect-renew-deadline="10s"
+I0731 07:42:13.577995       1 flags.go:57] FLAG: --leader-elect-resource-lock="leases"
+I0731 07:42:13.578002       1 flags.go:57] FLAG: --leader-elect-resource-name="volcano"
+I0731 07:42:13.578008       1 flags.go:57] FLAG: --leader-elect-resource-namespace="volcano-system"
+I0731 07:42:13.578015       1 flags.go:57] FLAG: --leader-elect-retry-period="2s"
+I0731 07:42:13.578021       1 flags.go:57] FLAG: --legacy-stderr-threshold-behavior="false"
+I0731 07:42:13.578028       1 flags.go:57] FLAG: --listen-address=":8080"
+I0731 07:42:13.578035       1 flags.go:57] FLAG: --lock-object-namespace=""
+I0731 07:42:13.578041       1 flags.go:57] FLAG: --log-backtrace-at=":0"
+I0731 07:42:13.578055       1 flags.go:57] FLAG: --log-dir=""
+I0731 07:42:13.578065       1 flags.go:57] FLAG: --log-file=""
+I0731 07:42:13.578071       1 flags.go:57] FLAG: --log-file-max-size="1800"
+I0731 07:42:13.578079       1 flags.go:57] FLAG: --log-flush-frequency="5s"
+I0731 07:42:13.578087       1 flags.go:57] FLAG: --logtostderr="true"
+I0731 07:42:13.578093       1 flags.go:57] FLAG: --master=""
+I0731 07:42:13.578100       1 flags.go:57] FLAG: --minimum-feasible-nodes="100"
+I0731 07:42:13.578108       1 flags.go:57] FLAG: --minimum-percentage-nodes-to-find="5"
+I0731 07:42:13.578115       1 flags.go:57] FLAG: --node-selector="[]"
+I0731 07:42:13.578131       1 flags.go:57] FLAG: --node-worker-threads="20"
+I0731 07:42:13.578139       1 flags.go:57] FLAG: --one-output="false"
+I0731 07:42:13.578145       1 flags.go:57] FLAG: --percentage-nodes-to-find="0"
+I0731 07:42:13.578151       1 flags.go:57] FLAG: --plugins-dir=""
+I0731 07:42:13.578157       1 flags.go:57] FLAG: --priority-class="true"
+I0731 07:42:13.578163       1 flags.go:57] FLAG: --resource-sync-timeout="1m0s"
+I0731 07:42:13.578170       1 flags.go:57] FLAG: --resync-period="0s"
+I0731 07:42:13.578177       1 flags.go:57] FLAG: --schedule-period="1s"
+I0731 07:42:13.578183       1 flags.go:57] FLAG: --scheduler-conf="/volcano.scheduler/volcano-scheduler.conf"
+I0731 07:42:13.578190       1 flags.go:57] FLAG: --scheduler-name="[volcano]"
+I0731 07:42:13.578208       1 flags.go:57] FLAG: --scheduler-sharding-mode="none"
+I0731 07:42:13.578214       1 flags.go:57] FLAG: --scheduler-sharding-name="volcano"
+I0731 07:42:13.578234       1 flags.go:57] FLAG: --skip-headers="false"
+I0731 07:42:13.578242       1 flags.go:57] FLAG: --skip-log-headers="false"
+I0731 07:42:13.578248       1 flags.go:57] FLAG: --stderrthreshold="0"
+I0731 07:42:13.578261       1 flags.go:57] FLAG: --tls-cert-file=""
+I0731 07:42:13.578267       1 flags.go:57] FLAG: --tls-private-key-file=""
+I0731 07:42:13.578273       1 flags.go:57] FLAG: --v="3"
+I0731 07:42:13.578280       1 flags.go:57] FLAG: --version="false"
+I0731 07:42:13.578286       1 flags.go:57] FLAG: --vmodule=""
+W0731 07:42:13.578349       1 client_config.go:682] Neither --kubeconfig nor --master was specified.  Using the inClusterConfig.  This might not work.
+I0731 07:42:13.587347       1 registry.go:397] setting kube:feature gate emulation version to 1.35, min compatibility version to 1.34
+I0731 07:42:13.588287       1 cache.go:537] Creating default queue and root queue
+I0731 07:42:13.592856       1 cache.go:469] Queue root already exists, skip creating.
+I0731 07:42:13.597024       1 cache.go:469] Queue default already exists, skip creating.
+I0731 07:42:13.597454       1 cache.go:598] no registered bind method, new a default one
+I0731 07:42:13.601187       1 scheduler.go:159] Finished loading scheduler config. Final state: actions=[allocate backfill preempt], plugins=[priority gang conformance overcommit drf predicates proportion nodeorder binpack]
+I0731 07:42:13.602859       1 reflector.go:367] "Starting reflector" type="*v1.Node" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.602928       1 reflector.go:411] "Listing and watching" type="*v1.Node" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.602974       1 reflector.go:367] "Starting reflector" type="*v1.PersistentVolumeClaim" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603030       1 reflector.go:411] "Listing and watching" type="*v1.PersistentVolumeClaim" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603119       1 reflector.go:367] "Starting reflector" type="*v1beta1.PodGroup" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603188       1 reflector.go:411] "Listing and watching" type="*v1beta1.PodGroup" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603312       1 reflector.go:367] "Starting reflector" type="*v1.ReplicaSet" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603337       1 reflector.go:411] "Listing and watching" type="*v1.ReplicaSet" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603365       1 reflector.go:367] "Starting reflector" type="*v1.ReplicationController" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603427       1 reflector.go:411] "Listing and watching" type="*v1.ReplicationController" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603562       1 reflector.go:367] "Starting reflector" type="*v1.ResourceSlice" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603719       1 reflector.go:411] "Listing and watching" type="*v1.ResourceSlice" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603694       1 reflector.go:367] "Starting reflector" type="*v1.ResourceClaim" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603760       1 reflector.go:367] "Starting reflector" type="*v1.Pod" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603774       1 reflector.go:411] "Listing and watching" type="*v1.ResourceClaim" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603901       1 reflector.go:411] "Listing and watching" type="*v1.Pod" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603905       1 reflector.go:367] "Starting reflector" type="*v1.CSINode" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603931       1 reflector.go:367] "Starting reflector" type="*v1.Namespace" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603943       1 reflector.go:367] "Starting reflector" type="*v1.DeviceClass" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603774       1 reflector.go:367] "Starting reflector" type="*v1.ResourceQuota" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603968       1 reflector.go:411] "Listing and watching" type="*v1.CSINode" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604018       1 reflector.go:411] "Listing and watching" type="*v1.ResourceQuota" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604009       1 reflector.go:367] "Starting reflector" type="*v1alpha1.Numatopology" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604032       1 reflector.go:411] "Listing and watching" type="*v1.Namespace" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604058       1 reflector.go:411] "Listing and watching" type="*v1.DeviceClass" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603706       1 reflector.go:367] "Starting reflector" type="*v1beta1.Queue" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604163       1 reflector.go:411] "Listing and watching" type="*v1beta1.Queue" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604217       1 reflector.go:411] "Listing and watching" type="*v1alpha1.Numatopology" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604203       1 reflector.go:367] "Starting reflector" type="*v1.StatefulSet" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604295       1 reflector.go:411] "Listing and watching" type="*v1.StatefulSet" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604194       1 reflector.go:367] "Starting reflector" type="*v1.Service" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604332       1 reflector.go:367] "Starting reflector" type="*v1.VolumeAttachment" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604361       1 reflector.go:367] "Starting reflector" type="*v1.PodDisruptionBudget" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604397       1 reflector.go:411] "Listing and watching" type="*v1.PodDisruptionBudget" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604359       1 reflector.go:367] "Starting reflector" type="*v1.PriorityClass" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.605337       1 reflector.go:411] "Listing and watching" type="*v1.PriorityClass" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.605611       1 reflector.go:411] "Listing and watching" type="*v1.Service" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604377       1 reflector.go:367] "Starting reflector" type="*v1.PersistentVolume" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.605766       1 reflector.go:411] "Listing and watching" type="*v1.PersistentVolume" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.605806       1 reflector.go:411] "Listing and watching" type="*v1.VolumeAttachment" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.606130       1 reflector.go:367] "Starting reflector" type="*v1alpha1.HyperNode" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.606169       1 reflector.go:367] "Starting reflector" type="*v1.StorageClass" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.606195       1 reflector.go:411] "Listing and watching" type="*v1alpha1.HyperNode" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.606299       1 reflector.go:411] "Listing and watching" type="*v1.StorageClass" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.609812       1 reflector.go:446] "Caches populated" type="*v1.ReplicationController" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.610169       1 reflector.go:446] "Caches populated" type="*v1.ResourceClaim" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.610168       1 reflector.go:446] "Caches populated" type="*v1beta1.PodGroup" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.610244       1 reflector.go:446] "Caches populated" type="*v1.ResourceQuota" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.610382       1 reflector.go:446] "Caches populated" type="*v1.PersistentVolumeClaim" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.610414       1 reflector.go:446] "Caches populated" type="*v1.ResourceSlice" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.610371       1 event_handlers.go:1209] Add ResourceQuota <gpu-dev/gpu-quota> in cache, with spec: map[limits.cpu:{{128 0} {<nil>} 128 DecimalSI} limits.memory:{{549755813888 0} {<nil>}  BinarySI} limits.nvidia.com/gpu:{{4 0} {<nil>} 4 DecimalSI} requests.cpu:{{64 0} {<nil>} 64 DecimalSI} requests.memory:{{274877906944 0} {<nil>}  BinarySI} requests.nvidia.com/gpu:{{4 0} {<nil>} 4 DecimalSI}].
+I0731 07:42:13.610648       1 reflector.go:446] "Caches populated" type="*v1.PodDisruptionBudget" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.610832       1 reflector.go:446] "Caches populated" type="*v1.CSINode" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.611275       1 reflector.go:446] "Caches populated" type="*v1alpha1.Numatopology" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.611760       1 reflector.go:446] "Caches populated" type="*v1.Node" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.612753       1 reflector.go:446] "Caches populated" type="*v1.StorageClass" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.612844       1 reflector.go:446] "Caches populated" type="*v1alpha1.HyperNode" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.613343       1 reflector.go:446] "Caches populated" type="*v1.PriorityClass" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.613863       1 reflector.go:446] "Caches populated" type="*v1beta1.Queue" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.613971       1 reflector.go:446] "Caches populated" type="*v1.Namespace" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.615628       1 reflector.go:446] "Caches populated" type="*v1.StatefulSet" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.615774       1 reflector.go:446] "Caches populated" type="*v1.DeviceClass" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.616082       1 reflector.go:446] "Caches populated" type="*v1.VolumeAttachment" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.616464       1 reflector.go:446] "Caches populated" type="*v1.PersistentVolume" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.619729       1 reflector.go:446] "Caches populated" type="*v1.Service" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.619999       1 reflector.go:446] "Caches populated" type="*v1.ReplicaSet" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.620992       1 reflector.go:446] "Caches populated" type="*v1.Pod" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+W0731 07:42:13.621433       1 node_info.go:359] received argument of nil node, no need to set other resources for 
+W0731 07:42:13.621479       1 node_info.go:254] the argument node is null.
+I0731 07:42:13.621499       1 event_handlers.go:445] Added pod <khalil/dense230m-oos-release-20260728-nl57n> into cache.
+I0731 07:42:13.621552       1 event_handlers.go:445] Added pod <kube-system/local-path-provisioner-5c4dc5d66d-hfr4n> into cache.
+I0731 07:42:13.621601       1 event_handlers.go:445] Added pod <kube-system/metrics-server-786d997795-bdpkb> into cache.
+I0731 07:42:13.621632       1 event_handlers.go:445] Added pod <kuboard/metrics-scraper-6b796b74bc-wr6px> into cache.
+I0731 07:42:13.621669       1 event_handlers.go:445] Added pod <node-feature-discovery/nfd-node-feature-discovery-worker-9p48r> into cache.
+I0731 07:42:13.621697       1 event_handlers.go:445] Added pod <volcano-system/volcano-admission-569b8b4545-hd7fz> into cache.
+I0731 07:42:13.621764       1 event_handlers.go:445] Added pod <volcano-system/volcano-admission-init-kj6s5> into cache.
+I0731 07:42:13.621816       1 event_handlers.go:445] Added pod <volcano-system/volcano-scheduler-7d5c9bb94f-st784> into cache.
+I0731 07:42:13.621902       1 event_handlers.go:445] Added pod <gpu-dev/dylan-trainer-ac4218e-f5sjk> into cache.
+I0731 07:42:13.621943       1 event_handlers.go:445] Added pod <khalil/dense230m-oos-release-20260728-fb8g5> into cache.
+I0731 07:42:13.621983       1 event_handlers.go:445] Added pod <kube-system/coredns-c4dbffb5f-kl2wl> into cache.
+I0731 07:42:13.622011       1 event_handlers.go:445] Added pod <nvidia-device-plugin/nvdp-nvidia-device-plugin-4grgz> into cache.
+I0731 07:42:13.622065       1 event_handlers.go:445] Added pod <khalil/dense230m-historical-embeddings-20260728-z6vtq> into cache.
+I0731 07:42:13.622103       1 event_handlers.go:445] Added pod <khalil/dense230m-oos-signal-20260728-wlx5f> into cache.
+I0731 07:42:13.622136       1 event_handlers.go:445] Added pod <node-feature-discovery/nfd-node-feature-discovery-gc-7b756b5b96-pvr8c> into cache.
+I0731 07:42:13.622163       1 event_handlers.go:445] Added pod <node-feature-discovery/nfd-node-feature-discovery-master-86795df55f-n6pxq> into cache.
+I0731 07:42:13.622186       1 event_handlers.go:445] Added pod <registry/registry-56bf56cbf4-5b7sd> into cache.
+I0731 07:42:13.622221       1 event_handlers.go:445] Added pod <khalil/dense230m-oos-release-v2-20260728-2vg8n> into cache.
+I0731 07:42:13.622250       1 event_handlers.go:445] Added pod <kueue-system/kueue-controller-manager-84bd4bb856-hzdmm> into cache.
+I0731 07:42:13.622293       1 event_handlers.go:445] Added pod <volcano-system/volcano-controllers-7c87f8cb95-lcmqv> into cache.
+I0731 07:42:13.622320       1 event_handlers.go:445] Added pod <volcano-system/volcano-scheduler-786498f9db-kfhms> into cache.
+I0731 07:42:13.702716       1 cache.go:877] Start metrics collection, metricsConf is map[]
+I0731 07:42:13.702772       1 cache.go:882] The interval for querying metrics data is 30s
+I0731 07:42:13.702819       1 cache.go:885] scheduler wait for handlers sync
+I0731 07:42:13.702906       1 cache.go:1771] The metrics type is not set in the volcano scheduler configmap file. As a result, the CPU and memory load information of the node is not collected.
+I0731 07:42:13.702926       1 event_handlers.go:789] "No need to update hyperNode cache when node added or deleted"
+W0731 07:42:13.702980       1 node_info.go:359] received argument of nil node, no need to set other resources for 
+W0731 07:42:13.703014       1 node_info.go:254] the argument node is null.
+I0731 07:42:13.803859       1 cache.go:887] scheduler finished handlers sync
+I0731 07:42:13.803889       1 scheduler.go:114] Scheduler completes Initialization and start to run
+I0731 07:42:13.804422       1 cache.go:1581] "SnapShot for scheduling" jobNum=0 QueueNum=3 NodeNum=1
+I0731 07:42:13.804480       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:13.804503       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:13.804527       1 session.go:279] Open Session b800212e-f91e-4cd7-8c51-8ac4293fbd46 with <0> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:13.808270       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:13.808464       1 session.go:577] Close Session b800212e-f91e-4cd7-8c51-8ac4293fbd46
+I0731 07:42:14.809949       1 cache.go:1581] "SnapShot for scheduling" jobNum=0 QueueNum=3 NodeNum=1
+I0731 07:42:14.810033       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:14.810058       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:14.810092       1 session.go:279] Open Session 311ac7d9-acae-4a32-b607-3c3369a93f33 with <0> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:14.810770       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:14.810883       1 session.go:577] Close Session 311ac7d9-acae-4a32-b607-3c3369a93f33

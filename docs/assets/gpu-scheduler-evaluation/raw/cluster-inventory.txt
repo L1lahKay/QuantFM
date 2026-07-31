@@ -1,0 +1,19 @@
+Script started on 2026-07-30 07:34:53+00:00 [<not executed on terminal>]
+2026-07-30T07:34:53Z
+NAME         READY   GPU   ACCELERATOR   K8S
+gpu-dev-01   True    8     nvidia        v1.35.4+k3s1
+No Kueue or Volcano CRDs installed
+NAME              SHORTNAMES   APIVERSION             NAMESPACED   KIND
+priorityclasses   pc           scheduling.k8s.io/v1   false        PriorityClass
+NAMESPACE   NAME        REQUEST                                                                      LIMIT                                                                   AGE
+gpu-dev     gpu-quota   requests.cpu: 0/64, requests.memory: 0/256Gi, requests.nvidia.com/gpu: 0/4   limits.cpu: 0/128, limits.memory: 0/512Gi, limits.nvidia.com/gpu: 0/4   79d
+NAME                   PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+local-path (default)   rancher.io/local-path   Delete          WaitForFirstConsumer   false                  82d
+NAMESPACE   NAME           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+registry    registry-pvc   Bound    pvc-c529fae0-e48e-4412-92f2-668174ac88e6   500Gi      RWO            local-path     <unset>                 82d   Filesystem
+Filesystem                        Type  Size  Used Avail Use% Mounted on
+/dev/mapper/ubuntu--vg-ubuntu--lv ext4  996G  851G  104G  90% /
+/dev/mapper/data--vg-k3s          xfs   2.0T   37G  2.0T   2% /data/k3s
+289G	/home/khalil/DataCleaning7.3/QuantFM/quant_fm/runs
+
+Script done on 2026-07-30 07:34:56+00:00 [COMMAND_EXIT_CODE="0"]

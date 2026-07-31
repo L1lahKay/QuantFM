@@ -17,6 +17,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pyarrow.parquet as pq
+from pylob.event_ordering import DEFAULT_EVENT_ORDERING_VERSION
+
+from quant_fm.tokenizer.artifact_contract import (
+    assert_token_contract_matches,
+    stable_vocab_sha256,
+    token_contract_path,
+)
+from quant_fm.tokenizer.transforms import DEFAULT_FEATURE_TRANSFORM_VERSION
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -35,6 +43,7 @@ class ShardEntry:
     rows: int
     sha256: str
     split: str = "train"
+    data_contract_sha256: str | None = None
 
 
 @dataclass(slots=True)
@@ -47,7 +56,10 @@ class Manifest:
     purge_days: int = 5
     embargo_days: int = 2
     vocab_path: str | None = None
+    vocab_sha256: str | None = None
     schema_version: str = "cn_l2_v1"
+    event_ordering_version: str | None = DEFAULT_EVENT_ORDERING_VERSION
+    feature_transform_version: str | None = DEFAULT_FEATURE_TRANSFORM_VERSION
 
     def split(self, name: str) -> list[ShardEntry]:
         """返回属于 ``name``（train/val/test）的所有分片。"""
@@ -66,6 +78,9 @@ class Manifest:
             "purge_days": self.purge_days,
             "embargo_days": self.embargo_days,
             "vocab_path": self.vocab_path,
+            "vocab_sha256": self.vocab_sha256,
+            "event_ordering_version": self.event_ordering_version,
+            "feature_transform_version": self.feature_transform_version,
             "shards": [asdict(s) for s in self.shards],
         }
         Path(path).write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -82,7 +97,10 @@ class Manifest:
             purge_days=data.get("purge_days", 5),
             embargo_days=data.get("embargo_days", 2),
             vocab_path=data.get("vocab_path"),
+            vocab_sha256=data.get("vocab_sha256"),
             schema_version=data.get("schema_version", "cn_l2_v1"),
+            event_ordering_version=data.get("event_ordering_version"),
+            feature_transform_version=data.get("feature_transform_version"),
         )
 
 
@@ -121,6 +139,11 @@ def scan_token_dir(
                         path=str(shard.resolve()),
                         rows=int(rows),
                         sha256=_sha256(shard),
+                        data_contract_sha256=(
+                            _sha256(token_contract_path(shard))
+                            if token_contract_path(shard).is_file()
+                            else None
+                        ),
                     )
                 )
     logger.info("scanned %d shards under %s", len(entries), tokens_dir)
@@ -168,6 +191,23 @@ def build_manifest(
     Manifest
     """
     entries = scan_token_dir(tokens_dir, markets=markets)
+    vocab = None
+    if vocab_path is not None:
+        artifact = Path(vocab_path)
+        if not artifact.is_file():
+            msg = f"vocab_path does not exist: {artifact}"
+            raise FileNotFoundError(msg)
+        payload = json.loads(artifact.read_text(encoding="utf-8"))
+        if payload.get("vocab_version") == "2.0":
+            from quant_fm.tokenizer.vocab_v2 import VocabV2
+
+            vocab = VocabV2.load(artifact)
+        else:
+            from quant_fm.tokenizer.vocab import Vocab
+
+            vocab = Vocab.load(artifact)
+        for entry in entries:
+            assert_token_contract_matches(Path(entry.path), vocab)
     for e in entries:
         e.split = _assign_split(e.date, train_end, val_end)
     manifest = Manifest(
@@ -177,6 +217,14 @@ def build_manifest(
         purge_days=purge_days,
         embargo_days=embargo_days,
         vocab_path=vocab_path,
+        vocab_sha256=(stable_vocab_sha256(vocab) if vocab is not None else None),
+        schema_version=(vocab.schema_version if vocab is not None else "cn_l2_v1"),
+        event_ordering_version=(
+            vocab.event_ordering_version if vocab is not None else None
+        ),
+        feature_transform_version=(
+            vocab.feature_transform_version if vocab is not None else None
+        ),
     )
     for name in ("train", "val", "test"):
         logger.info("split %s: %d shards", name, len(manifest.split(name)))

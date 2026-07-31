@@ -1,0 +1,21 @@
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: khalil-volcano-low
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+value: 100
+globalDefault: false
+description: Low-priority victim used only by the quota-bounded Volcano evaluation.
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: khalil-volcano-high
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+value: 1000
+globalDefault: false
+description: High-priority claimant used only by the quota-bounded Volcano evaluation.

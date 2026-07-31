@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: khalil-scheduler-bench
+  labels:
+    owner: khalil
+    purpose: scheduler-evaluation
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: khalil-quota-bench
+  labels:
+    owner: khalil
+    purpose: scheduler-evaluation

@@ -1,0 +1,23 @@
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: khalil-bench-low
+  labels:
+    owner: khalil
+    purpose: scheduler-evaluation
+value: 100
+globalDefault: false
+preemptionPolicy: Never
+description: Temporary low priority used only by the khalil scheduler benchmark.
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: khalil-bench-high
+  labels:
+    owner: khalil
+    purpose: scheduler-evaluation
+value: 1000
+globalDefault: false
+preemptionPolicy: PreemptLowerPriority
+description: Temporary high priority used only by the khalil scheduler benchmark.

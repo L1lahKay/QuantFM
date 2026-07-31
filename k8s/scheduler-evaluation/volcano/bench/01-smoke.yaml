@@ -1,0 +1,87 @@
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+  name: khalil-volcano-smoke
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  weight: 1
+  reclaimable: true
+  capability:
+    cpu: "2"
+    memory: 4Gi
+    nvidia.com/gpu: "1"
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: PodGroup
+metadata:
+  namespace: gpu-dev
+  name: khalil-volcano-smoke-pg
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  minMember: 1
+  minResources:
+    cpu: 500m
+    memory: 1Gi
+    nvidia.com/gpu: "1"
+  queue: khalil-volcano-smoke
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  namespace: gpu-dev
+  name: khalil-volcano-smoke
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 120
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        evaluation.quantfm/owner: khalil
+        evaluation.quantfm/suite: volcano-v1-15-1
+        evaluation.quantfm/scenario: smoke
+      annotations:
+        scheduling.k8s.io/group-name: khalil-volcano-smoke-pg
+    spec:
+      schedulerName: volcano
+      runtimeClassName: nvidia
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 2
+      nodeSelector:
+        accelerator: nvidia
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: gpu-probe
+          image: registry.zs/gpu-dev/dylan-trainer:ac4218e
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              echo "APP_START_UTC=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+              echo "CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-unset}"
+              nvidia-smi -L
+              echo "VISIBLE_GPU_COUNT=$(nvidia-smi -L | wc -l)"
+              python -c 'import torch; print("TORCH_VERSION=" + str(torch.__version__)); print("TORCH_CUDA_AVAILABLE=" + str(torch.cuda.is_available()).lower()); assert torch.cuda.is_available(); x = torch.tensor([6.0], device="cuda") * 7; torch.cuda.synchronize(); print("CUDA_TENSOR_RESULT=" + str(int(x.item())))'
+              sleep 4
+              echo "APP_FINISH_UTC=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "2"
+              memory: 2Gi
+              nvidia.com/gpu: "1"

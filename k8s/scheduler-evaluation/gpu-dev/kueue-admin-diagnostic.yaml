@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: khalil-kueue-admin-diag
+  namespace: gpu-dev
+  labels:
+    owner: khalil
+    experiment: kueue-admin-diagnostic
+    kueue.x-k8s.io/queue-name: gpu-dev
+spec:
+  suspend: true
+  backoffLimit: 0
+  activeDeadlineSeconds: 180
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        owner: khalil
+        experiment: kueue-admin-diagnostic
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      runtimeClassName: nvidia
+      nodeSelector:
+        accelerator: nvidia
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: probe
+          image: registry.zs/gpu-dev/dylan-trainer:ac4218e
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-ceu"]
+          args:
+            - |
+              echo "UNEXPECTED_START $(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+              exit 88
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "2"
+              memory: 2Gi
+              nvidia.com/gpu: "1"

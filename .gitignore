@@ -16,6 +16,9 @@ events.out.tfevents*
 minio_fm_env.sh
 credentials.json
 
+# Local GPU-cluster handout (contains a private kubeconfig/token)
+/docs/handout-khalil-gpu/
+
 # Local career notes (do not publish)
 /项目总结与简历材料.md
 /面试问答-预训练与AI-Infra.md

@@ -5,6 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from pylob.event_ordering import (
+    DEFAULT_EVENT_ORDERING_VERSION,
+    validate_event_ordering_version,
+)
 from pylob.pipeline.paths import (
     archive_object_key,
     endpoint_is_secure,
@@ -62,6 +66,7 @@ class PipelineConfig:
     skip_existing: bool = False
     write_debug_artifacts: bool = True
     n_workers: int = 1
+    event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION
 
     def __post_init__(self) -> None:
         market = self.market.upper()
@@ -75,6 +80,11 @@ class PipelineConfig:
         object.__setattr__(self, "market", market)
         object.__setattr__(self, "layout", layout)
         object.__setattr__(self, "output_dir", Path(self.output_dir))
+        object.__setattr__(
+            self,
+            "event_ordering_version",
+            validate_event_ordering_version(self.event_ordering_version),
+        )
 
     def resolved_trade_keys(self) -> tuple[str, ...]:
         """Return explicit or layout-derived trade object keys."""

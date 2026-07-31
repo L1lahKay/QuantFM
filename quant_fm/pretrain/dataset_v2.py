@@ -8,10 +8,10 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
-import polars as pl
 import torch
 from torch.utils.data import Dataset
 
+from quant_fm.tokenizer.storage_encoding_v2 import read_token_frame_v2
 from quant_fm.tokenizer.vocab_v2 import NA_ID, PAD_ID
 
 if TYPE_CHECKING:
@@ -76,9 +76,15 @@ class _Window:
 class _V2ShardCache:
     """按冻结字段读取 token/scalar parquet 的小型 LRU。"""
 
-    def __init__(self, capacity: int, layout: V2FieldLayout) -> None:
+    def __init__(
+        self,
+        capacity: int,
+        layout: V2FieldLayout,
+        vocab: VocabV2,
+    ) -> None:
         self.capacity = capacity
         self.layout = layout
+        self.vocab = vocab
         self._store: OrderedDict[str, dict[str, np.ndarray]] = OrderedDict()
 
     def get(self, path: str) -> dict[str, np.ndarray]:
@@ -87,7 +93,7 @@ class _V2ShardCache:
             self._store.move_to_end(path)
             return self._store[path]
         columns = [*self.layout.token_fields, *self.layout.value_fields]
-        frame = pl.read_parquet(path, columns=columns)
+        frame = read_token_frame_v2(path, columns=columns, vocab=self.vocab)
         arrays = {
             field: frame[field].to_numpy().astype(np.int64)
             for field in self.layout.token_fields
@@ -122,7 +128,7 @@ class EventWindowDatasetV2(Dataset):
         self.context = context
         self.stride = stride or context
         self.min_len = min_len
-        self._cache = _V2ShardCache(cache_size, self.layout)
+        self._cache = _V2ShardCache(cache_size, self.layout, vocab)
         self._windows = self._index_windows()
 
     def _index_windows(self) -> list[_Window]:

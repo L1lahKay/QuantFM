@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -10,9 +11,14 @@ from typing import TYPE_CHECKING, Any
 
 import polars as pl
 
+from pylob.event_ordering import DEFAULT_EVENT_ORDERING_VERSION
 from pylob.orderbook_builder_sh import OrderBookSH
 from pylob.orderbook_builder_sz import OrderBookSZ
-from pylob.pipeline.events import build_event_stream
+from pylob.pipeline.events import (
+    build_event_stream,
+    event_stream_contract_matches,
+    write_event_stream_contract,
+)
 from pylob.pipeline.minio_io import MinioDataSource
 from pylob.pipeline.s3_io import PolarsS3Reader, split_combined_frame
 from pylob.pipeline.standardize import standardize_order_frame, standardize_trade_frame
@@ -90,6 +96,7 @@ def _clean_one_symbol(
     cut_serial: int | None,
     write_debug_artifacts: bool,
     timeout_s: float | None = None,
+    event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION,
 ) -> str:
     """
     Clean a single symbol; returns status ``written`` or ``empty``.
@@ -111,6 +118,7 @@ def _clean_one_symbol(
         symbol=symbol,
         cut_time=cut_time,
         cut_serial=cut_serial,
+        event_ordering_version=event_ordering_version,
     )
     if order_data is None or len(order_data) == 0:
         return "empty"
@@ -135,7 +143,13 @@ def _clean_one_symbol(
     symbol_dir = output_dir / market / symbol
     symbol_dir.mkdir(parents=True, exist_ok=True)
     events_out = symbol_dir / "events.parquet"
-    pl.from_pandas(events).write_parquet(events_out)
+    temporary_events = events_out.with_suffix(".parquet.tmp")
+    pl.from_pandas(events).write_parquet(temporary_events)
+    temporary_events.replace(events_out)
+    write_event_stream_contract(
+        events_out,
+        event_ordering_version=event_ordering_version,
+    )
     if write_debug_artifacts:
         tokens = build_field_tokens(events)
         pl.from_pandas(order_data).write_parquet(symbol_dir / "market_rows.parquet")
@@ -156,6 +170,9 @@ def _worker_clean_symbol(payload: dict[str, Any]) -> tuple[str, str, str | None]
             cut_serial=payload["cut_serial"],
             write_debug_artifacts=payload["write_debug_artifacts"],
             timeout_s=payload.get("timeout_s"),
+            event_ordering_version=payload.get(
+                "event_ordering_version", DEFAULT_EVENT_ORDERING_VERSION
+            ),
         )
         return payload["symbol"], status, None
     except Exception as exc:
@@ -173,6 +190,7 @@ def _partition_by_symbol(
     order_sub = order_df.filter(pl.col("symbol").is_in(symbols))
     trade_parts = trade_sub.partition_by("symbol", as_dict=True, include_key=True)
     order_parts = order_sub.partition_by("symbol", as_dict=True, include_key=True)
+
     # polars may key by the value itself or a single-element tuple depending on version
     def _normalize(parts: dict) -> dict[str, pl.DataFrame]:
         out: dict[str, pl.DataFrame] = {}
@@ -210,8 +228,24 @@ def build_clean_dataset(minio_config: MinioConfig, config: PipelineConfig) -> No
     for symbol in config.symbols:
         events_out = config.output_dir / config.market / symbol / "events.parquet"
         if config.skip_existing and events_out.exists():
-            skipped += 1
-            continue
+            try:
+                compatible = event_stream_contract_matches(
+                    events_out,
+                    version=config.event_ordering_version,
+                )
+            except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
+                compatible = False
+                logger.warning("invalid event contract %s: %s", events_out, exc)
+            if compatible:
+                skipped += 1
+                continue
+            msg = (
+                f"refusing to overwrite incompatible clean event artifact during "
+                f"resume: {events_out}; requested ordering="
+                f"{config.event_ordering_version}. Use a new output root or disable "
+                "skip_existing explicitly."
+            )
+            raise RuntimeError(msg)
         pending.append(symbol)
 
     if skipped:
@@ -249,6 +283,7 @@ def build_clean_dataset(minio_config: MinioConfig, config: PipelineConfig) -> No
                     cut_time=config.cut_time,
                     cut_serial=config.cut_serial,
                     write_debug_artifacts=config.write_debug_artifacts,
+                    event_ordering_version=config.event_ordering_version,
                 )
                 if status == "written":
                     written += 1
@@ -287,6 +322,7 @@ def build_clean_dataset(minio_config: MinioConfig, config: PipelineConfig) -> No
             "cut_time": config.cut_time,
             "cut_serial": config.cut_serial,
             "write_debug_artifacts": config.write_debug_artifacts,
+            "event_ordering_version": config.event_ordering_version,
         }
         for symbol in pending
     ]

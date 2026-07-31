@@ -113,10 +113,16 @@ class SparseMoEFeedForward(nn.Module):
                 weights = weights[keep]
             accepted += token_index.numel()
             expert_output = expert(active[token_index])
+            # Autocast can leave ``active`` (and therefore ``routed``) in FP32
+            # while Linear returns BF16/FP16. ``index_add_`` requires identical
+            # dtypes, so accumulate expert contributions in the buffer dtype.
+            contribution = expert_output.to(routed.dtype) * weights.to(
+                routed.dtype
+            ).unsqueeze(-1)
             routed.index_add_(
                 0,
                 token_index,
-                expert_output * weights.to(expert_output.dtype).unsqueeze(-1),
+                contribution,
             )
         active_hidden = routed if self.shared is None else routed + self.shared(active)
         hidden = torch.zeros_like(flat)

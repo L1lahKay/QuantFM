@@ -1,0 +1,19 @@
+# Administrator-only static claim for the retained QuantFM local PV.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: quantfm-data
+  namespace: gpu-dev
+  labels:
+    app.kubernetes.io/name: quantfm
+    app.kubernetes.io/component: training-storage
+    owner: khalil
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  volumeMode: Filesystem
+  volumeName: pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580
+  resources:
+    requests:
+      storage: 500Gi

@@ -85,6 +85,14 @@ def test_tokenize_determinism(tmp_path):
         assert (t1[col] > PAD_ID).all()
 
 
+def test_fit_bins_rejects_false_date_provenance(tmp_path):
+    canonical = events_to_canonical(_fake_events(), date="2024-07-03", market="SZ")
+    path = tmp_path / "events.parquet"
+    canonical.write_parquet(path)
+    with pytest.raises(ValueError, match="fit_dates must exactly match"):
+        fit_bins([path], n_bins=8, fit_dates=["2024-07-04"])
+
+
 def test_no_leakage_raises():
     vocab = default_vocab()
     vocab.fit_dates = ("2024-01-01", "2024-01-02")
@@ -108,6 +116,109 @@ def test_manifest_split(tmp_path):
     assert len(manifest.split("val")) == 1
     assert len(manifest.split("test")) == 1
     assert manifest.shards[0].sha256
+
+
+def test_pretrain_split_contract_rejects_thin_validation_and_vocab_leakage():
+    from quant_fm.manifest.build_manifest import Manifest, ShardEntry
+    from quant_fm.pretrain.train import validate_pretrain_split_contract
+
+    def shard(date: str, split: str) -> ShardEntry:
+        return ShardEntry("SZ", "000001", date, "unused", 10, "hash", split)
+
+    manifest = Manifest(
+        shards=[
+            shard("2025-01-02", "train"),
+            shard("2025-01-03", "train"),
+            shard("2025-01-06", "val"),
+            shard("2025-01-07", "test"),
+        ]
+    )
+    vocab = default_vocab()
+    vocab.fit_dates = ("2025-01-02", "2025-01-07")
+    with pytest.raises(ValueError, match="validation split is too short") as error:
+        validate_pretrain_split_contract(
+            manifest,
+            vocab,
+            require_validation=True,
+            min_validation_dates=2,
+            min_test_dates=1,
+        )
+    assert "vocab was fitted on validation/test dates" in str(error.value)
+
+
+def test_pretrain_split_contract_accepts_chronological_date_blocks():
+    from quant_fm.manifest.build_manifest import Manifest, ShardEntry
+    from quant_fm.pretrain.train import validate_pretrain_split_contract
+
+    shards = []
+    for index in range(15):
+        split = "train" if index < 5 else "val" if index < 10 else "test"
+        shards.append(
+            ShardEntry(
+                "SZ",
+                "000001",
+                f"2025-01-{index + 1:02d}",
+                "unused",
+                10,
+                "hash",
+                split,
+            )
+        )
+    vocab = default_vocab()
+    vocab.fit_dates = tuple(item.date for item in shards if item.split == "train")
+    contract = validate_pretrain_split_contract(
+        Manifest(shards=shards),
+        vocab,
+        require_validation=True,
+    )
+    assert contract["train_dates"] == 5
+    assert contract["validation_dates"] == 5
+    assert contract["test_dates"] == 5
+
+
+def test_pretrain_split_contract_rejects_vocab_dates_absent_from_manifest():
+    from quant_fm.manifest.build_manifest import Manifest, ShardEntry
+    from quant_fm.pretrain.train import validate_pretrain_split_contract
+
+    shards = [
+        ShardEntry("SZ", "000001", "2025-01-02", "unused", 10, "hash", "train"),
+        ShardEntry("SZ", "000001", "2025-01-03", "unused", 10, "hash", "val"),
+        ShardEntry("SZ", "000001", "2025-01-06", "unused", 10, "hash", "test"),
+    ]
+    vocab = default_vocab()
+    # 该日期即使早于正式 OOS，只要不属于 manifest 的训练切分，也不能用于拟合。
+    vocab.fit_dates = ("2025-01-02", "2025-01-05")
+
+    with pytest.raises(ValueError, match="not contained in the manifest training"):
+        validate_pretrain_split_contract(
+            Manifest(shards=shards),
+            vocab,
+            require_validation=True,
+            min_validation_dates=1,
+            min_test_dates=1,
+        )
+
+
+def test_pretrain_split_contract_rejects_manifest_date_plan_mismatch():
+    from quant_fm.manifest.build_manifest import Manifest, ShardEntry
+    from quant_fm.pretrain.train import validate_pretrain_split_contract
+
+    shards = [
+        ShardEntry("SZ", "000001", "2025-01-02", "unused", 10, "hash", "train"),
+        ShardEntry("SZ", "000001", "2025-01-03", "unused", 10, "hash", "val"),
+        ShardEntry("SZ", "000001", "2025-01-06", "unused", 10, "hash", "test"),
+    ]
+    vocab = default_vocab()
+    vocab.fit_dates = ("2025-01-02",)
+    with pytest.raises(ValueError, match="dates differ from frozen plan"):
+        validate_pretrain_split_contract(
+            Manifest(shards=shards),
+            vocab,
+            require_validation=True,
+            min_validation_dates=1,
+            min_test_dates=1,
+            expected_dates={"train": {"2025-01-02", "2025-01-03"}},
+        )
 
 
 def test_cpcv_and_dsr():

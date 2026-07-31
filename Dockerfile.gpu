@@ -1,0 +1,78 @@
+# syntax=docker/dockerfile:1.7
+
+ARG UV_IMAGE=ghcr.io/astral-sh/uv:0.11.24
+ARG PYTHON_IMAGE=python:3.12-slim-bookworm
+
+FROM ${UV_IMAGE} AS uv-bin
+
+FROM ${PYTHON_IMAGE} AS build
+
+COPY --from=uv-bin /uv /usr/local/bin/uv
+
+WORKDIR /workspace/QuantFM
+ENV UV_CACHE_DIR=/tmp/quantfm-uv-cache \
+    UV_LINK_MODE=copy
+
+COPY .python-version pyproject.toml uv.lock README.md ./
+COPY order_book ./order_book
+COPY quant_fm ./quant_fm
+
+RUN uv sync \
+      --frozen \
+      --extra fm \
+      --no-dev \
+      --no-editable \
+      --no-python-downloads \
+      --compile-bytecode \
+    && rm -rf "${UV_CACHE_DIR}"
+
+FROM ${PYTHON_IMAGE} AS runtime
+
+ARG APP_UID=1006
+ARG APP_GID=1009
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y ca-certificates libgomp1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid "${APP_GID}" khalil \
+    && useradd \
+         --uid "${APP_UID}" \
+         --gid "${APP_GID}" \
+         --home-dir /nonexistent \
+         --no-create-home \
+         --shell /usr/sbin/nologin \
+         khalil
+
+WORKDIR /workspace/QuantFM
+
+COPY --from=build /workspace/QuantFM/.venv ./.venv
+COPY quant_fm ./quant_fm
+
+# The migrated manifests contain absolute paths from the former host layout.
+# Both paths below are container-local symlinks into the PVC mount; neither is
+# a hostPath and neither reads the node's /home filesystem.
+RUN rm -rf /workspace/QuantFM/quant_fm/runs \
+    && mkdir -p \
+         /mnt/quantfm \
+         /home/khalil/DataCleaning7.3/QuantFM/quant_fm \
+    && ln -s /mnt/quantfm/runs /workspace/QuantFM/quant_fm/runs \
+    && ln -s \
+         /mnt/quantfm/runs \
+         /home/khalil/DataCleaning7.3/QuantFM/quant_fm/runs
+
+ENV PATH=/workspace/QuantFM/.venv/bin:${PATH} \
+    PYTHONPATH=/workspace/QuantFM \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    HOME=/mnt/quantfm/cache/home \
+    TMPDIR=/mnt/quantfm/tmp \
+    XDG_CACHE_HOME=/mnt/quantfm/cache \
+    HF_HOME=/mnt/quantfm/cache/huggingface \
+    TORCH_HOME=/mnt/quantfm/cache/torch \
+    TRITON_CACHE_DIR=/mnt/quantfm/cache/triton \
+    CUDA_CACHE_PATH=/mnt/quantfm/cache/cuda
+
+USER 1006:1009
+
+ENTRYPOINT ["python", "-m", "quant_fm.pretrain.train"]
+CMD ["--help"]

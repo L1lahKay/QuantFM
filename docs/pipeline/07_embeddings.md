@@ -1,9 +1,8 @@
 # 阶段 7：股日 Embedding、日内聚合与跨股票上下文
 
-> 当前状态（2026-07）：跨 chunk 的 mean/last/last-k 语义已修复，固定多尺度池化、
-> learned `IntradayAggregator` 以及同步跨股票基础设施已实现并有测试。默认 embedding
-> CLI 已接入前三种和固定 `multi_scale`；learned aggregator 与 cross-asset 模型尚未
-> 接入生产评分和标准训练/推理编排。
+> 当前状态（2026-07）：跨 chunk 的 mean/last/last-k 语义、因果重叠窗口和版本化
+> 多尺度池化均已实现。默认 V2 为 `context=2048, stride=512`，learned
+> `IntradayAggregator` 与 cross-asset 模型仍未接入生产评分编排。
 
 ## 核心代码
 
@@ -20,8 +19,10 @@
 
 ## 已修复的跨 chunk 池化
 
-一个股日仍按 `context` 独立送入 FM；chunk 之间没有 event-transformer attention 或
-KV cache。区别在于 `StockDayPoolAccumulator` 现在按时间顺序跨所有 chunk 累积：
+旧 checkpoint 的默认语义仍是每个 `context` 独立编码。新 V2 使用 `stride<context`
+的重叠窗口：后续窗口携带最多 `context-stride` 个历史事件作为 attention 前缀，但只将
+首次出现的后缀送入 pooling，因此每个事件严格计入一次。这不是跨全日 KV cache，契约
+名称为 `causal_overlap_unique_emit_v2`。`StockDayPoolAccumulator` 再按时间顺序累积：
 
 - `mean`：所有有效事件 hidden 的严格全日均值；
 - `last`：只取全日最后一个有效 hidden，不再平均每个 chunk 的 last；
@@ -40,15 +41,15 @@ from quant_fm.embedding.pool_stock_day import (
 
 ## 固定多尺度池化
 
-`--pooling multi_scale` 使用 `int_time` 计算日内毫秒，并输出八个 `d_model` 向量：
+`--pooling multi_scale` 使用 `int_time` 计算日内毫秒。新
+`hierarchical_selected_v2` 严格输出配置声明的四个 `d_model` 向量：
 
 ```text
-mean_all / last_256 / last_1024 / open_call
-continuous_am / continuous_pm / close_call / close_30m
+mean_all / last_256 / continuous_pm / close_30m
 ```
 
-最后追加一个原始 `event_count` 标量，因此输出宽度为 `8 * d_model + 1`。没有事件的
-阶段窗口使用零向量。这个方法不训练额外参数，可直接给现有 Ranker 做无重训消融。
+输出宽度为 `4*d_model`，不追加未标准化的 event count。历史 `hierarchical_v1` 仍被
+明确解释为 `8*d_model+1`，仅用于读取旧契约，不能冒充新表示。
 
 ## Embedding CLI
 
@@ -72,7 +73,7 @@ uv run python -m quant_fm.embedding.extract_hidden \
   --manifest quant_fm/runs/v2_shared/data/manifest.json \
   --split test \
   --out quant_fm/runs/v2_25m/embeddings_multiscale.parquet \
-  --context 2048 --pooling multi_scale \
+  --context 2048 --stride 512 --pooling multi_scale \
   --batch-size 16 --dtype bf16 --device auto
 ```
 
@@ -80,14 +81,19 @@ uv run python -m quant_fm.embedding.extract_hidden \
 `--part-index` 可按 token row 数近似均衡切分 shard，供多进程/多 GPU 独立提取；
 各 part 的输出需要由外部显式合并。
 
+`extract_embeddings_parallel.sh`、K8s 抽取器和 judge 入口在未显式设置时不再
+下发 `context/pooling/stride`，而是使用 checkpoint 冻结值。环境变量或 CLI
+仍可用于研究覆盖，但正式 Top-K gate 会精确要求 `cn_l2_v2 + post_event +
+context=2048 + stride=512 + hierarchical_selected_v2`，不会仅因“也是因果重叠”就放行。
+
 普通 pooling 输出：
 
 ```text
 date | symbol | market | emb_0 | ... | emb_<d_model-1>
 ```
 
-`multi_scale` 输出相同列名，但 embedding 宽度为 `8*d_model+1`。生成 parquet 不应
-提交到 GitHub。
+V2 `multi_scale` 输出相同列名，宽度由 checkpoint 冻结的 ordered outputs 推导；当前
+默认是 `4*d_model`。生成 parquet 不应提交到 GitHub。
 
 ## Learned 日内聚合器
 
@@ -145,7 +151,7 @@ from quant_fm.cross_asset.model import CrossAssetModelConfig, LinearCrossAssetMo
 ## 验证条件
 
 - 输出行数等于所选 split 的非空股日 shard 数；
-- 普通 pooling 宽度为 checkpoint `d_model`，multi-scale 为 `8*d_model+1`；
+- 普通 pooling 宽度为 checkpoint `d_model`，当前 V2 multi-scale 为 `4*d_model`；
 - 不含 NaN/Inf；
 - 相同 checkpoint、vocab、输入和 pooling 配置产生稳定结果；
 - v2 checkpoint 缺少 `--vocab` 或 hash/schema/字段顺序不匹配时 fail fast；
@@ -154,5 +160,5 @@ from quant_fm.cross_asset.model import CrossAssetModelConfig, LinearCrossAssetMo
 
 相关测试包括 `test_hierarchical_pooling.py`、`test_intraday_aggregator.py`、
 `test_cross_asset_causality.py` 和 `test_cross_asset_dataset_model.py`。截至本次改造，
-全仓结果为 `243 passed, 2 skipped, 1 xfailed`。这证明代码级语义和防泄漏约束通过，
+全仓结果为 `396 passed, 2 skipped, 1 xfailed`。这证明代码级语义和防泄漏约束通过，
 不代表 learned pooling、cross-asset 或新 FM 已完成真实训练和 OOS 收益验收。

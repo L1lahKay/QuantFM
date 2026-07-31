@@ -15,12 +15,22 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
+from pylob.event_ordering import (
+    DEFAULT_EVENT_ORDERING_VERSION,
+    LEGACY_LOCAL_TIME_V1,
+    validate_event_ordering_version,
+)
 
 from quant_fm.schema.cn_l2_v1 import EVT_TYPES, SESSIONS, SIDES
 from quant_fm.tokenizer.field_spec import (
     DEFAULT_FIELD_SPECS_V2,
     FieldSpec,
     validate_field_specs,
+)
+from quant_fm.tokenizer.transforms import (
+    DEFAULT_FEATURE_TRANSFORM_VERSION,
+    FEATURE_TRANSFORM_LEGACY_V1,
+    validate_feature_transform_version,
 )
 
 if TYPE_CHECKING:
@@ -263,9 +273,24 @@ class VocabV2:
     schema_version: str = "cn_l2_v2"
     fit_dates: tuple[str, ...] = ()
     sampling: dict[str, Any] = field(default_factory=dict)
+    event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION
+    feature_transform_version: str = DEFAULT_FEATURE_TRANSFORM_VERSION
+    data_semantics_explicit: bool = field(default=True, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         """校验字段顺序和每类词表均与 FieldSpec 一致。"""
+        self.event_ordering_version = validate_event_ordering_version(
+            self.event_ordering_version
+        )
+        self.feature_transform_version = validate_feature_transform_version(
+            self.feature_transform_version
+        )
+        if not self.data_semantics_explicit and (
+            self.event_ordering_version != LEGACY_LOCAL_TIME_V1
+            or self.feature_transform_version != FEATURE_TRANSFORM_LEGACY_V1
+        ):
+            msg = "implicit data semantics are reserved for legacy vocab artifacts"
+            raise ValueError(msg)
         validate_field_specs(self.field_specs)
         known = {spec.name: spec for spec in self.field_specs}
         unexpected = (set(self.categorical) | set(self.binned)) - set(known)
@@ -462,30 +487,32 @@ class VocabV2:
 
     def to_json(self) -> str:
         """序列化为稳定、可审计的 v2 JSON。"""
-        return json.dumps(
-            {
-                "vocab_version": self.VOCAB_VERSION,
-                "schema_version": self.schema_version,
-                "special_ids": dict(SPECIAL_IDS),
-                "fit_dates": list(self.fit_dates),
-                "field_specs": [spec.to_dict() for spec in self.field_specs],
-                "categorical": {
-                    name: list(values) for name, values in self.categorical.items()
-                },
-                "categorical_occupancy": {
-                    name: list(values)
-                    for name, values in self.categorical_occupancy.items()
-                },
-                "categorical_unknown_counts": self.categorical_unknown_counts,
-                "categorical_missing_counts": self.categorical_missing_counts,
-                "binned": {
-                    name: vocab.to_dict() for name, vocab in self.binned.items()
-                },
-                "sampling": self.sampling,
+        payload = {
+            "vocab_version": self.VOCAB_VERSION,
+            "schema_version": self.schema_version,
+            "special_ids": dict(SPECIAL_IDS),
+            "fit_dates": list(self.fit_dates),
+            "field_specs": [spec.to_dict() for spec in self.field_specs],
+            "categorical": {
+                name: list(values) for name, values in self.categorical.items()
             },
-            indent=2,
-            sort_keys=True,
-        )
+            "categorical_occupancy": {
+                name: list(values)
+                for name, values in self.categorical_occupancy.items()
+            },
+            "categorical_unknown_counts": self.categorical_unknown_counts,
+            "categorical_missing_counts": self.categorical_missing_counts,
+            "binned": {name: vocab.to_dict() for name, vocab in self.binned.items()},
+            "sampling": self.sampling,
+        }
+        if self.data_semantics_explicit:
+            payload.update(
+                {
+                    "event_ordering_version": self.event_ordering_version,
+                    "feature_transform_version": self.feature_transform_version,
+                }
+            )
+        return json.dumps(payload, indent=2, sort_keys=True)
 
     def save(self, path: Path) -> None:
         """原子性由调用方管理；本方法只写入一个明确的 v2 artifact。"""
@@ -501,6 +528,12 @@ class VocabV2:
         if data.get("special_ids") != dict(SPECIAL_IDS):
             msg = "artifact special token ids do not match tokenizer v2"
             raise ValueError(msg)
+        ordering_explicit = "event_ordering_version" in data
+        transform_explicit = "feature_transform_version" in data
+        if ordering_explicit != transform_explicit:
+            msg = "vocab data-semantics contract must contain both version fields"
+            raise ValueError(msg)
+        semantics_explicit = ordering_explicit and transform_explicit
         return cls(
             field_specs=tuple(
                 FieldSpec.from_dict(spec) for spec in data["field_specs"]
@@ -528,6 +561,13 @@ class VocabV2:
             schema_version=str(data.get("schema_version", "cn_l2_v2")),
             fit_dates=tuple(str(value) for value in data.get("fit_dates", [])),
             sampling=dict(data.get("sampling", {})),
+            event_ordering_version=data.get(
+                "event_ordering_version", LEGACY_LOCAL_TIME_V1
+            ),
+            feature_transform_version=data.get(
+                "feature_transform_version", FEATURE_TRANSFORM_LEGACY_V1
+            ),
+            data_semantics_explicit=semantics_explicit,
         )
 
 
@@ -542,6 +582,8 @@ def default_vocab_v2(
     field_specs: tuple[FieldSpec, ...] = DEFAULT_FIELD_SPECS_V2,
     *,
     categorical: Mapping[str, Sequence[str]] | None = None,
+    event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION,
+    feature_transform_version: str = DEFAULT_FEATURE_TRANSFORM_VERSION,
 ) -> VocabV2:
     """构造未拟合的 v2 词表，主要用于 schema/smoke 测试。"""
     categories = dict(_DEFAULT_CATEGORIES_V2)
@@ -572,4 +614,6 @@ def default_vocab_v2(
         categorical_unknown_counts=dict.fromkeys(categorical_vocab, 0),
         categorical_missing_counts=dict.fromkeys(categorical_vocab, 0),
         binned=binned_vocab,
+        event_ordering_version=event_ordering_version,
+        feature_transform_version=feature_transform_version,
     )

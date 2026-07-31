@@ -1,0 +1,69 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-07-31T06:22:40Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "khalil-kueue-probe-2xxkg",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27863459",
+                "uid": "3422aad8-e507-4fa7-ac38-a1a7c54c19b3"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-07-31T06:22:40Z",
+            "message": "Job suspended",
+            "metadata": {
+                "creationTimestamp": "2026-07-31T06:22:40Z",
+                "name": "khalil-kueue-probe-2xxkg.18c74ba77e38717c",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27863460",
+                "uid": "33174681-7eff-47c4-a9de-5e7e20586933"
+            },
+            "reason": "Suspended",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "CreatedWorkload",
+            "apiVersion": "v1",
+            "eventTime": "2026-07-31T06:22:40.037595Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "khalil-kueue-probe-2xxkg",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27863459",
+                "uid": "3422aad8-e507-4fa7-ac38-a1a7c54c19b3"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Created Workload: gpu-dev/job-khalil-kueue-probe-2xxkg-612aa",
+            "metadata": {
+                "creationTimestamp": "2026-07-31T06:22:40Z",
+                "name": "khalil-kueue-probe-2xxkg.18c74ba77ef9f271",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27863463",
+                "uid": "9bcaedb5-ba15-4fa4-a644-aad0df11d0fa"
+            },
+            "reason": "CreatedWorkload",
+            "reportingComponent": "batch/job-kueue-controller",
+            "reportingInstance": "batch/job-kueue-controller-kueue-controller-manager-84bd4bb856-hzdmm",
+            "source": {},
+            "type": "Normal"
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

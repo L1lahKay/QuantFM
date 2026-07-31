@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bare-waiter-5gpu
+  namespace: khalil-scheduler-bench
+  labels:
+    owner: khalil
+    experiment: bare-contention
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 120
+  template:
+    metadata:
+      labels:
+        owner: khalil
+        experiment: bare-contention
+        role: waiter
+    spec:
+      restartPolicy: Never
+      runtimeClassName: nvidia
+      nodeSelector:
+        accelerator: nvidia
+      terminationGracePeriodSeconds: 0
+      containers:
+        - name: waiter
+          image: ubuntu:22.04
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-lc"]
+          args:
+            - |
+              set -euo pipefail
+              echo "WAITER_START $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+              echo "VISIBLE_GPUS $(nvidia-smi -L | wc -l)"
+              sleep 10
+              echo "WAITER_END $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+              nvidia.com/gpu: "5"
+            limits:
+              cpu: 500m
+              memory: 256Mi
+              nvidia.com/gpu: "5"

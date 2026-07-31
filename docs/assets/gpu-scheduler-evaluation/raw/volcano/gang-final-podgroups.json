@@ -1,0 +1,58 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "scheduling.volcano.sh/v1beta1",
+            "kind": "PodGroup",
+            "metadata": {
+                "annotations": {
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"scheduling.volcano.sh/v1beta1\",\"kind\":\"PodGroup\",\"metadata\":{\"annotations\":{},\"labels\":{\"evaluation.quantfm/owner\":\"khalil\",\"evaluation.quantfm/suite\":\"volcano-v1-15-1\"},\"name\":\"khalil-volcano-gang-pg\",\"namespace\":\"gpu-dev\"},\"spec\":{\"minMember\":2,\"minResources\":{\"cpu\":\"200m\",\"memory\":\"256Mi\",\"nvidia.com/gpu\":\"2\"},\"queue\":\"khalil-volcano-gang\"}}\n"
+                },
+                "creationTimestamp": "2026-07-31T07:41:42Z",
+                "generation": 7,
+                "labels": {
+                    "evaluation.quantfm/owner": "khalil",
+                    "evaluation.quantfm/suite": "volcano-v1-15-1"
+                },
+                "name": "khalil-volcano-gang-pg",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27882402",
+                "uid": "aef2dd3a-fe24-4f9e-b985-66e27b964a6c"
+            },
+            "spec": {
+                "minMember": 2,
+                "minResources": {
+                    "cpu": "200m",
+                    "memory": "256Mi",
+                    "nvidia.com/gpu": "2"
+                },
+                "queue": "khalil-volcano-gang"
+            },
+            "status": {
+                "conditions": [
+                    {
+                        "lastTransitionTime": "2026-07-31T07:41:43Z",
+                        "message": "2/2 tasks in gang unschedulable: pod group is not ready, 2 Pending, 2 minAvailable; Pending: 2 Unschedulable",
+                        "reason": "NotEnoughResources",
+                        "status": "True",
+                        "transitionID": "aed1030f-1da0-4f6e-8fec-f85e68a1b465",
+                        "type": "Unschedulable"
+                    },
+                    {
+                        "lastTransitionTime": "2026-07-31T07:42:05Z",
+                        "reason": "tasks in gang are ready to be scheduled",
+                        "status": "True",
+                        "transitionID": "6adf4fc8-c4c4-456a-b0b8-6dbece817d66",
+                        "type": "Scheduled"
+                    }
+                ],
+                "phase": "Completed",
+                "succeeded": 2
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

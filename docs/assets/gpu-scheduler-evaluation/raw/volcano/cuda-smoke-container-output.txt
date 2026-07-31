@@ -1,0 +1,8 @@
+[pod/khalil-volcano-smoke-zs4w9/gpu-probe] APP_START_UTC=2026-07-31T07:48:05.736Z
+[pod/khalil-volcano-smoke-zs4w9/gpu-probe] CUDA_VISIBLE_DEVICES=unset
+[pod/khalil-volcano-smoke-zs4w9/gpu-probe] GPU 0: NVIDIA GeForce RTX 5090 (UUID: GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651)
+[pod/khalil-volcano-smoke-zs4w9/gpu-probe] VISIBLE_GPU_COUNT=1
+[pod/khalil-volcano-smoke-zs4w9/gpu-probe] TORCH_VERSION=2.13.0+cu130
+[pod/khalil-volcano-smoke-zs4w9/gpu-probe] TORCH_CUDA_AVAILABLE=true
+[pod/khalil-volcano-smoke-zs4w9/gpu-probe] CUDA_TENSOR_RESULT=42
+[pod/khalil-volcano-smoke-zs4w9/gpu-probe] APP_FINISH_UTC=2026-07-31T07:48:13.634Z

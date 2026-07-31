@@ -28,7 +28,15 @@ from typing import TYPE_CHECKING
 import polars as pl
 from pylob.pipeline.paths import zeus_default_object_key
 
-from quant_fm.downstream.return_spec import RETURN_SPECS, get_return_spec
+from quant_fm.downstream.return_spec import (
+    AFTER_CLOSE_AVAILABILITY,
+    EXECUTION_CONTRACT_VERSION,
+    RETURN_SPECS,
+    get_return_spec,
+    normalise_trading_calendar,
+    read_trading_calendar,
+    trading_calendar_sha256,
+)
 from quant_fm.schema.cn_l2_v1 import PRICE_SCALE
 from quant_fm.scripts.minio_config import read_bucket, storage_options_for_read
 
@@ -243,19 +251,23 @@ def build_execution_panel(
     if missing:
         msg = f"daily quotes missing required columns: {sorted(missing)}"
         raise ValueError(msg)
-    calendar = list(dict.fromkeys(str(value) for value in trading_calendar))
-    if calendar != sorted(calendar):
-        msg = "trading_calendar must be strictly increasing"
+    calendar = normalise_trading_calendar(trading_calendar)
+    normalized_signal_dates = [str(value) for value in signal_dates]
+    if len(normalized_signal_dates) != len(set(normalized_signal_dates)):
+        msg = "signal_dates contains duplicate dates"
+        raise ValueError(msg)
+    if normalized_signal_dates != sorted(normalized_signal_dates):
+        msg = "signal_dates must be strictly increasing"
         raise ValueError(msg)
     positions = {date: i for i, date in enumerate(calendar)}
-    unknown = sorted(set(signal_dates) - set(positions))
+    unknown = sorted(set(normalized_signal_dates) - set(positions))
     if unknown:
         msg = f"signal dates absent from trading calendar: {unknown[:5]}"
         raise ValueError(msg)
 
-    mapping_rows: list[dict[str, str | None]] = []
+    mapping_rows: list[dict[str, str | int | None]] = []
     incomplete: list[str] = []
-    for date in signal_dates:
+    for date in normalized_signal_dates:
         index = positions[date]
         entry_index = index + spec.entry_day_lag
         exit_index = index + spec.exit_day_lag
@@ -264,7 +276,14 @@ def build_execution_panel(
         if entry_date is None or exit_date is None:
             incomplete.append(date)
         mapping_rows.append(
-            {"date": date, "entry_date": entry_date, "exit_date": exit_date}
+            {
+                "date": date,
+                "entry_date": entry_date,
+                "exit_date": exit_date,
+                "signal_calendar_index": index,
+                "entry_calendar_index": entry_index if entry_date is not None else None,
+                "exit_calendar_index": exit_index if exit_date is not None else None,
+            }
         )
     if incomplete and require_complete_horizon:
         msg = (
@@ -275,8 +294,28 @@ def build_execution_panel(
 
     mapping = pl.DataFrame(
         mapping_rows,
-        schema={"date": pl.Utf8, "entry_date": pl.Utf8, "exit_date": pl.Utf8},
+        schema={
+            "date": pl.Utf8,
+            "entry_date": pl.Utf8,
+            "exit_date": pl.Utf8,
+            "signal_calendar_index": pl.Int64,
+            "entry_calendar_index": pl.Int64,
+            "exit_calendar_index": pl.Int64,
+        },
     )
+    required_quote_dates = {
+        str(value)
+        for column in ("date", "entry_date", "exit_date")
+        for value in mapping[column].drop_nulls().to_list()
+    }
+    available_quote_dates = {str(value) for value in daily["date"].unique().to_list()}
+    missing_quote_dates = sorted(required_quote_dates - available_quote_dates)
+    if missing_quote_dates and require_complete_horizon:
+        msg = (
+            "daily quotes do not cover signal/entry/exit trading dates: "
+            f"{missing_quote_dates[:5]}"
+        )
+        raise ValueError(msg)
     base_columns = [
         "date",
         "symbol",
@@ -286,7 +325,9 @@ def build_execution_panel(
         "is_halt",
         "limit_locked",
     ]
-    signal = daily.select(base_columns).filter(pl.col("date").is_in(signal_dates))
+    signal = daily.select(base_columns).filter(
+        pl.col("date").is_in(normalized_signal_dates)
+    )
     signal = signal.rename(
         {
             "is_st": "is_st_at_signal",
@@ -320,7 +361,13 @@ def build_execution_panel(
         .join(entry, on=["symbol", "entry_date"], how="left")
         .join(exit_quotes, on=["symbol", "exit_date"], how="left")
         .with_columns(
+            pl.lit(EXECUTION_CONTRACT_VERSION).alias("execution_contract_version"),
             pl.lit(spec.name).alias("return_spec"),
+            pl.lit(AFTER_CLOSE_AVAILABILITY).alias("signal_availability"),
+            pl.lit(trading_calendar_sha256(calendar)).alias("trading_calendar_sha256"),
+            pl.lit(len(calendar)).cast(pl.Int32).alias("calendar_date_count"),
+            pl.lit(spec.entry_day_lag).cast(pl.Int32).alias("entry_day_lag"),
+            pl.lit(spec.exit_day_lag).cast(pl.Int32).alias("exit_day_lag"),
             pl.lit(spec.entry_price).alias("entry_price_field"),
             pl.lit(spec.exit_price).alias("exit_price_field"),
             (
@@ -371,10 +418,14 @@ def build_panel(
     """
     opts = storage_options_for_read()
     frames: list[pl.DataFrame] = []
+    strict_execution = return_spec is not None and require_complete_horizon
     for d in dates:
         try:
             frames.append(eod_from_snapshots(d, symbols=symbols, storage_options=opts))
         except Exception:
+            if strict_execution:
+                logger.exception("failed to load required execution date %s", d)
+                raise
             logger.exception("skip %s", d)
     if not frames:
         return pl.DataFrame()
@@ -473,7 +524,7 @@ def main() -> None:
         parser.error("need --dates or --dates-file or --from-embeddings")
 
     if args.calendar_file is not None:
-        dates = _read_dates(args.calendar_file)
+        dates = read_trading_calendar(args.calendar_file)
     if args.return_spec and args.calendar_file is None:
         parser.error("--return-spec requires an explicit --calendar-file")
 

@@ -1,0 +1,87 @@
+# Final deployment refit after the development recipe has been frozen.
+# Train: 300 dates through 2026-04-30.  Test: 51 shadow-OOS dates after cutoff.
+# There is deliberately no validation split and no best-checkpoint selection.
+schema_version: cn_l2_v2
+seed: 42
+
+data:
+  manifest: quant_fm/runs/v2_backbone_moe_adapt_2026q1/refit_data/manifest.json
+  vocab: quant_fm/runs/v2_backbone_moe_adapt_2026q1/refit_data/vocab_v2.json
+  train_dates_file: quant_fm/runs/v2_backbone_moe_300d/plan/adaptation_final_train_dates.txt
+  test_dates_file: quant_fm/runs/v2_backbone_moe_300d/plan/adaptation_shadow_oos_dates.txt
+  context: 2048
+  stride: 2048
+  min_len: 2
+  cache_size: 32
+  num_workers: 8
+  shard_aware_sampler: true
+  drop_last: false
+  persistent_workers: true
+  prefetch_factor: 2
+  min_validation_dates: 40
+  min_test_dates: 40
+
+model:
+  d_model: 1024
+  n_layers: 18
+  n_heads: 16
+  ffn_hidden: 2816
+  dropout: 0.05
+  max_seq_len: 2048
+  rope_theta: 10000.0
+  field_fusion:
+    method: gated_sum
+    categorical_dim: 32
+    field_dropout: 0.05
+    input_norm: true
+  backbone_moe:
+    enabled: true
+    layer_indices: [14, 15, 16, 17]
+    n_routed_experts: 4
+    top_k: 1
+    shared_expert_hidden: 1024
+    routed_expert_hidden: 1792
+    capacity_factor: 1.25
+    load_balance_weight: 0.01
+    router_z_loss_weight: 0.001
+
+loss:
+  normalize_by_train_entropy: true
+  targets:
+    tok_evt_type: {type: ce, weight: 1.0}
+    tok_side: {type: ce, weight: 1.0}
+    tok_price_bin: {type: ordinal_ce, weight: 1.0, ordinal_weight: 0.5}
+    tok_volume_bin: {type: ordinal_ce, weight: 0.5, ordinal_weight: 0.25}
+    tok_delta_t_bin: {type: ordinal_ce, weight: 0.5, ordinal_weight: 0.25}
+
+book:
+  state_timing: post_event
+
+pooling:
+  version: hierarchical_selected_v2
+  method: multi_scale
+  stride: 512
+  outputs: [mean_all, last_256, continuous_pm, close_30m]
+
+optim:
+  lr: 2.0e-4
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+  grad_clip: 1.0
+  warmup_steps: 5000
+  max_data_epochs: 1
+  lr_schedule_steps: 330000
+  micro_batch_size: 2
+  grad_accum: 8
+  precision: bf16
+
+runtime:
+  out_dir: quant_fm/runs/v2_backbone_moe_adapt_2026q1/refit_run
+  log_every: 50
+  eval_every: 5000
+  val_max_batches: 0
+  ckpt_every: 10000
+  save_best: false
+  fsdp: true
+  fsdp_no_sync: true
+  device: cuda

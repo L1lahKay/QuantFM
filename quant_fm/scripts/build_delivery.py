@@ -20,6 +20,21 @@ def main() -> None:
     parser.add_argument("--vocab", type=Path)
     parser.add_argument("--universe", type=Path)
     parser.add_argument("--allow-in-sample", action="store_true")
+    parser.add_argument(
+        "--allow-legacy-embedding-contract",
+        action="store_true",
+        help="仅迁移/诊断：允许缺少表征 sidecar 的旧 embedding",
+    )
+    parser.add_argument(
+        "--allow-legacy-training-contract",
+        action="store_true",
+        help="仅研究/迁移诊断：允许不完整的生产训练契约与缺省身份文件",
+    )
+    parser.add_argument(
+        "--allow-noncausal-representation",
+        action="store_true",
+        help="仅迁移/诊断：允许旧 token/chunk/pooling 表征",
+    )
     args = parser.parse_args()
     generate_scores(
         embeddings_path=args.embeddings,
@@ -31,6 +46,9 @@ def main() -> None:
         vocab_path=args.vocab,
         universe_path=args.universe,
         allow_in_sample=args.allow_in_sample,
+        allow_legacy_embedding_contract=args.allow_legacy_embedding_contract,
+        allow_legacy_training_contract=args.allow_legacy_training_contract,
+        require_causal_representation=not args.allow_noncausal_representation,
     )
 
 

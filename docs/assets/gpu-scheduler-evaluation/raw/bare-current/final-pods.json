@@ -1,0 +1,413 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "creationTimestamp": "2026-07-31T08:06:20Z",
+                "generateName": "khalil-bare-quota-holder-",
+                "generation": 1,
+                "labels": {
+                    "batch.kubernetes.io/controller-uid": "bc5363fe-0c45-4261-9a66-5167a123a713",
+                    "batch.kubernetes.io/job-name": "khalil-bare-quota-holder",
+                    "controller-uid": "bc5363fe-0c45-4261-9a66-5167a123a713",
+                    "experiment": "bare-current-quota",
+                    "job-name": "khalil-bare-quota-holder",
+                    "owner": "khalil",
+                    "role": "holder"
+                },
+                "name": "khalil-bare-quota-holder-v45v8",
+                "namespace": "gpu-dev",
+                "ownerReferences": [
+                    {
+                        "apiVersion": "batch/v1",
+                        "blockOwnerDeletion": true,
+                        "controller": true,
+                        "kind": "Job",
+                        "name": "khalil-bare-quota-holder",
+                        "uid": "bc5363fe-0c45-4261-9a66-5167a123a713"
+                    }
+                ],
+                "resourceVersion": "27888385",
+                "uid": "4cf63337-82c7-4aeb-b109-5be0af64dd76"
+            },
+            "spec": {
+                "automountServiceAccountToken": false,
+                "containers": [
+                    {
+                        "args": [
+                            "python - \u003c\u003c'PY'\nimport datetime\nimport time\nimport torch\n\nprint(f\"APP_START_UTC={datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')}\", flush=True)\ncount = torch.cuda.device_count()\nprint(f\"VISIBLE_GPU_COUNT={count}\", flush=True)\nassert count == 4, count\nvalues = []\nfor index in range(count):\n    value = torch.ones(1024, device=f\"cuda:{index}\").sum()\n    values.append(int(value.item()))\ntorch.cuda.synchronize()\nprint(f\"CUDA_DEVICE_RESULTS={values}\", flush=True)\ntime.sleep(18)\nprint(f\"APP_FINISH_UTC={datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')}\", flush=True)\nPY\n"
+                        ],
+                        "command": [
+                            "/bin/sh",
+                            "-ceu"
+                        ],
+                        "image": "registry.zs/gpu-dev/dylan-trainer:ac4218e",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "holder",
+                        "resources": {
+                            "limits": {
+                                "cpu": "2",
+                                "memory": "2Gi",
+                                "nvidia.com/gpu": "4"
+                            },
+                            "requests": {
+                                "cpu": "500m",
+                                "memory": "1Gi",
+                                "nvidia.com/gpu": "4"
+                            }
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File"
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "enableServiceLinks": true,
+                "nodeName": "gpu-dev-01",
+                "nodeSelector": {
+                    "accelerator": "nvidia"
+                },
+                "preemptionPolicy": "PreemptLowerPriority",
+                "priority": 0,
+                "restartPolicy": "Never",
+                "runtimeClassName": "nvidia",
+                "schedulerName": "default-scheduler",
+                "securityContext": {},
+                "serviceAccount": "default",
+                "serviceAccountName": "default",
+                "terminationGracePeriodSeconds": 0,
+                "tolerations": [
+                    {
+                        "effect": "NoSchedule",
+                        "key": "nvidia.com/gpu",
+                        "operator": "Exists"
+                    },
+                    {
+                        "effect": "NoExecute",
+                        "key": "node.kubernetes.io/not-ready",
+                        "operator": "Exists",
+                        "tolerationSeconds": 300
+                    },
+                    {
+                        "effect": "NoExecute",
+                        "key": "node.kubernetes.io/unreachable",
+                        "operator": "Exists",
+                        "tolerationSeconds": 300
+                    }
+                ]
+            },
+            "status": {
+                "conditions": [
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T08:06:47Z",
+                        "observedGeneration": 1,
+                        "status": "False",
+                        "type": "PodReadyToStartContainers"
+                    },
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T08:06:20Z",
+                        "observedGeneration": 1,
+                        "reason": "PodCompleted",
+                        "status": "True",
+                        "type": "Initialized"
+                    },
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T08:06:46Z",
+                        "observedGeneration": 1,
+                        "reason": "PodCompleted",
+                        "status": "False",
+                        "type": "Ready"
+                    },
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T08:06:46Z",
+                        "observedGeneration": 1,
+                        "reason": "PodCompleted",
+                        "status": "False",
+                        "type": "ContainersReady"
+                    },
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T08:06:20Z",
+                        "observedGeneration": 1,
+                        "status": "True",
+                        "type": "PodScheduled"
+                    }
+                ],
+                "containerStatuses": [
+                    {
+                        "allocatedResources": {
+                            "cpu": "500m",
+                            "memory": "1Gi",
+                            "nvidia.com/gpu": "4"
+                        },
+                        "containerID": "containerd://448c209df4723ad386a4cb6fc8cf7fcbed2094bcb2f359d0bbc4be3aa76686cb",
+                        "image": "registry.zs/gpu-dev/dylan-trainer:ac4218e",
+                        "imageID": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+                        "lastState": {},
+                        "name": "holder",
+                        "ready": false,
+                        "resources": {
+                            "limits": {
+                                "cpu": "2",
+                                "memory": "2Gi",
+                                "nvidia.com/gpu": "4"
+                            },
+                            "requests": {
+                                "cpu": "500m",
+                                "memory": "1Gi",
+                                "nvidia.com/gpu": "4"
+                            }
+                        },
+                        "restartCount": 0,
+                        "started": false,
+                        "state": {
+                            "terminated": {
+                                "containerID": "containerd://448c209df4723ad386a4cb6fc8cf7fcbed2094bcb2f359d0bbc4be3aa76686cb",
+                                "exitCode": 0,
+                                "finishedAt": "2026-07-31T08:06:46Z",
+                                "reason": "Completed",
+                                "startedAt": "2026-07-31T08:06:23Z"
+                            }
+                        },
+                        "user": {
+                            "linux": {
+                                "gid": 0,
+                                "supplementalGroups": [
+                                    0
+                                ],
+                                "uid": 0
+                            }
+                        }
+                    }
+                ],
+                "hostIP": "192.168.2.12",
+                "hostIPs": [
+                    {
+                        "ip": "192.168.2.12"
+                    }
+                ],
+                "observedGeneration": 1,
+                "phase": "Succeeded",
+                "podIP": "10.52.0.113",
+                "podIPs": [
+                    {
+                        "ip": "10.52.0.113"
+                    }
+                ],
+                "qosClass": "Burstable",
+                "startTime": "2026-07-31T08:06:20Z"
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "creationTimestamp": "2026-07-31T08:06:55Z",
+                "generateName": "khalil-bare-quota-waiter-",
+                "generation": 1,
+                "labels": {
+                    "batch.kubernetes.io/controller-uid": "0e3ae50e-79c6-4380-95af-c6f3e94bd0f9",
+                    "batch.kubernetes.io/job-name": "khalil-bare-quota-waiter",
+                    "controller-uid": "0e3ae50e-79c6-4380-95af-c6f3e94bd0f9",
+                    "experiment": "bare-current-quota",
+                    "job-name": "khalil-bare-quota-waiter",
+                    "owner": "khalil",
+                    "role": "waiter"
+                },
+                "name": "khalil-bare-quota-waiter-2xwz9",
+                "namespace": "gpu-dev",
+                "ownerReferences": [
+                    {
+                        "apiVersion": "batch/v1",
+                        "blockOwnerDeletion": true,
+                        "controller": true,
+                        "kind": "Job",
+                        "name": "khalil-bare-quota-waiter",
+                        "uid": "0e3ae50e-79c6-4380-95af-c6f3e94bd0f9"
+                    }
+                ],
+                "resourceVersion": "27888481",
+                "uid": "262d9857-da08-4c07-8e1a-b03225b731cd"
+            },
+            "spec": {
+                "automountServiceAccountToken": false,
+                "containers": [
+                    {
+                        "args": [
+                            "python - \u003c\u003c'PY'\nimport datetime\nimport time\nimport torch\n\nprint(f\"APP_START_UTC={datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')}\", flush=True)\ncount = torch.cuda.device_count()\nprint(f\"VISIBLE_GPU_COUNT={count}\", flush=True)\nassert count == 1, count\nvalue = torch.tensor([20, 22], device=\"cuda\").sum()\ntorch.cuda.synchronize()\nprint(f\"CUDA_TENSOR_RESULT={int(value.item())}\", flush=True)\ntime.sleep(4)\nprint(f\"APP_FINISH_UTC={datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')}\", flush=True)\nPY\n"
+                        ],
+                        "command": [
+                            "/bin/sh",
+                            "-ceu"
+                        ],
+                        "image": "registry.zs/gpu-dev/dylan-trainer:ac4218e",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "waiter",
+                        "resources": {
+                            "limits": {
+                                "cpu": "2",
+                                "memory": "2Gi",
+                                "nvidia.com/gpu": "1"
+                            },
+                            "requests": {
+                                "cpu": "500m",
+                                "memory": "1Gi",
+                                "nvidia.com/gpu": "1"
+                            }
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File"
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "enableServiceLinks": true,
+                "nodeName": "gpu-dev-01",
+                "nodeSelector": {
+                    "accelerator": "nvidia"
+                },
+                "preemptionPolicy": "PreemptLowerPriority",
+                "priority": 0,
+                "restartPolicy": "Never",
+                "runtimeClassName": "nvidia",
+                "schedulerName": "default-scheduler",
+                "securityContext": {},
+                "serviceAccount": "default",
+                "serviceAccountName": "default",
+                "terminationGracePeriodSeconds": 0,
+                "tolerations": [
+                    {
+                        "effect": "NoSchedule",
+                        "key": "nvidia.com/gpu",
+                        "operator": "Exists"
+                    },
+                    {
+                        "effect": "NoExecute",
+                        "key": "node.kubernetes.io/not-ready",
+                        "operator": "Exists",
+                        "tolerationSeconds": 300
+                    },
+                    {
+                        "effect": "NoExecute",
+                        "key": "node.kubernetes.io/unreachable",
+                        "operator": "Exists",
+                        "tolerationSeconds": 300
+                    }
+                ]
+            },
+            "status": {
+                "conditions": [
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T08:07:08Z",
+                        "observedGeneration": 1,
+                        "status": "False",
+                        "type": "PodReadyToStartContainers"
+                    },
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T08:06:55Z",
+                        "observedGeneration": 1,
+                        "reason": "PodCompleted",
+                        "status": "True",
+                        "type": "Initialized"
+                    },
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T08:07:06Z",
+                        "observedGeneration": 1,
+                        "reason": "PodCompleted",
+                        "status": "False",
+                        "type": "Ready"
+                    },
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T08:07:06Z",
+                        "observedGeneration": 1,
+                        "reason": "PodCompleted",
+                        "status": "False",
+                        "type": "ContainersReady"
+                    },
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T08:06:55Z",
+                        "observedGeneration": 1,
+                        "status": "True",
+                        "type": "PodScheduled"
+                    }
+                ],
+                "containerStatuses": [
+                    {
+                        "allocatedResources": {
+                            "cpu": "500m",
+                            "memory": "1Gi",
+                            "nvidia.com/gpu": "1"
+                        },
+                        "containerID": "containerd://3d75116e8773b21fb603f06ccc00ebd6cb2a82e12fdef14e4540df28d4e579dd",
+                        "image": "registry.zs/gpu-dev/dylan-trainer:ac4218e",
+                        "imageID": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+                        "lastState": {},
+                        "name": "waiter",
+                        "ready": false,
+                        "resources": {
+                            "limits": {
+                                "cpu": "2",
+                                "memory": "2Gi",
+                                "nvidia.com/gpu": "1"
+                            },
+                            "requests": {
+                                "cpu": "500m",
+                                "memory": "1Gi",
+                                "nvidia.com/gpu": "1"
+                            }
+                        },
+                        "restartCount": 0,
+                        "started": false,
+                        "state": {
+                            "terminated": {
+                                "containerID": "containerd://3d75116e8773b21fb603f06ccc00ebd6cb2a82e12fdef14e4540df28d4e579dd",
+                                "exitCode": 0,
+                                "finishedAt": "2026-07-31T08:07:06Z",
+                                "reason": "Completed",
+                                "startedAt": "2026-07-31T08:06:58Z"
+                            }
+                        },
+                        "user": {
+                            "linux": {
+                                "gid": 0,
+                                "supplementalGroups": [
+                                    0
+                                ],
+                                "uid": 0
+                            }
+                        }
+                    }
+                ],
+                "hostIP": "192.168.2.12",
+                "hostIPs": [
+                    {
+                        "ip": "192.168.2.12"
+                    }
+                ],
+                "observedGeneration": 1,
+                "phase": "Succeeded",
+                "podIP": "10.52.0.114",
+                "podIPs": [
+                    {
+                        "ip": "10.52.0.114"
+                    }
+                ],
+                "qosClass": "Burstable",
+                "startTime": "2026-07-31T08:06:55Z"
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

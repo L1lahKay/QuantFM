@@ -8,6 +8,7 @@ def test_new_train_state_round_trip_and_legacy_conversion() -> None:
             "update_step": 5,
             "samples_seen": 80,
             "non_pad_tokens_seen": 1234,
+            "data_epochs_completed": 2,
             "best_val": 1.2,
             "best_update_step": 4,
         }
@@ -17,6 +18,7 @@ def test_new_train_state_round_trip_and_legacy_conversion() -> None:
         update_step=5,
         samples_seen=80,
         non_pad_tokens_seen=1234,
+        data_epochs_completed=2,
         best_val=1.2,
         best_update_step=4,
     )

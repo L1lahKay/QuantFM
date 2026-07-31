@@ -12,8 +12,15 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import polars as pl
+from pylob.event_ordering import (
+    DEFAULT_EVENT_ORDERING_VERSION,
+    validate_order_if_present,
+)
 
-from quant_fm.tokenizer.transforms import add_derived_fields
+from quant_fm.tokenizer.transforms import (
+    DEFAULT_FEATURE_TRANSFORM_VERSION,
+    add_derived_fields,
+)
 from quant_fm.tokenizer.vocab import CONTINUOUS_FIELDS, default_vocab
 
 if TYPE_CHECKING:
@@ -57,6 +64,8 @@ def fit_bins(
     max_samples_per_field: int = 5_000_000,
     fit_dates: Sequence[str] = (),
     seed: int = 0,
+    event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION,
+    feature_transform_version: str = DEFAULT_FEATURE_TRANSFORM_VERSION,
 ) -> Vocab:
     """
     从规范事件 parquet 拟合 :class:`Vocab`。
@@ -73,6 +82,10 @@ def fit_bins(
         用于拟合的交易日（记入词表供审计）。
     seed
         子采样 RNG 种子（可复现）。
+    event_ordering_version
+        事件排序语义；因果版本会拒绝时间/交易所序号倒置的 shard。
+    feature_transform_version
+        EW-VWAP 起始缺失与派生字段语义，冻结进词表。
 
     返回
     -------
@@ -82,12 +95,18 @@ def fit_bins(
     rng = np.random.default_rng(seed)
     pools: dict[str, list[np.ndarray]] = {f: [] for f in CONTINUOUS_FIELDS}
     counts: dict[str, int] = dict.fromkeys(CONTINUOUS_FIELDS, 0)
+    observed_dates: set[str] = set()
 
     for path in paths:
         df = pl.read_parquet(path)
         if df.height == 0:
             continue
-        df = add_derived_fields(df)
+        if "date" in df.columns:
+            observed_dates.update(str(value) for value in df["date"].unique())
+        else:
+            observed_dates.add(path.stem)
+        validate_order_if_present(df, version=event_ordering_version)
+        df = add_derived_fields(df, transform_version=feature_transform_version)
         for f in CONTINUOUS_FIELDS:
             vals = df[f].to_numpy().astype(np.float64)
             vals = vals[np.isfinite(vals)]
@@ -103,7 +122,11 @@ def fit_bins(
             pools[f].append(vals)
             counts[f] += vals.size
 
-    vocab = default_vocab(n_bins=n_bins)
+    vocab = default_vocab(
+        n_bins=n_bins,
+        event_ordering_version=event_ordering_version,
+        feature_transform_version=feature_transform_version,
+    )
     for f in CONTINUOUS_FIELDS:
         pooled = (
             np.concatenate(pools[f]) if pools[f] else np.array([], dtype=np.float64)
@@ -113,5 +136,13 @@ def fit_bins(
             "fitted %s: %d samples -> %d edges", f, pooled.size, len(vocab.edges[f])
         )
 
-    vocab.fit_dates = tuple(fit_dates)
+    declared_dates = {str(value) for value in fit_dates}
+    if declared_dates and declared_dates != observed_dates:
+        msg = (
+            "fit_dates must exactly match dates observed in fitted parquet shards; "
+            f"declared_only={sorted(declared_dates - observed_dates)}, "
+            f"observed_only={sorted(observed_dates - declared_dates)}"
+        )
+        raise ValueError(msg)
+    vocab.fit_dates = tuple(sorted(observed_dates))
     return vocab

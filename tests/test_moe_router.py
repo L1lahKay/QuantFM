@@ -50,6 +50,29 @@ def test_temporal_moe_shared_residual_and_all_experts_receive_load() -> None:
     assert hidden.grad is not None
 
 
+def test_temporal_moe_supports_bfloat16_autocast_with_float32_inputs() -> None:
+    config = RegimeMoEConfig(
+        enabled=True,
+        n_experts=2,
+        top_k=1,
+        expert_hidden=8,
+        router_hidden=6,
+        capacity_factor=2.0,
+    )
+    model = TemporalRegimeMoE(6, 3, config)
+    hidden = torch.randn(4, 6, requires_grad=True)
+    features = torch.randn(4, 3)
+
+    with torch.autocast("cpu", dtype=torch.bfloat16):
+        output = model(hidden, features)
+        loss = output.hidden.square().mean() + output.auxiliary_loss
+
+    assert output.hidden.dtype == hidden.dtype
+    loss.backward()
+    assert hidden.grad is not None
+    assert torch.isfinite(hidden.grad).all()
+
+
 def test_regime_normalizer_and_inference_artifact_round_trip(tmp_path) -> None:
     specs = (
         RegimeFeatureSpec("market_vol"),

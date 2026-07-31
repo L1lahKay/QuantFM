@@ -27,6 +27,10 @@ import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
+from pylob.event_ordering import (
+    DEFAULT_EVENT_ORDERING_VERSION,
+    SUPPORTED_EVENT_ORDERING_VERSIONS,
+)
 from pylob.pipeline.config import PipelineConfig
 from pylob.pipeline.workflow import build_clean_dataset
 
@@ -37,8 +41,13 @@ from quant_fm.lob_rebuild.export_events import (
 from quant_fm.manifest.build_manifest import build_manifest
 from quant_fm.scripts.minio_config import load_read_config, read_bucket
 from quant_fm.scripts.suggest_model_size import estimate_events, suggest
+from quant_fm.tokenizer.artifact_contract import assert_token_contract_matches
 from quant_fm.tokenizer.fit_bins import fit_bins
 from quant_fm.tokenizer.tokenize_events import assert_no_leakage, tokenize_path
+from quant_fm.tokenizer.transforms import (
+    DEFAULT_FEATURE_TRANSFORM_VERSION,
+    SUPPORTED_FEATURE_TRANSFORM_VERSIONS,
+)
 from quant_fm.tokenizer.vocab import Vocab
 
 logger = logging.getLogger(__name__)
@@ -94,6 +103,7 @@ def _tokenize_shards_parallel(
                 logger.info("tokenize progress %d/%d", done, len(payload))
     return done
 
+
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DATES = ROOT / "quant_fm/data/medium_60_dates.txt"
 DEFAULT_SZ = ROOT / "quant_fm/data/medium_symbols_sz.txt"
@@ -129,6 +139,7 @@ def clean_one_day(
     *,
     skip_existing: bool = False,
     n_workers: int | None = None,
+    event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION,
 ) -> None:
     """单日单市场 PyLOB 清洗。"""
     from pylob.pipeline.workflow import default_clean_workers
@@ -146,6 +157,7 @@ def clean_one_day(
         # medium 流水线只用 events.parquet；跳过 debug 产物加快写盘
         write_debug_artifacts=False,
         n_workers=default_clean_workers() if n_workers is None else n_workers,
+        event_ordering_version=event_ordering_version,
     )
     build_clean_dataset(load_read_config(), cfg)
 
@@ -184,6 +196,8 @@ def run(
     upload_tag: str = "medium",
     upload_events: bool = False,
     delete_local_after_upload: bool = False,
+    event_ordering_version: str | None = None,
+    feature_transform_version: str | None = None,
 ) -> None:
     """Run the medium-scale data preparation and optional upload pipeline."""
     workdir = Path(workdir)
@@ -223,11 +237,41 @@ def run(
     # drop events，避免 60+ 天 events 堆积爆盘（约 4GB/天）。
     if reuse_vocab is not None:
         vocab = Vocab.load(reuse_vocab)
+        assert_no_leakage(vocab, val_dates, test_dates)
         vocab.save(vocab_path)
         logger.info(
             "reuse frozen vocab: %s (fit_dates=%d, 按日 tokenize+drop)",
             reuse_vocab,
             len(vocab.fit_dates),
+        )
+        if (
+            event_ordering_version is not None
+            and event_ordering_version != vocab.event_ordering_version
+        ):
+            msg = (
+                "requested event ordering disagrees with reused vocab: "
+                f"requested={event_ordering_version}, "
+                f"vocab={vocab.event_ordering_version}"
+            )
+            raise ValueError(msg)
+        if (
+            feature_transform_version is not None
+            and feature_transform_version != vocab.feature_transform_version
+        ):
+            msg = (
+                "requested feature transform disagrees with reused vocab: "
+                f"requested={feature_transform_version}, "
+                f"vocab={vocab.feature_transform_version}"
+            )
+            raise ValueError(msg)
+        effective_event_ordering = vocab.event_ordering_version
+        effective_feature_transform = vocab.feature_transform_version
+    else:
+        effective_event_ordering = (
+            event_ordering_version or DEFAULT_EVENT_ORDERING_VERSION
+        )
+        effective_feature_transform = (
+            feature_transform_version or DEFAULT_FEATURE_TRANSFORM_VERSION
         )
 
     def _tokenize_day(day: str) -> int:
@@ -240,19 +284,34 @@ def run(
         交给 ``quant_fm.scripts.tokenize_dir`` 在干净解释器里跑即可规避。
         """
         assert vocab is not None
-        pending = any(
-            not (tokens_dir / p.relative_to(events_dir)).exists()
-            for p in events_dir.rglob(f"{day}.parquet")
-        )
+        pending = False
+        for event_path in events_dir.rglob(f"{day}.parquet"):
+            token_path = tokens_dir / event_path.relative_to(events_dir)
+            if not token_path.exists():
+                pending = True
+                continue
+            try:
+                assert_token_contract_matches(token_path, vocab)
+            except ValueError as exc:
+                msg = (
+                    f"refusing to reuse incompatible token shard: {token_path}; "
+                    f"use a new workdir ({exc})"
+                )
+                raise RuntimeError(msg) from exc
         cmd = [
             sys.executable,
             "-m",
             "quant_fm.scripts.tokenize_dir",
-            "--events-dir", str(events_dir),
-            "--tokens-dir", str(tokens_dir),
-            "--vocab", str(vocab_path),
-            "--day", day,
-            "--workers", str(_default_tokenize_workers()),
+            "--events-dir",
+            str(events_dir),
+            "--tokens-dir",
+            str(tokens_dir),
+            "--vocab",
+            str(vocab_path),
+            "--day",
+            day,
+            "--workers",
+            str(_default_tokenize_workers()),
         ]
         if drop_events:
             cmd.append("--drop-events")
@@ -308,6 +367,7 @@ def run(
                 minio_config=load_read_config(),
                 bucket=read_bucket(),
                 skip_existing=resume,
+                event_ordering_version=effective_event_ordering,
             )
             if int(clean_stats["errors"]):
                 failed = clean_stats.get("failed_symbols", [])
@@ -324,12 +384,22 @@ def run(
             if symbols_sz:
                 logger.info("clean %s SZ (%d symbols)", date, len(symbols_sz))
                 clean_one_day(
-                    date, symbols_sz, "SZ", day_clean, skip_existing=resume
+                    date,
+                    symbols_sz,
+                    "SZ",
+                    day_clean,
+                    skip_existing=resume,
+                    event_ordering_version=effective_event_ordering,
                 )
             if symbols_sh:
                 logger.info("clean %s SH (%d symbols)", date, len(symbols_sh))
                 clean_one_day(
-                    date, symbols_sh, "SH", day_clean, skip_existing=resume
+                    date,
+                    symbols_sh,
+                    "SH",
+                    day_clean,
+                    skip_existing=resume,
+                    event_ordering_version=effective_event_ordering,
                 )
             clean_marker.parent.mkdir(parents=True, exist_ok=True)
             clean_marker.write_text("cleaned\n")
@@ -344,6 +414,9 @@ def run(
                 symbols=symbols_sz + symbols_sh,
                 skip_existing=resume,
             )
+            if not token_paths:
+                msg = f"refusing to mark {date} done: no token shards were produced"
+                raise RuntimeError(msg)
             from quant_fm.scripts.make_adhoc_manifest import write_day_index
 
             write_day_index(tokens_dir, date)
@@ -392,7 +465,13 @@ def run(
                 len(train_paths),
             )
 
-        vocab = fit_bins(train_paths, n_bins=n_bins, fit_dates=fit_dates)
+        vocab = fit_bins(
+            train_paths,
+            n_bins=n_bins,
+            fit_dates=fit_dates,
+            event_ordering_version=effective_event_ordering,
+            feature_transform_version=effective_feature_transform,
+        )
         vocab.save(vocab_path)
         assert_no_leakage(vocab, val_dates, test_dates)
 
@@ -401,10 +480,22 @@ def run(
             rel = p.relative_to(events_dir)
             dst = tokens_dir / rel
             if dst.exists() and resume:
+                try:
+                    assert_token_contract_matches(dst, vocab)
+                except ValueError as exc:
+                    msg = (
+                        f"refusing to reuse incompatible token shard: {dst}; "
+                        f"use a new workdir ({exc})"
+                    )
+                    raise RuntimeError(msg) from exc
                 continue
             jobs.append((p, dst))
         if jobs:
-            logger.info("tokenizing %d event shards (workers=%d)", len(jobs), _default_tokenize_workers())
+            logger.info(
+                "tokenizing %d event shards (workers=%d)",
+                len(jobs),
+                _default_tokenize_workers(),
+            )
             _tokenize_shards_parallel(
                 jobs,
                 vocab_path=vocab_path,
@@ -426,6 +517,14 @@ def run(
             rel = p.relative_to(events_dir)
             dst = tokens_dir / rel
             if dst.exists() and resume:
+                try:
+                    assert_token_contract_matches(dst, vocab)
+                except ValueError as exc:
+                    msg = (
+                        f"refusing to reuse incompatible token shard: {dst}; "
+                        f"use a new workdir ({exc})"
+                    )
+                    raise RuntimeError(msg) from exc
                 if drop_events:
                     p.unlink(missing_ok=True)
                 continue
@@ -529,6 +628,24 @@ def main() -> None:
     )
     parser.add_argument("--resume", action="store_true")
     parser.add_argument(
+        "--event-ordering-version",
+        choices=sorted(SUPPORTED_EVENT_ORDERING_VERSIONS),
+        default=None,
+        help=(
+            "事件排序契约；新词表默认 exchange_time_sequence_v2，复用旧词表时"
+            "自动采用该词表记录的版本"
+        ),
+    )
+    parser.add_argument(
+        "--feature-transform-version",
+        choices=sorted(SUPPORTED_FEATURE_TRANSFORM_VERSIONS),
+        default=None,
+        help=(
+            "派生特征/EW-VWAP 契约；新词表默认 ew_vwap_causal_nan_v2，"
+            "复用词表时自动采用其中记录的版本"
+        ),
+    )
+    parser.add_argument(
         "--fast-clean",
         action="store_true",
         help="P0/P1 高性能清洗：每天只读一次 MinIO、SZ+SH 同池、本地 raw 缓存续跑",
@@ -599,6 +716,8 @@ def main() -> None:
         upload_tag=args.upload_tag,
         upload_events=args.upload_events,
         delete_local_after_upload=args.delete_local_after_upload,
+        event_ordering_version=args.event_ordering_version,
+        feature_transform_version=args.feature_transform_version,
     )
 
 

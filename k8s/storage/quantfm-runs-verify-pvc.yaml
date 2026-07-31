@@ -1,0 +1,144 @@
+# Independent, read-only verification of the staged QuantFM runs copy.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: khalil-quantfm-runs-verify-20260731
+  namespace: khalil
+  labels:
+    app.kubernetes.io/name: quantfm
+    app.kubernetes.io/component: storage-migration-verify
+    owner: khalil
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 7200
+  ttlSecondsAfterFinished: 604800
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: quantfm
+        app.kubernetes.io/component: storage-migration-verify
+        owner: khalil
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        accelerator: nvidia
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      securityContext:
+        runAsUser: 1006
+        runAsGroup: 1009
+        fsGroup: 1009
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: verify
+          image: ubuntu:22.04
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-lc"]
+          args:
+            - |
+              set -euo pipefail
+
+              source_dir=/source-runs
+              pvc_root=/mnt/quantfm
+              stage_dir="$pvc_root/runs.migrating-20260731"
+
+              test -f "$pvc_root/migration-20260731.complete"
+              test -f "$pvc_root/migration-20260731.report"
+              test -d "$stage_dir"
+              cat "$pvc_root/migration-20260731.report"
+
+              inventory() {
+                inventory_root="$1"
+                inventory_files="$(find "$inventory_root" -xdev -type f -printf '.' | wc -c)"
+                inventory_dirs="$(find "$inventory_root" -xdev -type d -printf '.' | wc -c)"
+                inventory_links="$(find "$inventory_root" -xdev -type l -printf '.' | wc -c)"
+                inventory_bytes="$(find "$inventory_root" -xdev -type f -printf '%s\n' | awk '{ total += $1 } END { printf "%.0f", total + 0 }')"
+                inventory_paths="$(find "$inventory_root" -xdev -printf '%y %P\n' | LC_ALL=C sort | sha256sum | awk '{print $1}')"
+                printf '%s|%s|%s|%s|%s\n' \
+                  "$inventory_files" "$inventory_dirs" "$inventory_links" \
+                  "$inventory_bytes" "$inventory_paths"
+              }
+
+              source_inventory="$(inventory "$source_dir")"
+              destination_inventory="$(inventory "$stage_dir")"
+              echo "source_inventory=$source_inventory"
+              echo "destination_inventory=$destination_inventory"
+              test "$source_inventory" = "$destination_inventory"
+
+              checksum_manifest="$pvc_root/migration-20260731.sha256"
+              verified_marker="$pvc_root/migration-20260731.verified"
+              test ! -e "$checksum_manifest"
+              test ! -e "$verified_marker"
+
+              source_state() {
+                (
+                  cd "$source_dir"
+                  find . -xdev \
+                    -printf '%y\t%s\t%T@\t%C@\t%P\t%l\0' \
+                    | LC_ALL=C sort -z \
+                    | sha256sum \
+                    | awk '{print $1}'
+                )
+              }
+
+              source_state_before="$(source_state)"
+              echo "full_sha256_started_utc=$(date -u +%FT%TZ)"
+              (
+                cd "$source_dir"
+                find . -xdev -type f -print0 \
+                  | LC_ALL=C sort -z \
+                  | xargs -0 -r sha256sum --
+              ) > "$checksum_manifest.tmp"
+              mv "$checksum_manifest.tmp" "$checksum_manifest"
+              echo "source_sha256_manifest_complete_utc=$(date -u +%FT%TZ)"
+
+              (
+                cd "$stage_dir"
+                sha256sum --quiet -c "$checksum_manifest"
+              )
+              echo "destination_sha256_check_complete_utc=$(date -u +%FT%TZ)"
+
+              source_links="$(cd "$source_dir" && find . -xdev -type l -printf '%P\t%l\0' | LC_ALL=C sort -z | sha256sum | awk '{print $1}')"
+              destination_links="$(cd "$stage_dir" && find . -xdev -type l -printf '%P\t%l\0' | LC_ALL=C sort -z | sha256sum | awk '{print $1}')"
+              test "$source_links" = "$destination_links"
+
+              source_modes="$(cd "$source_dir" && find . -xdev -mindepth 1 -printf '%y\t%m\t%P\0' | LC_ALL=C sort -z | sha256sum | awk '{print $1}')"
+              destination_modes="$(cd "$stage_dir" && find . -xdev -mindepth 1 -printf '%y\t%m\t%P\0' | LC_ALL=C sort -z | sha256sum | awk '{print $1}')"
+              test "$source_modes" = "$destination_modes"
+
+              source_state_after="$(source_state)"
+              test "$source_state_before" = "$source_state_after"
+              {
+                echo "verified_utc=$(date -u +%FT%TZ)"
+                echo "manifest=$checksum_manifest"
+                echo "source_state=$source_state_after"
+                echo "symlink_sha256=$source_links"
+                echo "mode_sha256=$source_modes"
+              } > "$verified_marker.tmp"
+              mv "$verified_marker.tmp" "$verified_marker"
+              sync
+
+              echo "MIGRATION_VERIFY_PASS"
+          resources:
+            requests:
+              cpu: "2"
+              memory: 1Gi
+            limits:
+              cpu: "4"
+              memory: 4Gi
+          volumeMounts:
+            - name: source-runs
+              mountPath: /source-runs
+              readOnly: true
+            - name: quantfm-data
+              mountPath: /mnt/quantfm
+      volumes:
+        - name: source-runs
+          hostPath:
+            path: /home/khalil/DataCleaning7.3/QuantFM/quant_fm/runs
+            type: Directory
+        - name: quantfm-data
+          persistentVolumeClaim:
+            claimName: quantfm-data

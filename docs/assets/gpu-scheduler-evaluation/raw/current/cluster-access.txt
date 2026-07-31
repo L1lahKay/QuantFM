@@ -1,0 +1,41 @@
+CAPTURED_AT 2026-07-31T06:25:15.075Z
+Client Version: v1.35.4+k3s1
+Kustomize Version: v5.7.1
+Server Version: v1.35.4+k3s1
+KUEUE_API_RESOURCES
+NAME                         SHORTNAMES                         APIVERSION               NAMESPACED   KIND
+admissionchecks              ac                                 kueue.x-k8s.io/v1beta2   false        AdmissionCheck
+clusterqueues                cq                                 kueue.x-k8s.io/v1beta2   false        ClusterQueue
+cohorts                      co                                 kueue.x-k8s.io/v1beta2   false        Cohort
+localqueues                  queue,queues,lq                    kueue.x-k8s.io/v1beta2   true         LocalQueue
+multikueueclusters           mkc                                kueue.x-k8s.io/v1beta2   false        MultiKueueCluster
+multikueueconfigs            mkconf                             kueue.x-k8s.io/v1beta2   false        MultiKueueConfig
+provisioningrequestconfigs   prc                                kueue.x-k8s.io/v1beta2   false        ProvisioningRequestConfig
+resourceflavors              flavor,flavors,rf                  kueue.x-k8s.io/v1beta2   false        ResourceFlavor
+topologies                   topo                               kueue.x-k8s.io/v1beta2   false        Topology
+workloadpriorityclasses      wpc                                kueue.x-k8s.io/v1beta2   false        WorkloadPriorityClass
+workloads                    kwl,kueueworkload,kueueworkloads   kueue.x-k8s.io/v1beta2   true         Workload
+VOLCANO_API_RESOURCES
+NONE
+RESTRICTED_ACCOUNT_PERMISSIONS
+CAN_I create  jobs.batch                                    yes
+CAN_I create  pods                                          no
+CAN_I get     resourcequotas                                no
+CAN_I get     localqueues.kueue.x-k8s.io                    no
+CAN_I get     workloads.kueue.x-k8s.io                      no
+CAN_I list    clusterqueues.kueue.x-k8s.io                  no
+CAN_I create  persistentvolumeclaims                        no
+CAN_I create  namespaces                                    no
+CAN_I create  priorityclasses.scheduling.k8s.io             no
+CAN_I get     nodes                                         no
+VISIBLE_JOBS_AND_PODS
+NAME                              STATUS     COMPLETIONS   DURATION   AGE   CONTAINERS   IMAGES                                      SELECTOR
+job.batch/dylan-trainer-ac4218e   Complete   1/1           33s        43m   trainer      registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=110bfe69-6575-4ca9-9ef2-fc52756683bb
+
+NAME                              READY   STATUS      RESTARTS   AGE   IP           NODE         NOMINATED NODE   READINESS GATES
+pod/dylan-trainer-ac4218e-f5sjk   0/1     Completed   0          43m   10.52.0.91   gpu-dev-01   <none>           <none>
+DIRECT_QUOTA_READ_EXPECTED_FORBIDDEN
+Error from server (Forbidden): resourcequotas is forbidden: User "system:serviceaccount:gpu-dev:gpu-dev-khalil" cannot list resource "resourcequotas" in API group "" in the namespace "gpu-dev"
+DIRECT_KUEUE_READ_EXPECTED_FORBIDDEN
+Error from server (Forbidden): localqueues.kueue.x-k8s.io is forbidden: User "system:serviceaccount:gpu-dev:gpu-dev-khalil" cannot list resource "localqueues" in API group "kueue.x-k8s.io" in the namespace "gpu-dev"
+Error from server (Forbidden): workloads.kueue.x-k8s.io is forbidden: User "system:serviceaccount:gpu-dev:gpu-dev-khalil" cannot list resource "workloads" in API group "kueue.x-k8s.io" in the namespace "gpu-dev"

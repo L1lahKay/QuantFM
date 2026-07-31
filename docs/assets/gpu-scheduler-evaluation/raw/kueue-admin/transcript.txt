@@ -1,0 +1,15 @@
+ADMIN_KUBECONFIG_PATH=/etc/rancher/k3s/k3s.yaml
+ADMIN_CONTEXT=default
+NAMESPACE=gpu-dev
+DIAGNOSTIC_BEGIN utc=2026-07-31T08:05:47.853Z monotonic_ns=2781134151194694
+LOCALQUEUE_COUNT=0
+JOB_CREATE_BEGIN utc=2026-07-31T08:05:48.993Z monotonic_ns=2781135289998159
+job.batch/khalil-kueue-admin-diag created
+JOB_CREATE_RETURN utc=2026-07-31T08:05:49.321Z monotonic_ns=2781135618341012
+WORKLOAD_OBSERVED utc=2026-07-31T08:05:49.889Z monotonic_ns=2781136186357233
+OBSERVED job_uid=3e719e8f-1437-4127-a3c9-bd37ae6bbe93 suspend=true pods=0
+RESULT localqueue_count=0 workload_created=true suspended=true pods=0
+CLEANUP_BEGIN utc=2026-07-31T08:05:54.709Z monotonic_ns=2781141006904507
+job.batch "khalil-kueue-admin-diag" deleted from gpu-dev namespace
+CLEANUP_END utc=2026-07-31T08:05:55.006Z monotonic_ns=2781141304085785
+DIAGNOSTIC_COMPLETE utc=2026-07-31T08:05:55.555Z monotonic_ns=2781141852044044

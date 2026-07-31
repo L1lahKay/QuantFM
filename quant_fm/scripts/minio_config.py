@@ -13,9 +13,11 @@ MinIO 读写分离配置（开箱即用）。
 from __future__ import annotations
 
 import getpass
+import ipaddress
 import json
 import os
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from pylob.pipeline.config import MinioConfig
 
@@ -25,6 +27,78 @@ DEFAULT_READ_BUCKET = "zeus-cn-quote"
 DEFAULT_WRITE_BUCKET = "model-cache"
 DEFAULT_OUTPUT_PREFIX = f"fm-pretrain/{getpass.getuser()}"
 DEFAULT_AWS_REGION = "us-east-1"
+
+
+def _endpoint_host(endpoint: str) -> str | None:
+    """Return the hostname portion of a MinIO endpoint."""
+    value = endpoint.strip()
+    if not value:
+        return None
+    parsed = urlsplit(value if "://" in value else f"//{value}")
+    return parsed.hostname
+
+
+def _is_internal_host(host: str) -> bool:
+    """Return whether a host is a private/local endpoint in auto mode."""
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return (
+            host == "localhost"
+            or "." not in host
+            or host.endswith((".internal", ".local", ".svc", ".cluster.local"))
+        )
+    return address.is_private or address.is_loopback or address.is_link_local
+
+
+def configure_minio_proxy_bypass(*endpoints: str) -> tuple[str, ...]:
+    """
+    Add MinIO hosts to both standard proxy-bypass environment variables.
+
+    Polars' Rust ``object_store`` client observes process proxy variables.  If an
+    internal MinIO address is omitted from ``NO_PROXY``, a valid S3 ``HEAD`` can
+    be sent to the corporate HTTP proxy and eventually surface as a misleading
+    ``502 Bad Gateway``.  Keep the proxy for unrelated traffic and bypass only
+    the explicitly configured MinIO hosts.
+
+    The default ``auto`` mode only bypasses private/local endpoints.  Set
+    ``MINIO_BYPASS_PROXY=true`` to include public hosts, or ``false`` to disable
+    this behavior entirely.
+    """
+    mode = os.getenv("MINIO_BYPASS_PROXY", "auto").strip().lower()
+    if mode in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }:
+        return ()
+
+    candidates = tuple(
+        dict.fromkeys(
+            host.lower()
+            for endpoint in endpoints
+            if (host := _endpoint_host(endpoint)) is not None
+        )
+    )
+    force = mode in {"1", "true", "yes", "on"}
+    hosts = tuple(host for host in candidates if force or _is_internal_host(host))
+    if not hosts:
+        return ()
+
+    entries: list[str] = []
+    existing: set[str] = set()
+    for name in ("NO_PROXY", "no_proxy"):
+        for item in os.getenv(name, "").split(","):
+            item = item.strip()
+            if item and item.lower() not in existing:
+                entries.append(item)
+                existing.add(item.lower())
+    entries.extend(host for host in hosts if host not in existing)
+    merged = ",".join(entries)
+    os.environ["NO_PROXY"] = merged
+    os.environ["no_proxy"] = merged
+    return hosts
 
 
 def _credentials_from_env(
@@ -88,8 +162,10 @@ def _secure_flag() -> bool:
 def load_read_config() -> MinioConfig:
     """Config for reading raw L2 from ``zeus-cn-quote`` on port **9000**."""
     key, secret = _resolve_read_credentials()
+    endpoint = _endpoint("MINIO_READ_ENDPOINT", DEFAULT_READ_ENDPOINT)
+    configure_minio_proxy_bypass(endpoint)
     return MinioConfig(
-        endpoint=_endpoint("MINIO_READ_ENDPOINT", DEFAULT_READ_ENDPOINT),
+        endpoint=endpoint,
         access_key=key,
         secret_key=secret,
         secure=_secure_flag(),
@@ -99,8 +175,10 @@ def load_read_config() -> MinioConfig:
 def load_write_config() -> MinioConfig:
     """Config for writing artifacts to ``model-cache`` on port **9100**."""
     key, secret = _resolve_write_credentials()
+    endpoint = _endpoint("MINIO_WRITE_ENDPOINT", DEFAULT_WRITE_ENDPOINT)
+    configure_minio_proxy_bypass(endpoint)
     return MinioConfig(
-        endpoint=_endpoint("MINIO_WRITE_ENDPOINT", DEFAULT_WRITE_ENDPOINT),
+        endpoint=endpoint,
         access_key=key,
         secret_key=secret,
         secure=_secure_flag(),
@@ -129,14 +207,14 @@ def output_prefix(*parts: str) -> str:
     return f"{base}/{extra}" if extra else base
 
 
-def storage_options_for_read() -> dict[str, str]:
+def storage_options_for_read() -> dict[str, str | int]:
     """Polars S3 options for reading raw L2."""
     from pylob.pipeline.s3_io import build_storage_options
 
     return build_storage_options(load_read_config())
 
 
-def storage_options_for_write() -> dict[str, str]:
+def storage_options_for_write() -> dict[str, str | int]:
     """Polars S3 options for writing to model-cache."""
     from pylob.pipeline.s3_io import build_storage_options
 

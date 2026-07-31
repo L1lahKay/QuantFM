@@ -26,6 +26,9 @@ CKPT="${CKPT:-$PRETRAIN/run/best.pt}"
 MANIFEST="$WORKDIR/data/manifest.json"
 EMB_DIR="$WORKDIR/embeddings"
 PANEL="${PANEL:-$WORKDIR/panel/daily_panel_cont60.parquet}"
+TRAIN_CALENDAR="${TRAIN_CALENDAR:-}"
+TRAIN_UNIVERSE="${TRAIN_UNIVERSE:-}"
+SCORE_UNIVERSE="${SCORE_UNIVERSE:-}"
 NPROC="${NPROC:-8}"
 BATCH="${BATCH:-16}"
 DTYPE="${DTYPE:-bf16}"
@@ -50,6 +53,18 @@ if [[ ! -f "$PANEL" ]]; then
   echo "ERROR: 连续 panel 不存在: $PANEL" >&2
   exit 1
 fi
+if [[ -z "$TRAIN_CALENDAR" || ! -f "$TRAIN_CALENDAR" ]]; then
+  echo "ERROR: 必须设置严格训练标签所用的 TRAIN_CALENDAR（覆盖末个信号日 T+2）" >&2
+  exit 2
+fi
+if [[ -z "$TRAIN_UNIVERSE" || ! -f "$TRAIN_UNIVERSE" ]]; then
+  echo "ERROR: 必须设置逐日 PIT TRAIN_UNIVERSE" >&2
+  exit 2
+fi
+if [[ -z "$SCORE_UNIVERSE" || ! -f "$SCORE_UNIVERSE" ]]; then
+  echo "ERROR: 必须设置逐日 PIT SCORE_UNIVERSE；embedding 不能代替股票池" >&2
+  exit 2
+fi
 
 # 2) 多卡抽 embedding（训练 Ranker 用 train，生产出分用 test）
 for split in train test; do
@@ -64,6 +79,8 @@ echo "==> train frozen signal ranker"
 uv run python -m quant_fm.signal.train \
   --embeddings "$EMB_DIR/train.parquet" \
   --panel "$PANEL" \
+  --calendar "$TRAIN_CALENDAR" \
+  --universe "$TRAIN_UNIVERSE" \
   --out-dir "$WORKDIR/signal_artifact" \
   --epochs "$EPOCHS" \
   --device cuda:0 \
@@ -75,6 +92,7 @@ uv run python -m quant_fm.signal.generate \
   --embeddings "$EMB_DIR/test.parquet" \
   --ranker "$WORKDIR/signal_artifact/ranker.pt" \
   --ranker-metadata "$WORKDIR/signal_artifact/ranker_metadata.json" \
+  --universe "$SCORE_UNIVERSE" \
   --out-dir "$WORKDIR/delivery" \
   --device cuda:0 \
   --fm-checkpoint "$CKPT" \

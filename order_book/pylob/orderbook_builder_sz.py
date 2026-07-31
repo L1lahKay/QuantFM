@@ -5,6 +5,10 @@ import polars as pl
 from pylob._utils import normalize_dtypes
 from pylob.cols_mapping import ColumnIndices
 from pylob.data_types import Order, Side, TradingPhase
+from pylob.event_ordering import (
+    DEFAULT_EVENT_ORDERING_VERSION,
+    order_market_events,
+)
 from pylob.matching_engine import MatchingEngine
 from pylob.result_mixin import ResultMixin
 
@@ -27,6 +31,8 @@ class OrderBookSZ(ResultMixin, MatchingEngine):
         symbol: str,
         cut_time=150100000,
         cut_serial=None,
+        *,
+        event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION,
     ):
         """
         准备市场数据处理环境.
@@ -37,6 +43,7 @@ class OrderBookSZ(ResultMixin, MatchingEngine):
             symbol: 股票代码
             cut_time: int_time 93500000
             cut_serial: serial int
+            event_ordering_version: 合并事件排序契约；默认交易所时间与序号。
 
         Returns
         -------
@@ -85,12 +92,12 @@ class OrderBookSZ(ResultMixin, MatchingEngine):
             o_filters.append(pl.col("serial") < cut_serial)
         order_df_test = odf.filter(pl.all_horizontal(o_filters))
 
-        # 合并、按 serial 排序
-        order_df = (
-            pl.concat([trade_df_test, order_df_test], how="diagonal")
-            .sort("local_time")
-            .to_pandas()
-        )
+        # local_time 是行情接收时间，不能决定交易所事件因果顺序。旧产物可通过
+        # local_time_v1 显式复现；新产物默认按 int_time + serial 稳定排序。
+        order_df = order_market_events(
+            pl.concat([trade_df_test, order_df_test], how="diagonal"),
+            version=event_ordering_version,
+        ).to_pandas()
 
         cols = list(order_df.columns)
 
@@ -183,7 +190,7 @@ class OrderBookSZ(ResultMixin, MatchingEngine):
             self.logger.debug("*************** 交易会话处理完成 ***************")
 
     def _build_trade_id_index(self) -> None:
-        """为 ``trade_df_with_c`` 建立 buy_id / sell_id → 子表 索引。"""
+        """为 ``trade_df_with_c`` 建立 buy_id / sell_id → 子表 索引."""
         df = self.trade_df_with_c
         if df is None or len(df) == 0:
             self._trades_by_buy_id: dict = {}
@@ -203,7 +210,7 @@ class OrderBookSZ(ResultMixin, MatchingEngine):
         self._trades_by_sell_id = sell
 
     def _lookup_trades_for_order(self, order_id: int, side: Side) -> pd.DataFrame:
-        """按方向从索引取该订单相关成交；无索引时回退到全表过滤。"""
+        """按方向从索引取该订单相关成交；无索引时回退到全表过滤."""
         oid = int(order_id)
         empty = self.trade_df_with_c.iloc[0:0]
         if side == Side.BUY:

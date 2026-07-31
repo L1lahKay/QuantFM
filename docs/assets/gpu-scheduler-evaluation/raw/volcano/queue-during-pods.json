@@ -1,0 +1,687 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "creationTimestamp": "2026-07-31T05:41:56Z",
+                "generateName": "dylan-trainer-ac4218e-",
+                "generation": 1,
+                "labels": {
+                    "app": "dylan-trainer",
+                    "batch.kubernetes.io/controller-uid": "110bfe69-6575-4ca9-9ef2-fc52756683bb",
+                    "batch.kubernetes.io/job-name": "dylan-trainer-ac4218e",
+                    "controller-uid": "110bfe69-6575-4ca9-9ef2-fc52756683bb",
+                    "job-name": "dylan-trainer-ac4218e",
+                    "owner": "dylan"
+                },
+                "name": "dylan-trainer-ac4218e-f5sjk",
+                "namespace": "gpu-dev",
+                "ownerReferences": [
+                    {
+                        "apiVersion": "batch/v1",
+                        "blockOwnerDeletion": true,
+                        "controller": true,
+                        "kind": "Job",
+                        "name": "dylan-trainer-ac4218e",
+                        "uid": "110bfe69-6575-4ca9-9ef2-fc52756683bb"
+                    }
+                ],
+                "resourceVersion": "27854273",
+                "uid": "50f42ab4-145e-41d2-9f38-d5c7b930f1d1"
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "command": [
+                            "python",
+                            "-m",
+                            "quant_fm.scripts.smoke",
+                            "--workdir",
+                            "/tmp/quantfm-smoke"
+                        ],
+                        "env": [
+                            {
+                                "name": "NVIDIA_VISIBLE_DEVICES",
+                                "value": "all"
+                            },
+                            {
+                                "name": "NVIDIA_DRIVER_CAPABILITIES",
+                                "value": "compute,utility"
+                            }
+                        ],
+                        "image": "registry.zs/gpu-dev/dylan-trainer:ac4218e",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "trainer",
+                        "resources": {
+                            "limits": {
+                                "cpu": "8",
+                                "memory": "16Gi",
+                                "nvidia.com/gpu": "1"
+                            },
+                            "requests": {
+                                "cpu": "4",
+                                "memory": "8Gi",
+                                "nvidia.com/gpu": "1"
+                            }
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+                                "name": "kube-api-access-pkr9k",
+                                "readOnly": true
+                            }
+                        ]
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "enableServiceLinks": true,
+                "nodeName": "gpu-dev-01",
+                "nodeSelector": {
+                    "accelerator": "nvidia"
+                },
+                "preemptionPolicy": "PreemptLowerPriority",
+                "priority": 0,
+                "restartPolicy": "Never",
+                "runtimeClassName": "nvidia",
+                "schedulerName": "default-scheduler",
+                "securityContext": {},
+                "serviceAccount": "default",
+                "serviceAccountName": "default",
+                "terminationGracePeriodSeconds": 30,
+                "tolerations": [
+                    {
+                        "effect": "NoSchedule",
+                        "key": "nvidia.com/gpu",
+                        "operator": "Exists"
+                    },
+                    {
+                        "effect": "NoExecute",
+                        "key": "node.kubernetes.io/not-ready",
+                        "operator": "Exists",
+                        "tolerationSeconds": 300
+                    },
+                    {
+                        "effect": "NoExecute",
+                        "key": "node.kubernetes.io/unreachable",
+                        "operator": "Exists",
+                        "tolerationSeconds": 300
+                    }
+                ],
+                "volumes": [
+                    {
+                        "name": "kube-api-access-pkr9k",
+                        "projected": {
+                            "defaultMode": 420,
+                            "sources": [
+                                {
+                                    "serviceAccountToken": {
+                                        "expirationSeconds": 3607,
+                                        "path": "token"
+                                    }
+                                },
+                                {
+                                    "configMap": {
+                                        "items": [
+                                            {
+                                                "key": "ca.crt",
+                                                "path": "ca.crt"
+                                            }
+                                        ],
+                                        "name": "kube-root-ca.crt"
+                                    }
+                                },
+                                {
+                                    "downwardAPI": {
+                                        "items": [
+                                            {
+                                                "fieldRef": {
+                                                    "apiVersion": "v1",
+                                                    "fieldPath": "metadata.namespace"
+                                                },
+                                                "path": "namespace"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "conditions": [
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T05:42:29Z",
+                        "observedGeneration": 1,
+                        "status": "False",
+                        "type": "PodReadyToStartContainers"
+                    },
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T05:41:56Z",
+                        "observedGeneration": 1,
+                        "reason": "PodCompleted",
+                        "status": "True",
+                        "type": "Initialized"
+                    },
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T05:42:27Z",
+                        "observedGeneration": 1,
+                        "reason": "PodCompleted",
+                        "status": "False",
+                        "type": "Ready"
+                    },
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T05:42:27Z",
+                        "observedGeneration": 1,
+                        "reason": "PodCompleted",
+                        "status": "False",
+                        "type": "ContainersReady"
+                    },
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T05:41:56Z",
+                        "observedGeneration": 1,
+                        "status": "True",
+                        "type": "PodScheduled"
+                    }
+                ],
+                "containerStatuses": [
+                    {
+                        "allocatedResources": {
+                            "cpu": "4",
+                            "memory": "8Gi",
+                            "nvidia.com/gpu": "1"
+                        },
+                        "containerID": "containerd://05d75d5f4e95f36110178324d2088a96bebca4948383194b10174ae07b8e6210",
+                        "image": "registry.zs/gpu-dev/dylan-trainer:ac4218e",
+                        "imageID": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+                        "lastState": {},
+                        "name": "trainer",
+                        "ready": false,
+                        "resources": {
+                            "limits": {
+                                "cpu": "8",
+                                "memory": "16Gi",
+                                "nvidia.com/gpu": "1"
+                            },
+                            "requests": {
+                                "cpu": "4",
+                                "memory": "8Gi",
+                                "nvidia.com/gpu": "1"
+                            }
+                        },
+                        "restartCount": 0,
+                        "started": false,
+                        "state": {
+                            "terminated": {
+                                "containerID": "containerd://05d75d5f4e95f36110178324d2088a96bebca4948383194b10174ae07b8e6210",
+                                "exitCode": 0,
+                                "finishedAt": "2026-07-31T05:42:26Z",
+                                "reason": "Completed",
+                                "startedAt": "2026-07-31T05:41:59Z"
+                            }
+                        },
+                        "user": {
+                            "linux": {
+                                "gid": 0,
+                                "supplementalGroups": [
+                                    0
+                                ],
+                                "uid": 0
+                            }
+                        },
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+                                "name": "kube-api-access-pkr9k",
+                                "readOnly": true,
+                                "recursiveReadOnly": "Disabled"
+                            }
+                        ]
+                    }
+                ],
+                "hostIP": "192.168.2.12",
+                "hostIPs": [
+                    {
+                        "ip": "192.168.2.12"
+                    }
+                ],
+                "observedGeneration": 1,
+                "phase": "Succeeded",
+                "podIP": "10.52.0.91",
+                "podIPs": [
+                    {
+                        "ip": "10.52.0.91"
+                    }
+                ],
+                "qosClass": "Burstable",
+                "startTime": "2026-07-31T05:41:56Z"
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "annotations": {
+                    "scheduling.k8s.io/group-name": "khalil-volcano-quota-holder-pg"
+                },
+                "creationTimestamp": "2026-07-31T07:40:49Z",
+                "finalizers": [
+                    "batch.kubernetes.io/job-tracking"
+                ],
+                "generateName": "khalil-volcano-quota-holder-",
+                "generation": 1,
+                "labels": {
+                    "batch.kubernetes.io/controller-uid": "c83d50ee-2b93-48e6-b945-e8e52db7ae7f",
+                    "batch.kubernetes.io/job-name": "khalil-volcano-quota-holder",
+                    "controller-uid": "c83d50ee-2b93-48e6-b945-e8e52db7ae7f",
+                    "evaluation.quantfm/owner": "khalil",
+                    "evaluation.quantfm/scenario": "queue-holder",
+                    "evaluation.quantfm/suite": "volcano-v1-15-1",
+                    "job-name": "khalil-volcano-quota-holder"
+                },
+                "name": "khalil-volcano-quota-holder-rmpkg",
+                "namespace": "gpu-dev",
+                "ownerReferences": [
+                    {
+                        "apiVersion": "batch/v1",
+                        "blockOwnerDeletion": true,
+                        "controller": true,
+                        "kind": "Job",
+                        "name": "khalil-volcano-quota-holder",
+                        "uid": "c83d50ee-2b93-48e6-b945-e8e52db7ae7f"
+                    }
+                ],
+                "resourceVersion": "27881972",
+                "uid": "4b71ae9d-f8ee-4c41-8a87-c62d51559727"
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "command": [
+                            "/bin/sh",
+                            "-c",
+                            "set -eu\necho \"APP_START_UTC=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\"\necho \"VISIBLE_GPU_COUNT=$(nvidia-smi -L | wc -l)\"\nsleep 30\necho \"APP_FINISH_UTC=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\"\n"
+                        ],
+                        "image": "registry.zs/gpu-dev/dylan-trainer:ac4218e",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "holder",
+                        "resources": {
+                            "limits": {
+                                "cpu": "250m",
+                                "memory": "256Mi",
+                                "nvidia.com/gpu": "1"
+                            },
+                            "requests": {
+                                "cpu": "100m",
+                                "memory": "128Mi",
+                                "nvidia.com/gpu": "1"
+                            }
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+                                "name": "kube-api-access-ggndb",
+                                "readOnly": true
+                            }
+                        ]
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "enableServiceLinks": true,
+                "nodeName": "gpu-dev-01",
+                "nodeSelector": {
+                    "accelerator": "nvidia"
+                },
+                "preemptionPolicy": "PreemptLowerPriority",
+                "priority": 0,
+                "restartPolicy": "Never",
+                "runtimeClassName": "nvidia",
+                "schedulerName": "volcano",
+                "securityContext": {},
+                "serviceAccount": "default",
+                "serviceAccountName": "default",
+                "terminationGracePeriodSeconds": 2,
+                "tolerations": [
+                    {
+                        "effect": "NoSchedule",
+                        "key": "nvidia.com/gpu",
+                        "operator": "Exists"
+                    },
+                    {
+                        "effect": "NoExecute",
+                        "key": "node.kubernetes.io/not-ready",
+                        "operator": "Exists",
+                        "tolerationSeconds": 300
+                    },
+                    {
+                        "effect": "NoExecute",
+                        "key": "node.kubernetes.io/unreachable",
+                        "operator": "Exists",
+                        "tolerationSeconds": 300
+                    }
+                ],
+                "volumes": [
+                    {
+                        "name": "kube-api-access-ggndb",
+                        "projected": {
+                            "defaultMode": 420,
+                            "sources": [
+                                {
+                                    "serviceAccountToken": {
+                                        "expirationSeconds": 3607,
+                                        "path": "token"
+                                    }
+                                },
+                                {
+                                    "configMap": {
+                                        "items": [
+                                            {
+                                                "key": "ca.crt",
+                                                "path": "ca.crt"
+                                            }
+                                        ],
+                                        "name": "kube-root-ca.crt"
+                                    }
+                                },
+                                {
+                                    "downwardAPI": {
+                                        "items": [
+                                            {
+                                                "fieldRef": {
+                                                    "apiVersion": "v1",
+                                                    "fieldPath": "metadata.namespace"
+                                                },
+                                                "path": "namespace"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "conditions": [
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T07:40:53Z",
+                        "observedGeneration": 1,
+                        "status": "True",
+                        "type": "PodReadyToStartContainers"
+                    },
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T07:40:50Z",
+                        "observedGeneration": 1,
+                        "status": "True",
+                        "type": "Initialized"
+                    },
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T07:40:53Z",
+                        "observedGeneration": 1,
+                        "status": "True",
+                        "type": "Ready"
+                    },
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T07:40:53Z",
+                        "observedGeneration": 1,
+                        "status": "True",
+                        "type": "ContainersReady"
+                    },
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T07:40:50Z",
+                        "observedGeneration": 1,
+                        "status": "True",
+                        "type": "PodScheduled"
+                    }
+                ],
+                "containerStatuses": [
+                    {
+                        "allocatedResources": {
+                            "cpu": "100m",
+                            "memory": "128Mi",
+                            "nvidia.com/gpu": "1"
+                        },
+                        "containerID": "containerd://375d5a33c6cdea906cb883330488fd5728d5bb6d6714d0e872d4ba6954974b4a",
+                        "image": "registry.zs/gpu-dev/dylan-trainer:ac4218e",
+                        "imageID": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+                        "lastState": {},
+                        "name": "holder",
+                        "ready": true,
+                        "resources": {
+                            "limits": {
+                                "cpu": "250m",
+                                "memory": "256Mi",
+                                "nvidia.com/gpu": "1"
+                            },
+                            "requests": {
+                                "cpu": "100m",
+                                "memory": "128Mi",
+                                "nvidia.com/gpu": "1"
+                            }
+                        },
+                        "restartCount": 0,
+                        "started": true,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-07-31T07:40:53Z"
+                            }
+                        },
+                        "user": {
+                            "linux": {
+                                "gid": 0,
+                                "supplementalGroups": [
+                                    0
+                                ],
+                                "uid": 0
+                            }
+                        },
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+                                "name": "kube-api-access-ggndb",
+                                "readOnly": true,
+                                "recursiveReadOnly": "Disabled"
+                            }
+                        ]
+                    }
+                ],
+                "hostIP": "192.168.2.12",
+                "hostIPs": [
+                    {
+                        "ip": "192.168.2.12"
+                    }
+                ],
+                "observedGeneration": 1,
+                "phase": "Running",
+                "podIP": "10.52.0.103",
+                "podIPs": [
+                    {
+                        "ip": "10.52.0.103"
+                    }
+                ],
+                "qosClass": "Burstable",
+                "startTime": "2026-07-31T07:40:50Z"
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "annotations": {
+                    "scheduling.k8s.io/group-name": "khalil-volcano-quota-waiter-pg"
+                },
+                "creationTimestamp": "2026-07-31T07:40:54Z",
+                "finalizers": [
+                    "batch.kubernetes.io/job-tracking"
+                ],
+                "generateName": "khalil-volcano-quota-waiter-",
+                "generation": 1,
+                "labels": {
+                    "batch.kubernetes.io/controller-uid": "b932ff98-efe4-4851-bee6-2a8ef6ae9993",
+                    "batch.kubernetes.io/job-name": "khalil-volcano-quota-waiter",
+                    "controller-uid": "b932ff98-efe4-4851-bee6-2a8ef6ae9993",
+                    "evaluation.quantfm/owner": "khalil",
+                    "evaluation.quantfm/scenario": "queue-waiter",
+                    "evaluation.quantfm/suite": "volcano-v1-15-1",
+                    "job-name": "khalil-volcano-quota-waiter"
+                },
+                "name": "khalil-volcano-quota-waiter-qr4mq",
+                "namespace": "gpu-dev",
+                "ownerReferences": [
+                    {
+                        "apiVersion": "batch/v1",
+                        "blockOwnerDeletion": true,
+                        "controller": true,
+                        "kind": "Job",
+                        "name": "khalil-volcano-quota-waiter",
+                        "uid": "b932ff98-efe4-4851-bee6-2a8ef6ae9993"
+                    }
+                ],
+                "resourceVersion": "27881982",
+                "uid": "0eff8697-80bf-416b-b0e5-f4610fa3f1ab"
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "command": [
+                            "/bin/sh",
+                            "-c",
+                            "set -eu\necho \"APP_START_UTC=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\"\necho \"VISIBLE_GPU_COUNT=$(nvidia-smi -L | wc -l)\"\nsleep 5\necho \"APP_FINISH_UTC=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\"\n"
+                        ],
+                        "image": "registry.zs/gpu-dev/dylan-trainer:ac4218e",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "waiter",
+                        "resources": {
+                            "limits": {
+                                "cpu": "250m",
+                                "memory": "256Mi",
+                                "nvidia.com/gpu": "1"
+                            },
+                            "requests": {
+                                "cpu": "100m",
+                                "memory": "128Mi",
+                                "nvidia.com/gpu": "1"
+                            }
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+                                "name": "kube-api-access-kxzt9",
+                                "readOnly": true
+                            }
+                        ]
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "enableServiceLinks": true,
+                "nodeSelector": {
+                    "accelerator": "nvidia"
+                },
+                "preemptionPolicy": "PreemptLowerPriority",
+                "priority": 0,
+                "restartPolicy": "Never",
+                "runtimeClassName": "nvidia",
+                "schedulerName": "volcano",
+                "securityContext": {},
+                "serviceAccount": "default",
+                "serviceAccountName": "default",
+                "terminationGracePeriodSeconds": 2,
+                "tolerations": [
+                    {
+                        "effect": "NoSchedule",
+                        "key": "nvidia.com/gpu",
+                        "operator": "Exists"
+                    },
+                    {
+                        "effect": "NoExecute",
+                        "key": "node.kubernetes.io/not-ready",
+                        "operator": "Exists",
+                        "tolerationSeconds": 300
+                    },
+                    {
+                        "effect": "NoExecute",
+                        "key": "node.kubernetes.io/unreachable",
+                        "operator": "Exists",
+                        "tolerationSeconds": 300
+                    }
+                ],
+                "volumes": [
+                    {
+                        "name": "kube-api-access-kxzt9",
+                        "projected": {
+                            "defaultMode": 420,
+                            "sources": [
+                                {
+                                    "serviceAccountToken": {
+                                        "expirationSeconds": 3607,
+                                        "path": "token"
+                                    }
+                                },
+                                {
+                                    "configMap": {
+                                        "items": [
+                                            {
+                                                "key": "ca.crt",
+                                                "path": "ca.crt"
+                                            }
+                                        ],
+                                        "name": "kube-root-ca.crt"
+                                    }
+                                },
+                                {
+                                    "downwardAPI": {
+                                        "items": [
+                                            {
+                                                "fieldRef": {
+                                                    "apiVersion": "v1",
+                                                    "fieldPath": "metadata.namespace"
+                                                },
+                                                "path": "namespace"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "conditions": [
+                    {
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2026-07-31T07:40:54Z",
+                        "message": "pod group is not ready, 1 Pending, 1 minAvailable; Pending: 1 Unschedulable",
+                        "reason": "Unschedulable",
+                        "status": "False",
+                        "type": "PodScheduled"
+                    }
+                ],
+                "phase": "Pending",
+                "qosClass": "Burstable"
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

@@ -4,6 +4,10 @@ import polars as pl
 from pylob._utils import normalize_dtypes
 from pylob.cols_mapping import ColumnIndices
 from pylob.data_types import TradingPhase
+from pylob.event_ordering import (
+    DEFAULT_EVENT_ORDERING_VERSION,
+    order_market_events,
+)
 from pylob.matching_engine import MatchingEngine
 from pylob.result_mixin import ResultMixin
 
@@ -21,7 +25,14 @@ class OrderBookSH(ResultMixin, MatchingEngine):
         self.current_trade_id_old = 0
 
     def prepare_market_data(
-        self, trade_df_SH, order_df_SH, symbol: str, cut_time=150100000, cut_serial=None
+        self,
+        trade_df_SH,
+        order_df_SH,
+        symbol: str,
+        cut_time=150100000,
+        cut_serial=None,
+        *,
+        event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION,
     ):
         """
         准备市场数据处理环境.
@@ -32,6 +43,7 @@ class OrderBookSH(ResultMixin, MatchingEngine):
             symbol: 股票代码
             cut_time: int_time 93500000
             cut_serial: serial
+            event_ordering_version: 合并事件排序契约；默认交易所时间与序号。
 
         Returns
         -------
@@ -69,12 +81,12 @@ class OrderBookSH(ResultMixin, MatchingEngine):
             )
         )
 
-        # 合并、按 serial 排序（保持列名）
-        order_df = (
-            pl.concat([trade_df_test, order_df_test], how="diagonal")
-            .sort("local_time")
-            .to_pandas()
-        )
+        # local_time 是行情接收时间，不能决定交易所事件因果顺序。旧产物可通过
+        # local_time_v1 显式复现；新产物默认按 int_time + serial 稳定排序。
+        order_df = order_market_events(
+            pl.concat([trade_df_test, order_df_test], how="diagonal"),
+            version=event_ordering_version,
+        ).to_pandas()
 
         cols = list(order_df.columns)
 

@@ -22,6 +22,8 @@ from pathlib import Path
 
 from quant_fm.scripts.make_adhoc_manifest import write_day_index
 from quant_fm.scripts.run_medium import _tokenize_shards_parallel
+from quant_fm.tokenizer.artifact_contract import assert_token_contract_matches
+from quant_fm.tokenizer.vocab import Vocab
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +39,19 @@ def tokenize_day(
     resume: bool,
 ) -> int:
     """收集某日未 tokenize 的分片并并行处理，返回处理数。"""
+    vocab = Vocab.load(vocab_path)
     jobs: list[tuple[Path, Path]] = []
     for p in sorted(events_dir.rglob(f"{day}.parquet")):
         dst = tokens_dir / p.relative_to(events_dir)
         if dst.exists() and resume:
+            try:
+                assert_token_contract_matches(dst, vocab)
+            except ValueError as exc:
+                msg = (
+                    f"refusing to overwrite incompatible token shard during resume: "
+                    f"{dst}; use a new tokens root ({exc})"
+                )
+                raise RuntimeError(msg) from exc
             if drop_events:
                 p.unlink(missing_ok=True)
             continue

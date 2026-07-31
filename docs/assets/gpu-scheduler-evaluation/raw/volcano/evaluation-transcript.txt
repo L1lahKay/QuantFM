@@ -1,0 +1,538 @@
+EVALUATION_BEGIN utc=2026-07-31T07:40:15.090Z monotonic_ns=2779601387120935
+ADMIN_KUBECONFIG_PATH=/etc/rancher/k3s/k3s.yaml
+ADMIN_CONTEXT=default
+NAMESPACE=gpu-dev
+CAN_I create queues.scheduling.volcano.sh: yes
+CAN_I create podgroups.scheduling.volcano.sh: yes
+CAN_I create priorityclasses.scheduling.k8s.io: yes
+CAN_I create jobs.batch: yes
+CAN_I patch configmaps: yes
+CAN_I patch deployments.apps: yes
+PREFLIGHT_RUNNING_GPU_REQUEST_TOTAL=0
+GPU_DEV_QUOTA_HARD=4 USED=0
+NODE_GPU_ALLOCATABLE=8
+b5fb45a57bcd1132be7055354999d244266873710609afd1f162005772d15c41  /home/khalil/DataCleaning7.3/QuantFM/k8s/scheduler-evaluation/volcano/upstream/volcano-development-v1.15.1.yaml
+EMPTY_QUEUE_PREREQUISITES_BEGIN utc=2026-07-31T07:40:25.764Z monotonic_ns=2779612061656051
+queue.scheduling.volcano.sh/khalil-volcano-smoke created (server dry run)
+queue.scheduling.volcano.sh/khalil-volcano-quota created (server dry run)
+queue.scheduling.volcano.sh/khalil-volcano-gang created (server dry run)
+queue.scheduling.volcano.sh/khalil-volcano-preempt created (server dry run)
+queue.scheduling.volcano.sh/khalil-volcano-smoke created
+queue.scheduling.volcano.sh/khalil-volcano-quota created
+queue.scheduling.volcano.sh/khalil-volcano-gang created
+queue.scheduling.volcano.sh/khalil-volcano-preempt created
+priorityclass.scheduling.k8s.io/khalil-volcano-low created (server dry run)
+priorityclass.scheduling.k8s.io/khalil-volcano-high created (server dry run)
+priorityclass.scheduling.k8s.io/khalil-volcano-low created
+priorityclass.scheduling.k8s.io/khalil-volcano-high created
+EMPTY_QUEUE_PREREQUISITES_READY utc=2026-07-31T07:40:26.956Z monotonic_ns=2779613253017498
+DRY_RUN 00-queues.yaml
+queue.scheduling.volcano.sh/khalil-volcano-smoke unchanged (server dry run)
+queue.scheduling.volcano.sh/khalil-volcano-quota unchanged (server dry run)
+queue.scheduling.volcano.sh/khalil-volcano-gang unchanged (server dry run)
+queue.scheduling.volcano.sh/khalil-volcano-preempt unchanged (server dry run)
+DRY_RUN 01-smoke.yaml
+queue.scheduling.volcano.sh/khalil-volcano-smoke unchanged (server dry run)
+podgroup.scheduling.volcano.sh/khalil-volcano-smoke-pg created (server dry run)
+job.batch/khalil-volcano-smoke created (server dry run)
+DRY_RUN 02-queue-base.yaml
+queue.scheduling.volcano.sh/khalil-volcano-quota unchanged (server dry run)
+podgroup.scheduling.volcano.sh/khalil-volcano-quota-holder-pg created (server dry run)
+podgroup.scheduling.volcano.sh/khalil-volcano-quota-waiter-pg created (server dry run)
+DRY_RUN 03-queue-holder.yaml
+job.batch/khalil-volcano-quota-holder created (server dry run)
+DRY_RUN 04-queue-waiter.yaml
+job.batch/khalil-volcano-quota-waiter created (server dry run)
+DRY_RUN 05-gang.yaml
+queue.scheduling.volcano.sh/khalil-volcano-gang unchanged (server dry run)
+podgroup.scheduling.volcano.sh/khalil-volcano-gang-pg created (server dry run)
+job.batch/khalil-volcano-gang created (server dry run)
+DRY_RUN 06-priorityclasses.yaml
+priorityclass.scheduling.k8s.io/khalil-volcano-low configured (server dry run)
+priorityclass.scheduling.k8s.io/khalil-volcano-high configured (server dry run)
+DRY_RUN 07-preempt-base.yaml
+queue.scheduling.volcano.sh/khalil-volcano-preempt unchanged (server dry run)
+podgroup.scheduling.volcano.sh/khalil-volcano-preempt-victim-pg created (server dry run)
+podgroup.scheduling.volcano.sh/khalil-volcano-preempt-high-pg created (server dry run)
+DRY_RUN 08-preempt-victim.yaml
+job.batch/khalil-volcano-preempt-victim created (server dry run)
+DRY_RUN 10-preempt-high.yaml
+job.batch/khalil-volcano-preempt-high created (server dry run)
+SERVER_DRY_RUN_COMPLETE utc=2026-07-31T07:40:31.473Z monotonic_ns=2779617771704411
+SCENARIO_SMOKE_BEGIN
+SMOKE_CREATE_BEGIN utc=2026-07-31T07:40:31.526Z monotonic_ns=2779617822372722
+queue.scheduling.volcano.sh/khalil-volcano-smoke unchanged
+podgroup.scheduling.volcano.sh/khalil-volcano-smoke-pg created
+job.batch/khalil-volcano-smoke created
+SMOKE_CREATE_RETURN utc=2026-07-31T07:40:32.201Z monotonic_ns=2779618497649761
+job.batch/khalil-volcano-smoke condition met
+SMOKE_COMPLETE_OBSERVED utc=2026-07-31T07:40:42.975Z monotonic_ns=2779629273009929
+CAPTURE_smoke-final utc=2026-07-31T07:40:43.027Z monotonic_ns=2779629324080422
+NAME                              STATUS     COMPLETIONS   DURATION   AGE    CONTAINERS   IMAGES                                      SELECTOR
+job.batch/dylan-trainer-ac4218e   Complete   1/1           33s        118m   trainer      registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=110bfe69-6575-4ca9-9ef2-fc52756683bb
+job.batch/khalil-volcano-smoke    Complete   1/1           10s        13s    gpu-probe    registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=757af4b2-7205-4c05-bd67-88fdb79b41c3
+
+NAME                              READY   STATUS      RESTARTS   AGE    IP            NODE         NOMINATED NODE   READINESS GATES
+pod/dylan-trainer-ac4218e-f5sjk   0/1     Completed   0          118m   10.52.0.91    gpu-dev-01   <none>           <none>
+pod/khalil-volcano-smoke-4qqdh    0/1     Completed   0          13s    10.52.0.102   gpu-dev-01   <none>           <none>
+
+NAME                                                     STATUS      MINMEMBER   RUNNINGS   AGE   QUEUE
+podgroup.scheduling.volcano.sh/khalil-volcano-smoke-pg   Completed   1                      13s   khalil-volcano-smoke
+NAME                     STATE   WEIGHT   CAP_GPU   DESERVED_GPU   ALLOC_GPU   INQUEUE   RUNNING
+khalil-volcano-gang      Open    1        1         <none>         <none>      <none>    <none>
+khalil-volcano-preempt   Open    1        3         <none>         <none>      <none>    <none>
+khalil-volcano-quota     Open    1        1         <none>         <none>      <none>    <none>
+khalil-volcano-smoke     Open    1        1         <none>         <none>      <none>    <none>
+LAST SEEN   TYPE      REASON             OBJECT                               MESSAGE
+55m         Warning   FailedBinding      persistentvolumeclaim/quantfm-data   volume "pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580" already bound to a different claim.
+13s         Normal    Scheduled          pod/khalil-volcano-smoke-4qqdh       Successfully assigned gpu-dev/khalil-volcano-smoke-4qqdh to gpu-dev-01
+13s         Warning   Unschedulable      podgroup/khalil-volcano-smoke-pg     0/1 tasks in gang unschedulable: pod group is ready, 1 Binding, 1 minAvailable
+13s         Normal    SuccessfulCreate   job/khalil-volcano-smoke             Created pod: khalil-volcano-smoke-4qqdh
+12s         Normal    Pulled             pod/khalil-volcano-smoke-4qqdh       Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+12s         Normal    Created            pod/khalil-volcano-smoke-4qqdh       Container created
+3s          Normal    Scheduled          podgroup/khalil-volcano-smoke-pg     pod group is ready
+10s         Normal    Started            pod/khalil-volcano-smoke-4qqdh       Container started
+3s          Normal    Completed          job/khalil-volcano-smoke             Job completed
+SMOKE_VISIBLE_GPU_ASSERTIONS=1
+SMOKE_POD_SCHEDULER=volcano
+job.batch "khalil-volcano-smoke" deleted from gpu-dev namespace
+podgroup.scheduling.volcano.sh "khalil-volcano-smoke-pg" deleted from gpu-dev namespace
+queue.scheduling.volcano.sh "khalil-volcano-smoke" deleted
+SCENARIO_SMOKE_END
+SCENARIO_QUEUE_CAPABILITY_BEGIN
+queue.scheduling.volcano.sh/khalil-volcano-quota unchanged
+podgroup.scheduling.volcano.sh/khalil-volcano-quota-holder-pg created
+podgroup.scheduling.volcano.sh/khalil-volcano-quota-waiter-pg created
+QUEUE_HOLDER_CREATE_BEGIN utc=2026-07-31T07:40:49.366Z monotonic_ns=2779635664088641
+job.batch/khalil-volcano-quota-holder created
+QUEUE_HOLDER_CREATE_RETURN utc=2026-07-31T07:40:49.690Z monotonic_ns=2779635986361830
+pod/khalil-volcano-quota-holder-rmpkg condition met
+QUEUE_HOLDER_READY_OBSERVED utc=2026-07-31T07:40:54.011Z monotonic_ns=2779640309418821
+QUEUE_WAITER_CREATE_BEGIN utc=2026-07-31T07:40:54.064Z monotonic_ns=2779640362559767
+job.batch/khalil-volcano-quota-waiter created
+QUEUE_WAITER_CREATE_RETURN utc=2026-07-31T07:40:54.409Z monotonic_ns=2779640706445377
+CAPTURE_queue-during utc=2026-07-31T07:40:59.463Z monotonic_ns=2779645759905193
+NAME                                    STATUS     COMPLETIONS   DURATION   AGE    CONTAINERS   IMAGES                                      SELECTOR
+job.batch/dylan-trainer-ac4218e         Complete   1/1           33s        119m   trainer      registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=110bfe69-6575-4ca9-9ef2-fc52756683bb
+job.batch/khalil-volcano-quota-holder   Running    0/1           12s        12s    holder       registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=c83d50ee-2b93-48e6-b945-e8e52db7ae7f
+job.batch/khalil-volcano-quota-waiter   Running    0/1           7s         7s     waiter       registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=b932ff98-efe4-4851-bee6-2a8ef6ae9993
+
+NAME                                    READY   STATUS      RESTARTS   AGE    IP            NODE         NOMINATED NODE   READINESS GATES
+pod/dylan-trainer-ac4218e-f5sjk         0/1     Completed   0          119m   10.52.0.91    gpu-dev-01   <none>           <none>
+pod/khalil-volcano-quota-holder-rmpkg   1/1     Running     0          12s    10.52.0.103   gpu-dev-01   <none>           <none>
+pod/khalil-volcano-quota-waiter-qr4mq   0/1     Pending     0          7s     <none>        <none>       <none>           <none>
+
+NAME                                                            STATUS    MINMEMBER   RUNNINGS   AGE   QUEUE
+podgroup.scheduling.volcano.sh/khalil-volcano-quota-holder-pg   Running   1           1          14s   khalil-volcano-quota
+podgroup.scheduling.volcano.sh/khalil-volcano-quota-waiter-pg   Pending   1                      14s   khalil-volcano-quota
+NAME                     STATE   WEIGHT   CAP_GPU   DESERVED_GPU   ALLOC_GPU   INQUEUE   RUNNING
+khalil-volcano-gang      Open    1        1         <none>         <none>      <none>    <none>
+khalil-volcano-preempt   Open    1        3         <none>         <none>      <none>    <none>
+khalil-volcano-quota     Open    1        1         <none>         1           <none>    <none>
+LAST SEEN   TYPE      REASON             OBJECT                                    MESSAGE
+55m         Warning   FailedBinding      persistentvolumeclaim/quantfm-data        volume "pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580" already bound to a different claim.
+30s         Normal    Scheduled          pod/khalil-volcano-smoke-4qqdh            Successfully assigned gpu-dev/khalil-volcano-smoke-4qqdh to gpu-dev-01
+30s         Normal    SuccessfulCreate   job/khalil-volcano-smoke                  Created pod: khalil-volcano-smoke-4qqdh
+30s         Warning   Unschedulable      podgroup/khalil-volcano-smoke-pg          0/1 tasks in gang unschedulable: pod group is ready, 1 Binding, 1 minAvailable
+20s         Normal    Scheduled          podgroup/khalil-volcano-smoke-pg          pod group is ready
+29s         Normal    Created            pod/khalil-volcano-smoke-4qqdh            Container created
+29s         Normal    Pulled             pod/khalil-volcano-smoke-4qqdh            Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+27s         Normal    Started            pod/khalil-volcano-smoke-4qqdh            Container started
+20s         Normal    Completed          job/khalil-volcano-smoke                  Job completed
+16s         Warning   Unschedulable      podgroup/khalil-volcano-smoke-pg          0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+9s          Warning   Unschedulable      podgroup/khalil-volcano-quota-waiter-pg   0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+1s          Normal    Unschedulable      podgroup/khalil-volcano-quota-waiter-pg   queue resource quota insufficient: insufficient nvidia.com/gpu
+13s         Warning   Unschedulable      podgroup/khalil-volcano-quota-holder-pg   0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+13s         Normal    SuccessfulCreate   job/khalil-volcano-quota-holder           Created pod: khalil-volcano-quota-holder-rmpkg
+12s         Normal    Scheduled          pod/khalil-volcano-quota-holder-rmpkg     Successfully assigned gpu-dev/khalil-volcano-quota-holder-rmpkg to gpu-dev-01
+12s         Warning   Unschedulable      podgroup/khalil-volcano-quota-holder-pg   0/1 tasks in gang unschedulable: pod group is ready, 1 Binding, 1 minAvailable
+11s         Normal    Created            pod/khalil-volcano-quota-holder-rmpkg     Container created
+11s         Normal    Pulled             pod/khalil-volcano-quota-holder-rmpkg     Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+8s          Normal    Scheduled          podgroup/khalil-volcano-quota-holder-pg   pod group is ready
+9s          Normal    Started            pod/khalil-volcano-quota-holder-rmpkg     Container started
+8s          Normal    SuccessfulCreate   job/khalil-volcano-quota-waiter           Created pod: khalil-volcano-quota-waiter-qr4mq
+8s          Warning   FailedScheduling   pod/khalil-volcano-quota-waiter-qr4mq     pod group is not ready, 1 Pending, 1 minAvailable; Pending: 1 Unschedulable
+1s          Warning   Unschedulable      podgroup/khalil-volcano-quota-waiter-pg   1/1 tasks in gang unschedulable: pod group is not ready, 1 Pending, 1 minAvailable; Pending: 1 Unschedulable
+QUEUE_DURING_WAITER_BOUND=0
+QUEUE_DURING_RUNNING_GPU_REQUEST_TOTAL=1
+QUEUE_DURING_PHYSICAL_FREE_GPU=7
+job.batch/khalil-volcano-quota-holder condition met
+QUEUE_HOLDER_COMPLETE_OBSERVED utc=2026-07-31T07:41:27.191Z monotonic_ns=2779673488737468
+job.batch/khalil-volcano-quota-waiter condition met
+QUEUE_WAITER_COMPLETE_OBSERVED utc=2026-07-31T07:41:38.254Z monotonic_ns=2779684553013062
+CAPTURE_queue-final utc=2026-07-31T07:41:38.307Z monotonic_ns=2779684603993106
+NAME                                    STATUS     COMPLETIONS   DURATION   AGE    CONTAINERS   IMAGES                                      SELECTOR
+job.batch/dylan-trainer-ac4218e         Complete   1/1           33s        119m   trainer      registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=110bfe69-6575-4ca9-9ef2-fc52756683bb
+job.batch/khalil-volcano-quota-holder   Complete   1/1           38s        51s    holder       registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=c83d50ee-2b93-48e6-b945-e8e52db7ae7f
+job.batch/khalil-volcano-quota-waiter   Complete   1/1           44s        46s    waiter       registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=b932ff98-efe4-4851-bee6-2a8ef6ae9993
+
+NAME                                    READY   STATUS      RESTARTS   AGE    IP            NODE         NOMINATED NODE   READINESS GATES
+pod/dylan-trainer-ac4218e-f5sjk         0/1     Completed   0          119m   10.52.0.91    gpu-dev-01   <none>           <none>
+pod/khalil-volcano-quota-holder-rmpkg   0/1     Completed   0          51s    10.52.0.103   gpu-dev-01   <none>           <none>
+pod/khalil-volcano-quota-waiter-qr4mq   0/1     Completed   0          46s    10.52.0.104   gpu-dev-01   <none>           <none>
+
+NAME                                                            STATUS      MINMEMBER   RUNNINGS   AGE   QUEUE
+podgroup.scheduling.volcano.sh/khalil-volcano-quota-holder-pg   Completed   1                      53s   khalil-volcano-quota
+podgroup.scheduling.volcano.sh/khalil-volcano-quota-waiter-pg   Completed   1                      53s   khalil-volcano-quota
+NAME                     STATE   WEIGHT   CAP_GPU   DESERVED_GPU   ALLOC_GPU   INQUEUE   RUNNING
+khalil-volcano-gang      Open    1        1         <none>         <none>      <none>    <none>
+khalil-volcano-preempt   Open    1        3         <none>         <none>      <none>    <none>
+khalil-volcano-quota     Open    1        1         <none>         <none>      <none>    <none>
+LAST SEEN   TYPE      REASON             OBJECT                                    MESSAGE
+56m         Warning   FailedBinding      persistentvolumeclaim/quantfm-data        volume "pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580" already bound to a different claim.
+68s         Warning   Unschedulable      podgroup/khalil-volcano-smoke-pg          0/1 tasks in gang unschedulable: pod group is ready, 1 Binding, 1 minAvailable
+68s         Normal    SuccessfulCreate   job/khalil-volcano-smoke                  Created pod: khalil-volcano-smoke-4qqdh
+68s         Normal    Scheduled          pod/khalil-volcano-smoke-4qqdh            Successfully assigned gpu-dev/khalil-volcano-smoke-4qqdh to gpu-dev-01
+58s         Normal    Scheduled          podgroup/khalil-volcano-smoke-pg          pod group is ready
+67s         Normal    Created            pod/khalil-volcano-smoke-4qqdh            Container created
+67s         Normal    Pulled             pod/khalil-volcano-smoke-4qqdh            Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+65s         Normal    Started            pod/khalil-volcano-smoke-4qqdh            Container started
+58s         Normal    Completed          job/khalil-volcano-smoke                  Job completed
+54s         Warning   Unschedulable      podgroup/khalil-volcano-smoke-pg          0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+51s         Warning   Unschedulable      podgroup/khalil-volcano-quota-holder-pg   0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+29s         Normal    Unschedulable      podgroup/khalil-volcano-quota-waiter-pg   queue resource quota insufficient: insufficient nvidia.com/gpu
+47s         Warning   Unschedulable      podgroup/khalil-volcano-quota-waiter-pg   0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+51s         Normal    SuccessfulCreate   job/khalil-volcano-quota-holder           Created pod: khalil-volcano-quota-holder-rmpkg
+50s         Warning   Unschedulable      podgroup/khalil-volcano-quota-holder-pg   0/1 tasks in gang unschedulable: pod group is ready, 1 Binding, 1 minAvailable
+50s         Normal    Scheduled          pod/khalil-volcano-quota-holder-rmpkg     Successfully assigned gpu-dev/khalil-volcano-quota-holder-rmpkg to gpu-dev-01
+14s         Normal    Scheduled          podgroup/khalil-volcano-quota-holder-pg   pod group is ready
+49s         Normal    Pulled             pod/khalil-volcano-quota-holder-rmpkg     Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+49s         Normal    Created            pod/khalil-volcano-quota-holder-rmpkg     Container created
+47s         Normal    Started            pod/khalil-volcano-quota-holder-rmpkg     Container started
+46s         Normal    SuccessfulCreate   job/khalil-volcano-quota-waiter           Created pod: khalil-volcano-quota-waiter-qr4mq
+29s         Warning   Unschedulable      podgroup/khalil-volcano-quota-waiter-pg   1/1 tasks in gang unschedulable: pod group is not ready, 1 Pending, 1 minAvailable; Pending: 1 Unschedulable
+46s         Warning   FailedScheduling   pod/khalil-volcano-quota-waiter-qr4mq     pod group is not ready, 1 Pending, 1 minAvailable; Pending: 1 Unschedulable
+14s         Normal    Scheduled          pod/khalil-volcano-quota-waiter-qr4mq     Successfully assigned gpu-dev/khalil-volcano-quota-waiter-qr4mq to gpu-dev-01
+13s         Normal    Completed          job/khalil-volcano-quota-holder           Job completed
+13s         Normal    Pulled             pod/khalil-volcano-quota-waiter-qr4mq     Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+13s         Normal    Created            pod/khalil-volcano-quota-waiter-qr4mq     Container created
+11s         Normal    Started            pod/khalil-volcano-quota-waiter-qr4mq     Container started
+2s          Normal    Completed          job/khalil-volcano-quota-waiter           Job completed
+job.batch "khalil-volcano-quota-holder" deleted from gpu-dev namespace
+job.batch "khalil-volcano-quota-waiter" deleted from gpu-dev namespace
+podgroup.scheduling.volcano.sh "khalil-volcano-quota-holder-pg" deleted from gpu-dev namespace
+podgroup.scheduling.volcano.sh "khalil-volcano-quota-waiter-pg" deleted from gpu-dev namespace
+queue.scheduling.volcano.sh "khalil-volcano-quota" deleted
+SCENARIO_QUEUE_CAPABILITY_END
+SCENARIO_GANG_BEGIN
+GANG_CREATE_BEGIN utc=2026-07-31T07:41:42.041Z monotonic_ns=2779688339674010
+queue.scheduling.volcano.sh/khalil-volcano-gang unchanged
+podgroup.scheduling.volcano.sh/khalil-volcano-gang-pg created
+job.batch/khalil-volcano-gang created
+GANG_CREATE_RETURN utc=2026-07-31T07:41:42.713Z monotonic_ns=2779689010769953
+CAPTURE_gang-below-threshold utc=2026-07-31T07:41:47.768Z monotonic_ns=2779694066284236
+NAME                              STATUS     COMPLETIONS   DURATION   AGE    CONTAINERS    IMAGES                                      SELECTOR
+job.batch/dylan-trainer-ac4218e   Complete   1/1           33s        119m   trainer       registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=110bfe69-6575-4ca9-9ef2-fc52756683bb
+job.batch/khalil-volcano-gang     Running    0/2           7s         7s     gang-member   registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=5f93213b-18f3-4e23-98c1-a9caa6e05f4a
+
+NAME                              READY   STATUS      RESTARTS   AGE    IP           NODE         NOMINATED NODE   READINESS GATES
+pod/dylan-trainer-ac4218e-f5sjk   0/1     Completed   0          119m   10.52.0.91   gpu-dev-01   <none>           <none>
+pod/khalil-volcano-gang-0-27lkn   0/1     Pending     0          7s     <none>       <none>       <none>           <none>
+pod/khalil-volcano-gang-1-tpnlh   0/1     Pending     0          7s     <none>       <none>       <none>           <none>
+
+NAME                                                    STATUS    MINMEMBER   RUNNINGS   AGE   QUEUE
+podgroup.scheduling.volcano.sh/khalil-volcano-gang-pg   Pending   2                      7s    khalil-volcano-gang
+NAME                     STATE   WEIGHT   CAP_GPU   DESERVED_GPU   ALLOC_GPU   INQUEUE   RUNNING
+khalil-volcano-gang      Open    1        1         <none>         <none>      <none>    <none>
+khalil-volcano-preempt   Open    1        3         <none>         <none>      <none>    <none>
+LAST SEEN   TYPE      REASON             OBJECT                                    MESSAGE
+56m         Warning   FailedBinding      persistentvolumeclaim/quantfm-data        volume "pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580" already bound to a different claim.
+78s         Normal    SuccessfulCreate   job/khalil-volcano-smoke                  Created pod: khalil-volcano-smoke-4qqdh
+78s         Normal    Scheduled          pod/khalil-volcano-smoke-4qqdh            Successfully assigned gpu-dev/khalil-volcano-smoke-4qqdh to gpu-dev-01
+78s         Warning   Unschedulable      podgroup/khalil-volcano-smoke-pg          0/1 tasks in gang unschedulable: pod group is ready, 1 Binding, 1 minAvailable
+68s         Normal    Scheduled          podgroup/khalil-volcano-smoke-pg          pod group is ready
+77s         Normal    Pulled             pod/khalil-volcano-smoke-4qqdh            Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+77s         Normal    Created            pod/khalil-volcano-smoke-4qqdh            Container created
+75s         Normal    Started            pod/khalil-volcano-smoke-4qqdh            Container started
+68s         Normal    Completed          job/khalil-volcano-smoke                  Job completed
+64s         Warning   Unschedulable      podgroup/khalil-volcano-smoke-pg          0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+9s          Warning   Unschedulable      podgroup/khalil-volcano-quota-holder-pg   0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+39s         Normal    Unschedulable      podgroup/khalil-volcano-quota-waiter-pg   queue resource quota insufficient: insufficient nvidia.com/gpu
+57s         Warning   Unschedulable      podgroup/khalil-volcano-quota-waiter-pg   0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+61s         Normal    SuccessfulCreate   job/khalil-volcano-quota-holder           Created pod: khalil-volcano-quota-holder-rmpkg
+60s         Normal    Scheduled          pod/khalil-volcano-quota-holder-rmpkg     Successfully assigned gpu-dev/khalil-volcano-quota-holder-rmpkg to gpu-dev-01
+60s         Warning   Unschedulable      podgroup/khalil-volcano-quota-holder-pg   0/1 tasks in gang unschedulable: pod group is ready, 1 Binding, 1 minAvailable
+24s         Normal    Scheduled          podgroup/khalil-volcano-quota-holder-pg   pod group is ready
+59s         Normal    Pulled             pod/khalil-volcano-quota-holder-rmpkg     Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+59s         Normal    Created            pod/khalil-volcano-quota-holder-rmpkg     Container created
+57s         Normal    Started            pod/khalil-volcano-quota-holder-rmpkg     Container started
+39s         Warning   Unschedulable      podgroup/khalil-volcano-quota-waiter-pg   1/1 tasks in gang unschedulable: pod group is not ready, 1 Pending, 1 minAvailable; Pending: 1 Unschedulable
+56s         Warning   FailedScheduling   pod/khalil-volcano-quota-waiter-qr4mq     pod group is not ready, 1 Pending, 1 minAvailable; Pending: 1 Unschedulable
+56s         Normal    SuccessfulCreate   job/khalil-volcano-quota-waiter           Created pod: khalil-volcano-quota-waiter-qr4mq
+24s         Normal    Scheduled          pod/khalil-volcano-quota-waiter-qr4mq     Successfully assigned gpu-dev/khalil-volcano-quota-waiter-qr4mq to gpu-dev-01
+23s         Normal    Pulled             pod/khalil-volcano-quota-waiter-qr4mq     Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+23s         Normal    Created            pod/khalil-volcano-quota-waiter-qr4mq     Container created
+23s         Normal    Completed          job/khalil-volcano-quota-holder           Job completed
+21s         Normal    Started            pod/khalil-volcano-quota-waiter-qr4mq     Container started
+12s         Normal    Completed          job/khalil-volcano-quota-waiter           Job completed
+8s          Normal    SuccessfulCreate   job/khalil-volcano-gang                   Created pod: khalil-volcano-gang-1-tpnlh
+8s          Normal    SuccessfulCreate   job/khalil-volcano-gang                   Created pod: khalil-volcano-gang-0-27lkn
+8s          Warning   Unschedulable      podgroup/khalil-volcano-gang-pg           0/0 tasks in gang unschedulable: pod group is not ready, 2 minAvailable
+1s          Normal    Unschedulable      podgroup/khalil-volcano-gang-pg           queue resource quota insufficient: insufficient nvidia.com/gpu
+7s          Warning   FailedScheduling   pod/khalil-volcano-gang-0-27lkn           pod group is not ready, 2 Pending, 2 minAvailable; Pending: 2 Unschedulable
+1s          Warning   Unschedulable      podgroup/khalil-volcano-gang-pg           2/2 tasks in gang unschedulable: pod group is not ready, 2 Pending, 2 minAvailable; Pending: 2 Unschedulable
+7s          Warning   FailedScheduling   pod/khalil-volcano-gang-1-tpnlh           pod group is not ready, 2 Pending, 2 minAvailable; Pending: 2 Unschedulable
+GANG_BOUND_BELOW_THRESHOLD=0
+GANG_CAPABILITY_PATCH_BEGIN utc=2026-07-31T07:41:50.819Z monotonic_ns=2779697108939765
+queue.scheduling.volcano.sh/khalil-volcano-gang patched
+GANG_CAPABILITY_PATCH_RETURN utc=2026-07-31T07:41:51.129Z monotonic_ns=2779697426650922
+job.batch/khalil-volcano-gang condition met
+GANG_COMPLETE_OBSERVED utc=2026-07-31T07:42:06.403Z monotonic_ns=2779712701727159
+CAPTURE_gang-final utc=2026-07-31T07:42:06.456Z monotonic_ns=2779712752339994
+NAME                              STATUS     COMPLETIONS   DURATION   AGE    CONTAINERS    IMAGES                                      SELECTOR
+job.batch/dylan-trainer-ac4218e   Complete   1/1           33s        120m   trainer       registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=110bfe69-6575-4ca9-9ef2-fc52756683bb
+job.batch/khalil-volcano-gang     Complete   2/2           24s        26s    gang-member   registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=5f93213b-18f3-4e23-98c1-a9caa6e05f4a
+
+NAME                              READY   STATUS      RESTARTS   AGE    IP            NODE         NOMINATED NODE   READINESS GATES
+pod/dylan-trainer-ac4218e-f5sjk   0/1     Completed   0          120m   10.52.0.91    gpu-dev-01   <none>           <none>
+pod/khalil-volcano-gang-0-27lkn   0/1     Completed   0          26s    10.52.0.105   gpu-dev-01   <none>           <none>
+pod/khalil-volcano-gang-1-tpnlh   0/1     Completed   0          26s    10.52.0.106   gpu-dev-01   <none>           <none>
+
+NAME                                                    STATUS      MINMEMBER   RUNNINGS   AGE   QUEUE
+podgroup.scheduling.volcano.sh/khalil-volcano-gang-pg   Completed   2                      26s   khalil-volcano-gang
+NAME                     STATE   WEIGHT   CAP_GPU   DESERVED_GPU   ALLOC_GPU   INQUEUE   RUNNING
+khalil-volcano-gang      Open    1        2         <none>         <none>      <none>    <none>
+khalil-volcano-preempt   Open    1        3         <none>         <none>      <none>    <none>
+LAST SEEN   TYPE      REASON             OBJECT                                    MESSAGE
+56m         Warning   FailedBinding      persistentvolumeclaim/quantfm-data        volume "pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580" already bound to a different claim.
+97s         Normal    Scheduled          pod/khalil-volcano-smoke-4qqdh            Successfully assigned gpu-dev/khalil-volcano-smoke-4qqdh to gpu-dev-01
+97s         Normal    SuccessfulCreate   job/khalil-volcano-smoke                  Created pod: khalil-volcano-smoke-4qqdh
+97s         Warning   Unschedulable      podgroup/khalil-volcano-smoke-pg          0/1 tasks in gang unschedulable: pod group is ready, 1 Binding, 1 minAvailable
+87s         Normal    Scheduled          podgroup/khalil-volcano-smoke-pg          pod group is ready
+96s         Normal    Created            pod/khalil-volcano-smoke-4qqdh            Container created
+96s         Normal    Pulled             pod/khalil-volcano-smoke-4qqdh            Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+94s         Normal    Started            pod/khalil-volcano-smoke-4qqdh            Container started
+87s         Normal    Completed          job/khalil-volcano-smoke                  Job completed
+83s         Warning   Unschedulable      podgroup/khalil-volcano-smoke-pg          0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+28s         Warning   Unschedulable      podgroup/khalil-volcano-quota-holder-pg   0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+58s         Normal    Unschedulable      podgroup/khalil-volcano-quota-waiter-pg   queue resource quota insufficient: insufficient nvidia.com/gpu
+76s         Warning   Unschedulable      podgroup/khalil-volcano-quota-waiter-pg   0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+80s         Normal    SuccessfulCreate   job/khalil-volcano-quota-holder           Created pod: khalil-volcano-quota-holder-rmpkg
+79s         Normal    Scheduled          pod/khalil-volcano-quota-holder-rmpkg     Successfully assigned gpu-dev/khalil-volcano-quota-holder-rmpkg to gpu-dev-01
+79s         Warning   Unschedulable      podgroup/khalil-volcano-quota-holder-pg   0/1 tasks in gang unschedulable: pod group is ready, 1 Binding, 1 minAvailable
+43s         Normal    Scheduled          podgroup/khalil-volcano-quota-holder-pg   pod group is ready
+78s         Normal    Pulled             pod/khalil-volcano-quota-holder-rmpkg     Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+78s         Normal    Created            pod/khalil-volcano-quota-holder-rmpkg     Container created
+76s         Normal    Started            pod/khalil-volcano-quota-holder-rmpkg     Container started
+58s         Warning   Unschedulable      podgroup/khalil-volcano-quota-waiter-pg   1/1 tasks in gang unschedulable: pod group is not ready, 1 Pending, 1 minAvailable; Pending: 1 Unschedulable
+75s         Warning   FailedScheduling   pod/khalil-volcano-quota-waiter-qr4mq     pod group is not ready, 1 Pending, 1 minAvailable; Pending: 1 Unschedulable
+75s         Normal    SuccessfulCreate   job/khalil-volcano-quota-waiter           Created pod: khalil-volcano-quota-waiter-qr4mq
+43s         Normal    Scheduled          pod/khalil-volcano-quota-waiter-qr4mq     Successfully assigned gpu-dev/khalil-volcano-quota-waiter-qr4mq to gpu-dev-01
+42s         Normal    Created            pod/khalil-volcano-quota-waiter-qr4mq     Container created
+42s         Normal    Completed          job/khalil-volcano-quota-holder           Job completed
+42s         Normal    Pulled             pod/khalil-volcano-quota-waiter-qr4mq     Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+40s         Normal    Started            pod/khalil-volcano-quota-waiter-qr4mq     Container started
+31s         Normal    Completed          job/khalil-volcano-quota-waiter           Job completed
+27s         Normal    SuccessfulCreate   job/khalil-volcano-gang                   Created pod: khalil-volcano-gang-1-tpnlh
+27s         Normal    SuccessfulCreate   job/khalil-volcano-gang                   Created pod: khalil-volcano-gang-0-27lkn
+19s         Normal    Unschedulable      podgroup/khalil-volcano-gang-pg           queue resource quota insufficient: insufficient nvidia.com/gpu
+27s         Warning   Unschedulable      podgroup/khalil-volcano-gang-pg           0/0 tasks in gang unschedulable: pod group is not ready, 2 minAvailable
+26s         Warning   FailedScheduling   pod/khalil-volcano-gang-1-tpnlh           pod group is not ready, 2 Pending, 2 minAvailable; Pending: 2 Unschedulable
+19s         Warning   Unschedulable      podgroup/khalil-volcano-gang-pg           2/2 tasks in gang unschedulable: pod group is not ready, 2 Pending, 2 minAvailable; Pending: 2 Unschedulable
+26s         Warning   FailedScheduling   pod/khalil-volcano-gang-0-27lkn           pod group is not ready, 2 Pending, 2 minAvailable; Pending: 2 Unschedulable
+18s         Warning   Unschedulable      podgroup/khalil-volcano-gang-pg           0/2 tasks in gang unschedulable: pod group is ready, 2 Binding, 2 minAvailable
+18s         Normal    Scheduled          pod/khalil-volcano-gang-1-tpnlh           Successfully assigned gpu-dev/khalil-volcano-gang-1-tpnlh to gpu-dev-01
+18s         Normal    Scheduled          pod/khalil-volcano-gang-0-27lkn           Successfully assigned gpu-dev/khalil-volcano-gang-0-27lkn to gpu-dev-01
+17s         Normal    Created            pod/khalil-volcano-gang-1-tpnlh           Container created
+17s         Normal    Pulled             pod/khalil-volcano-gang-1-tpnlh           Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+4s          Normal    Scheduled          podgroup/khalil-volcano-gang-pg           pod group is ready
+17s         Normal    Created            pod/khalil-volcano-gang-0-27lkn           Container created
+17s         Normal    Pulled             pod/khalil-volcano-gang-0-27lkn           Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+14s         Normal    Started            pod/khalil-volcano-gang-1-tpnlh           Container started
+14s         Normal    Started            pod/khalil-volcano-gang-0-27lkn           Container started
+3s          Normal    Completed          job/khalil-volcano-gang                   Job completed
+job.batch "khalil-volcano-gang" deleted from gpu-dev namespace
+podgroup.scheduling.volcano.sh "khalil-volcano-gang-pg" deleted from gpu-dev namespace
+queue.scheduling.volcano.sh "khalil-volcano-gang" deleted
+SCENARIO_GANG_END
+SCENARIO_PREEMPT_BEGIN
+priorityclass.scheduling.k8s.io/khalil-volcano-low configured
+priorityclass.scheduling.k8s.io/khalil-volcano-high configured
+preempt_CONFIG_PATCH_BEGIN utc=2026-07-31T07:42:10.601Z monotonic_ns=2779716898260370
+configmap/volcano-scheduler-configmap patched
+deployment.apps/volcano-scheduler restarted
+Waiting for deployment "volcano-scheduler" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "volcano-scheduler" rollout to finish: 1 old replicas are pending termination...
+deployment "volcano-scheduler" successfully rolled out
+preempt_CONFIG_READY utc=2026-07-31T07:42:14.480Z monotonic_ns=2779720777596591
+queue.scheduling.volcano.sh/khalil-volcano-preempt unchanged
+podgroup.scheduling.volcano.sh/khalil-volcano-preempt-victim-pg created
+podgroup.scheduling.volcano.sh/khalil-volcano-preempt-high-pg created
+PREEMPT_VICTIMS_CREATE_BEGIN utc=2026-07-31T07:42:17.934Z monotonic_ns=2779724232163912
+job.batch/khalil-volcano-preempt-victim created
+PREEMPT_VICTIMS_CREATE_RETURN utc=2026-07-31T07:42:18.275Z monotonic_ns=2779724572132079
+pod/khalil-volcano-preempt-victim-g6qgz condition met
+PREEMPT_VICTIMS_READY_OBSERVED utc=2026-07-31T07:42:23.486Z monotonic_ns=2779729783406071
+CAPTURE_preempt-before utc=2026-07-31T07:42:23.538Z monotonic_ns=2779729833252862
+NAME                                      STATUS     COMPLETIONS   DURATION   AGE    CONTAINERS   IMAGES                                      SELECTOR
+job.batch/dylan-trainer-ac4218e           Complete   1/1           33s        120m   trainer      registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=110bfe69-6575-4ca9-9ef2-fc52756683bb
+job.batch/khalil-volcano-preempt-victim   Running    0/1           7s         7s     victim       registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=f7ffd6f9-dd93-4ee6-947f-281066824c97
+
+NAME                                      READY   STATUS      RESTARTS   AGE    IP            NODE         NOMINATED NODE   READINESS GATES
+pod/dylan-trainer-ac4218e-f5sjk           0/1     Completed   0          120m   10.52.0.91    gpu-dev-01   <none>           <none>
+pod/khalil-volcano-preempt-victim-g6qgz   1/1     Running     0          7s     10.52.0.108   gpu-dev-01   <none>           <none>
+
+NAME                                                              STATUS    MINMEMBER   RUNNINGS   AGE   QUEUE
+podgroup.scheduling.volcano.sh/khalil-volcano-preempt-high-pg     Inqueue   1                      10s   khalil-volcano-preempt
+podgroup.scheduling.volcano.sh/khalil-volcano-preempt-victim-pg   Running   1           1          10s   khalil-volcano-preempt
+NAME                     STATE   WEIGHT   CAP_GPU   DESERVED_GPU   ALLOC_GPU   INQUEUE   RUNNING
+khalil-volcano-preempt   Open    1        3         <none>         3           <none>    <none>
+LAST SEEN   TYPE      REASON             OBJECT                                      MESSAGE
+56m         Warning   FailedBinding      persistentvolumeclaim/quantfm-data          volume "pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580" already bound to a different claim.
+114s        Normal    SuccessfulCreate   job/khalil-volcano-smoke                    Created pod: khalil-volcano-smoke-4qqdh
+114s        Normal    Scheduled          pod/khalil-volcano-smoke-4qqdh              Successfully assigned gpu-dev/khalil-volcano-smoke-4qqdh to gpu-dev-01
+114s        Warning   Unschedulable      podgroup/khalil-volcano-smoke-pg            0/1 tasks in gang unschedulable: pod group is ready, 1 Binding, 1 minAvailable
+113s        Normal    Pulled             pod/khalil-volcano-smoke-4qqdh              Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+104s        Normal    Scheduled          podgroup/khalil-volcano-smoke-pg            pod group is ready
+113s        Normal    Created            pod/khalil-volcano-smoke-4qqdh              Container created
+111s        Normal    Started            pod/khalil-volcano-smoke-4qqdh              Container started
+104s        Normal    Completed          job/khalil-volcano-smoke                    Job completed
+100s        Warning   Unschedulable      podgroup/khalil-volcano-smoke-pg            0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+93s         Warning   Unschedulable      podgroup/khalil-volcano-quota-waiter-pg     0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+75s         Normal    Unschedulable      podgroup/khalil-volcano-quota-waiter-pg     queue resource quota insufficient: insufficient nvidia.com/gpu
+45s         Warning   Unschedulable      podgroup/khalil-volcano-quota-holder-pg     0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+97s         Normal    SuccessfulCreate   job/khalil-volcano-quota-holder             Created pod: khalil-volcano-quota-holder-rmpkg
+96s         Warning   Unschedulable      podgroup/khalil-volcano-quota-holder-pg     0/1 tasks in gang unschedulable: pod group is ready, 1 Binding, 1 minAvailable
+96s         Normal    Scheduled          pod/khalil-volcano-quota-holder-rmpkg       Successfully assigned gpu-dev/khalil-volcano-quota-holder-rmpkg to gpu-dev-01
+95s         Normal    Created            pod/khalil-volcano-quota-holder-rmpkg       Container created
+60s         Normal    Scheduled          podgroup/khalil-volcano-quota-holder-pg     pod group is ready
+95s         Normal    Pulled             pod/khalil-volcano-quota-holder-rmpkg       Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+93s         Normal    Started            pod/khalil-volcano-quota-holder-rmpkg       Container started
+75s         Warning   Unschedulable      podgroup/khalil-volcano-quota-waiter-pg     1/1 tasks in gang unschedulable: pod group is not ready, 1 Pending, 1 minAvailable; Pending: 1 Unschedulable
+92s         Warning   FailedScheduling   pod/khalil-volcano-quota-waiter-qr4mq       pod group is not ready, 1 Pending, 1 minAvailable; Pending: 1 Unschedulable
+92s         Normal    SuccessfulCreate   job/khalil-volcano-quota-waiter             Created pod: khalil-volcano-quota-waiter-qr4mq
+60s         Normal    Scheduled          pod/khalil-volcano-quota-waiter-qr4mq       Successfully assigned gpu-dev/khalil-volcano-quota-waiter-qr4mq to gpu-dev-01
+59s         Normal    Created            pod/khalil-volcano-quota-waiter-qr4mq       Container created
+59s         Normal    Pulled             pod/khalil-volcano-quota-waiter-qr4mq       Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+59s         Normal    Completed          job/khalil-volcano-quota-holder             Job completed
+57s         Normal    Started            pod/khalil-volcano-quota-waiter-qr4mq       Container started
+48s         Normal    Completed          job/khalil-volcano-quota-waiter             Job completed
+44s         Normal    SuccessfulCreate   job/khalil-volcano-gang                     Created pod: khalil-volcano-gang-1-tpnlh
+36s         Normal    Unschedulable      podgroup/khalil-volcano-gang-pg             queue resource quota insufficient: insufficient nvidia.com/gpu
+17s         Warning   Unschedulable      podgroup/khalil-volcano-gang-pg             0/0 tasks in gang unschedulable: pod group is not ready, 2 minAvailable
+44s         Normal    SuccessfulCreate   job/khalil-volcano-gang                     Created pod: khalil-volcano-gang-0-27lkn
+43s         Warning   FailedScheduling   pod/khalil-volcano-gang-1-tpnlh             pod group is not ready, 2 Pending, 2 minAvailable; Pending: 2 Unschedulable
+43s         Warning   FailedScheduling   pod/khalil-volcano-gang-0-27lkn             pod group is not ready, 2 Pending, 2 minAvailable; Pending: 2 Unschedulable
+36s         Warning   Unschedulable      podgroup/khalil-volcano-gang-pg             2/2 tasks in gang unschedulable: pod group is not ready, 2 Pending, 2 minAvailable; Pending: 2 Unschedulable
+35s         Warning   Unschedulable      podgroup/khalil-volcano-gang-pg             0/2 tasks in gang unschedulable: pod group is ready, 2 Binding, 2 minAvailable
+35s         Normal    Scheduled          pod/khalil-volcano-gang-0-27lkn             Successfully assigned gpu-dev/khalil-volcano-gang-0-27lkn to gpu-dev-01
+35s         Normal    Scheduled          pod/khalil-volcano-gang-1-tpnlh             Successfully assigned gpu-dev/khalil-volcano-gang-1-tpnlh to gpu-dev-01
+21s         Normal    Scheduled          podgroup/khalil-volcano-gang-pg             pod group is ready
+34s         Normal    Pulled             pod/khalil-volcano-gang-0-27lkn             Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+34s         Normal    Created            pod/khalil-volcano-gang-0-27lkn             Container created
+34s         Normal    Pulled             pod/khalil-volcano-gang-1-tpnlh             Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+34s         Normal    Created            pod/khalil-volcano-gang-1-tpnlh             Container created
+31s         Normal    Started            pod/khalil-volcano-gang-1-tpnlh             Container started
+31s         Normal    Started            pod/khalil-volcano-gang-0-27lkn             Container started
+20s         Normal    Completed          job/khalil-volcano-gang                     Job completed
+9s          Warning   Unschedulable      podgroup/khalil-volcano-preempt-victim-pg   0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+1s          Warning   Unschedulable      podgroup/khalil-volcano-preempt-high-pg     0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+8s          Warning   Unschedulable      podgroup/khalil-volcano-preempt-victim-pg   0/1 tasks in gang unschedulable: pod group is ready, 1 Binding, 1 minAvailable
+8s          Normal    SuccessfulCreate   job/khalil-volcano-preempt-victim           Created pod: khalil-volcano-preempt-victim-g6qgz
+8s          Normal    Scheduled          pod/khalil-volcano-preempt-victim-g6qgz     Successfully assigned gpu-dev/khalil-volcano-preempt-victim-g6qgz to gpu-dev-01
+7s          Normal    Created            pod/khalil-volcano-preempt-victim-g6qgz     Container created
+7s          Normal    Pulled             pod/khalil-volcano-preempt-victim-g6qgz     Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+3s          Normal    Scheduled          podgroup/khalil-volcano-preempt-victim-pg   pod group is ready
+4s          Normal    Started            pod/khalil-volcano-preempt-victim-g6qgz     Container started
+PREEMPT_HIGH_CREATE_BEGIN utc=2026-07-31T07:42:26.547Z monotonic_ns=2779732844104234
+job.batch/khalil-volcano-preempt-high created
+PREEMPT_HIGH_CREATE_RETURN utc=2026-07-31T07:42:26.886Z monotonic_ns=2779733184410650
+pod/khalil-volcano-preempt-high-mkfxh condition met
+PREEMPT_HIGH_READY_OBSERVED utc=2026-07-31T07:42:31.538Z monotonic_ns=2779737835887384
+job.batch/khalil-volcano-preempt-high condition met
+PREEMPT_HIGH_COMPLETE_OBSERVED utc=2026-07-31T07:42:42.619Z monotonic_ns=2779748915416911
+CAPTURE_preempt-after utc=2026-07-31T07:42:42.669Z monotonic_ns=2779748966056804
+NAME                                      STATUS     COMPLETIONS   DURATION   AGE    CONTAINERS   IMAGES                                      SELECTOR
+job.batch/dylan-trainer-ac4218e           Complete   1/1           33s        120m   trainer      registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=110bfe69-6575-4ca9-9ef2-fc52756683bb
+job.batch/khalil-volcano-preempt-high     Complete   1/1           16s        18s    preemptor    registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=9d8e1ea5-4b39-4329-a34a-9321dff4809f
+job.batch/khalil-volcano-preempt-victim   Failed     0/1           26s        26s    victim       registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=f7ffd6f9-dd93-4ee6-947f-281066824c97
+
+NAME                                    READY   STATUS      RESTARTS   AGE    IP            NODE         NOMINATED NODE   READINESS GATES
+pod/dylan-trainer-ac4218e-f5sjk         0/1     Completed   0          120m   10.52.0.91    gpu-dev-01   <none>           <none>
+pod/khalil-volcano-preempt-high-mkfxh   0/1     Completed   0          18s    10.52.0.109   gpu-dev-01   <none>           <none>
+
+NAME                                                              STATUS      MINMEMBER   RUNNINGS   AGE   QUEUE
+podgroup.scheduling.volcano.sh/khalil-volcano-preempt-high-pg     Completed   1                      29s   khalil-volcano-preempt
+podgroup.scheduling.volcano.sh/khalil-volcano-preempt-victim-pg   Inqueue     1                      29s   khalil-volcano-preempt
+NAME                     STATE   WEIGHT   CAP_GPU   DESERVED_GPU   ALLOC_GPU   INQUEUE   RUNNING
+khalil-volcano-preempt   Open    1        3         <none>         <none>      <none>    <none>
+112s        Warning   Unschedulable          podgroup/khalil-volcano-quota-waiter-pg     0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+94s         Normal    Unschedulable          podgroup/khalil-volcano-quota-waiter-pg     queue resource quota insufficient: insufficient nvidia.com/gpu
+116s        Normal    SuccessfulCreate       job/khalil-volcano-quota-holder             Created pod: khalil-volcano-quota-holder-rmpkg
+115s        Warning   Unschedulable          podgroup/khalil-volcano-quota-holder-pg     0/1 tasks in gang unschedulable: pod group is ready, 1 Binding, 1 minAvailable
+115s        Normal    Scheduled              pod/khalil-volcano-quota-holder-rmpkg       Successfully assigned gpu-dev/khalil-volcano-quota-holder-rmpkg to gpu-dev-01
+114s        Normal    Created                pod/khalil-volcano-quota-holder-rmpkg       Container created
+114s        Normal    Pulled                 pod/khalil-volcano-quota-holder-rmpkg       Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+79s         Normal    Scheduled              podgroup/khalil-volcano-quota-holder-pg     pod group is ready
+112s        Normal    Started                pod/khalil-volcano-quota-holder-rmpkg       Container started
+111s        Normal    SuccessfulCreate       job/khalil-volcano-quota-waiter             Created pod: khalil-volcano-quota-waiter-qr4mq
+111s        Warning   FailedScheduling       pod/khalil-volcano-quota-waiter-qr4mq       pod group is not ready, 1 Pending, 1 minAvailable; Pending: 1 Unschedulable
+94s         Warning   Unschedulable          podgroup/khalil-volcano-quota-waiter-pg     1/1 tasks in gang unschedulable: pod group is not ready, 1 Pending, 1 minAvailable; Pending: 1 Unschedulable
+79s         Normal    Scheduled              pod/khalil-volcano-quota-waiter-qr4mq       Successfully assigned gpu-dev/khalil-volcano-quota-waiter-qr4mq to gpu-dev-01
+78s         Normal    Completed              job/khalil-volcano-quota-holder             Job completed
+78s         Normal    Created                pod/khalil-volcano-quota-waiter-qr4mq       Container created
+78s         Normal    Pulled                 pod/khalil-volcano-quota-waiter-qr4mq       Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+76s         Normal    Started                pod/khalil-volcano-quota-waiter-qr4mq       Container started
+67s         Normal    Completed              job/khalil-volcano-quota-waiter             Job completed
+63s         Normal    SuccessfulCreate       job/khalil-volcano-gang                     Created pod: khalil-volcano-gang-1-tpnlh
+63s         Normal    SuccessfulCreate       job/khalil-volcano-gang                     Created pod: khalil-volcano-gang-0-27lkn
+36s         Warning   Unschedulable          podgroup/khalil-volcano-gang-pg             0/0 tasks in gang unschedulable: pod group is not ready, 2 minAvailable
+55s         Normal    Unschedulable          podgroup/khalil-volcano-gang-pg             queue resource quota insufficient: insufficient nvidia.com/gpu
+62s         Warning   FailedScheduling       pod/khalil-volcano-gang-1-tpnlh             pod group is not ready, 2 Pending, 2 minAvailable; Pending: 2 Unschedulable
+62s         Warning   FailedScheduling       pod/khalil-volcano-gang-0-27lkn             pod group is not ready, 2 Pending, 2 minAvailable; Pending: 2 Unschedulable
+55s         Warning   Unschedulable          podgroup/khalil-volcano-gang-pg             2/2 tasks in gang unschedulable: pod group is not ready, 2 Pending, 2 minAvailable; Pending: 2 Unschedulable
+54s         Warning   Unschedulable          podgroup/khalil-volcano-gang-pg             0/2 tasks in gang unschedulable: pod group is ready, 2 Binding, 2 minAvailable
+54s         Normal    Scheduled              pod/khalil-volcano-gang-1-tpnlh             Successfully assigned gpu-dev/khalil-volcano-gang-1-tpnlh to gpu-dev-01
+54s         Normal    Scheduled              pod/khalil-volcano-gang-0-27lkn             Successfully assigned gpu-dev/khalil-volcano-gang-0-27lkn to gpu-dev-01
+53s         Normal    Created                pod/khalil-volcano-gang-1-tpnlh             Container created
+53s         Normal    Pulled                 pod/khalil-volcano-gang-1-tpnlh             Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+40s         Normal    Scheduled              podgroup/khalil-volcano-gang-pg             pod group is ready
+53s         Normal    Created                pod/khalil-volcano-gang-0-27lkn             Container created
+53s         Normal    Pulled                 pod/khalil-volcano-gang-0-27lkn             Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+50s         Normal    Started                pod/khalil-volcano-gang-1-tpnlh             Container started
+50s         Normal    Started                pod/khalil-volcano-gang-0-27lkn             Container started
+39s         Normal    Completed              job/khalil-volcano-gang                     Job completed
+20s         Warning   Unschedulable          podgroup/khalil-volcano-preempt-high-pg     0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+0s          Warning   Unschedulable          podgroup/khalil-volcano-preempt-victim-pg   0/0 tasks in gang unschedulable: pod group is not ready, 1 minAvailable
+27s         Normal    Scheduled              pod/khalil-volcano-preempt-victim-g6qgz     Successfully assigned gpu-dev/khalil-volcano-preempt-victim-g6qgz to gpu-dev-01
+27s         Warning   Unschedulable          podgroup/khalil-volcano-preempt-victim-pg   0/1 tasks in gang unschedulable: pod group is ready, 1 Binding, 1 minAvailable
+27s         Normal    SuccessfulCreate       job/khalil-volcano-preempt-victim           Created pod: khalil-volcano-preempt-victim-g6qgz
+16s         Normal    Scheduled              podgroup/khalil-volcano-preempt-victim-pg   pod group is ready
+26s         Normal    Pulled                 pod/khalil-volcano-preempt-victim-g6qgz     Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+26s         Normal    Created                pod/khalil-volcano-preempt-victim-g6qgz     Container created
+23s         Normal    Started                pod/khalil-volcano-preempt-victim-g6qgz     Container started
+19s         Normal    SuccessfulCreate       job/khalil-volcano-preempt-high             Created pod: khalil-volcano-preempt-high-mkfxh
+19s         Warning   Evict                  pod/khalil-volcano-preempt-victim-g6qgz     Pod is evicted, because of preempt
+19s         Normal    Evict                  podgroup/khalil-volcano-preempt-victim-pg   preempt
+19s         Warning   FailedScheduling       pod/khalil-volcano-preempt-high-mkfxh       Pod gpu-dev/khalil-volcano-preempt-high-mkfxh can possibly be assigned to gpu-dev-01, once resource is released and minAvailable is satisfied
+17s         Warning   Unschedulable          podgroup/khalil-volcano-preempt-victim-pg   0/1 tasks in gang unschedulable: pod group is not ready, 1 Releasing, 1 minAvailable
+19s         Normal    Killing                pod/khalil-volcano-preempt-victim-g6qgz     Stopping container victim
+19s         Warning   Unschedulable          podgroup/khalil-volcano-preempt-high-pg     0/1 tasks in gang unschedulable: pod group is not ready, 1 Pipelined, 1 minAvailable
+18s         Warning   Unschedulable          podgroup/khalil-volcano-preempt-high-pg     0/1 tasks in gang unschedulable: pod group is ready, 1 Binding, 1 minAvailable
+18s         Normal    Scheduled              pod/khalil-volcano-preempt-high-mkfxh       Successfully assigned gpu-dev/khalil-volcano-preempt-high-mkfxh to gpu-dev-01
+17s         Normal    Pulled                 pod/khalil-volcano-preempt-high-mkfxh       Container image "registry.zs/gpu-dev/dylan-trainer:ac4218e" already present on machine and can be accessed by the pod
+3s          Normal    Scheduled              podgroup/khalil-volcano-preempt-high-pg     pod group is ready
+16s         Normal    Created                pod/khalil-volcano-preempt-high-mkfxh       Container created
+15s         Warning   BackoffLimitExceeded   job/khalil-volcano-preempt-victim           Job has reached the specified backoff limit
+14s         Normal    Started                pod/khalil-volcano-preempt-high-mkfxh       Container started
+3s          Normal    Completed              job/khalil-volcano-preempt-high             Job completed
+PREEMPT_EFFECTIVE=true
+job.batch "khalil-volcano-preempt-victim" deleted from gpu-dev namespace
+job.batch "khalil-volcano-preempt-high" deleted from gpu-dev namespace
+podgroup.scheduling.volcano.sh "khalil-volcano-preempt-victim-pg" deleted from gpu-dev namespace
+podgroup.scheduling.volcano.sh "khalil-volcano-preempt-high-pg" deleted from gpu-dev namespace
+queue.scheduling.volcano.sh "khalil-volcano-preempt" deleted
+SCENARIO_PREEMPT_END
+CLEANUP_BEGIN utc=2026-07-31T07:42:47.225Z monotonic_ns=2779753522144883
+SCHEDULER_RESTORE_BEGIN utc=2026-07-31T07:42:47.276Z monotonic_ns=2779753572532862
+configmap/volcano-scheduler-configmap patched
+deployment.apps/volcano-scheduler restarted
+Waiting for deployment "volcano-scheduler" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "volcano-scheduler" rollout to finish: 1 old replicas are pending termination...
+deployment "volcano-scheduler" successfully rolled out
+SCHEDULER_RESTORE_READY utc=2026-07-31T07:42:50.741Z monotonic_ns=2779757041700186
+priorityclass.scheduling.k8s.io "khalil-volcano-low" deleted
+priorityclass.scheduling.k8s.io "khalil-volcano-high" deleted
+CLEANUP_END utc=2026-07-31T07:42:52.695Z monotonic_ns=2779758992437765
+EVALUATION_COMPLETE utc=2026-07-31T07:42:57.884Z monotonic_ns=2779764180938796
+RESULT smoke=true queue_capability=true gang=true preempt=true reclaim=not_tested_shared_quota_safety cleanup=true config_restored=true

@@ -25,7 +25,21 @@ DEVICE="${DEVICE:-cuda:0}"
 SKIP_EMB="${SKIP_EMB:-0}"
 SKIP_PANEL="${SKIP_PANEL:-0}"
 EPOCHS="${EPOCHS:-30}"
-TOP_K="${TOP_K:-50}"
+TOP_K="${TOP_K:-300}"
+CONTEXT="${CONTEXT-}"
+POOLING="${POOLING-}"
+STRIDE="${STRIDE-}"
+
+REPRESENTATION_ARGS=()
+if [[ -n "$CONTEXT" ]]; then
+  REPRESENTATION_ARGS+=(--context "$CONTEXT")
+fi
+if [[ -n "$POOLING" ]]; then
+  REPRESENTATION_ARGS+=(--pooling "$POOLING")
+fi
+if [[ -n "$STRIDE" ]]; then
+  REPRESENTATION_ARGS+=(--stride "$STRIDE")
+fi
 
 if [[ ! -f "$CKPT" ]]; then
   echo "ERROR: checkpoint 不存在: $CKPT" >&2
@@ -40,6 +54,7 @@ echo "======== $(date -Is) judge-300m ========"
 echo "workdir: $WORKDIR"
 echo "ckpt:    $CKPT"
 echo "device:  $DEVICE"
+echo "repr:    context=${CONTEXT:-checkpoint} pooling=${POOLING:-checkpoint} stride=${STRIDE:-checkpoint}"
 
 mkdir -p "$EMB_DIR" "$(dirname "$PANEL")"
 
@@ -56,19 +71,22 @@ if [[ "$SKIP_EMB" != "1" ]]; then
       --manifest "$MANIFEST" \
       --split "$split" \
       --out "$out" \
-      --context 2048 \
-      --pooling mean \
-      --device "$DEVICE"
+      --device "$DEVICE" \
+      "${REPRESENTATION_ARGS[@]}"
   done
   # 合并一份 all.parquet，便于 panel --from-embeddings
   uv run python - <<PY
 import polars as pl
 from pathlib import Path
+from quant_fm.embedding.contract import propagate_embedding_contract
 emb = Path("$EMB_DIR")
-parts = [pl.read_parquet(emb / f"{s}.parquet") for s in ("train", "val", "test")]
+paths = [emb / f"{s}.parquet" for s in ("train", "val", "test")]
+parts = [pl.read_parquet(path) for path in paths]
 all_df = pl.concat(parts, how="vertical_relaxed")
-all_df.write_parquet(emb / "all.parquet")
-print(f"wrote {emb/'all.parquet'} rows={all_df.height}")
+out = emb / "all.parquet"
+all_df.write_parquet(out)
+propagate_embedding_contract(paths, out, context="judge embedding splits")
+print(f"wrote {out} rows={all_df.height}")
 PY
 else
   echo "==> SKIP_EMB=1"

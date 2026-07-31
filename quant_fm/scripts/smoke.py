@@ -240,7 +240,11 @@ def _score_signal(
 ) -> None:
     """仅在历史日造标签训练；最新日期完全无标签也必须能够出分。"""
     from quant_fm.downstream.make_features import build_training_features
-    from quant_fm.downstream.train_ranker import feature_columns, train_ranker
+    from quant_fm.downstream.train_ranker import (
+        RankerObjectiveConfig,
+        feature_columns,
+        train_ranker,
+    )
     from quant_fm.signal.artifact import save_ranker_artifact
     from quant_fm.signal.generate import generate_scores
 
@@ -274,7 +278,12 @@ def _score_signal(
         metadata_path,
         feature_columns=feature_columns(features),
         training_end_date=dates[0],
+        label_end_date=dates[0],
         seed=0,
+        objective=RankerObjectiveConfig(),
+        embedding_contract=None,
+        allow_legacy_embedding_contract=True,
+        allow_legacy_training_contract=True,
         history=history,
     )
     scoring_path = workdir / "scoring_embeddings.parquet"
@@ -287,6 +296,8 @@ def _score_signal(
         device="cpu",
         fm_checkpoint_path=fm_checkpoint,
         vocab_path=vocab_path,
+        allow_legacy_embedding_contract=True,
+        allow_legacy_training_contract=True,
     )
     scores = pl.read_parquet(scores_path)
     assert scores.columns == ["date", "symbol", "score"]

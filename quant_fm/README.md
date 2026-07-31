@@ -22,7 +22,7 @@
   → date/symbol/score            quant_fm/signal（唯一交付）
 ```
 
-MinIO **读写**详见 [docs/minio_setup.md](../docs/minio_setup.md)。
+MinIO **读写**详见 [docs/data/minio_setup.md](../docs/data/minio_setup.md)。
 
 ## MinIO 完整流水线（读 → tokens → 写 → 训练）
 
@@ -71,7 +71,7 @@ delivery/
 
 ## 真实 Pilot
 
-先配置凭据（endpoint 已内置，见 [docs/minio_setup.md](../docs/minio_setup.md)）：
+先配置凭据（endpoint 已内置，见 [docs/data/minio_setup.md](../docs/data/minio_setup.md)）：
 
 ```bash
 cp quant_fm/scripts/minio_env.example.sh ~/.minio_fm_env.sh

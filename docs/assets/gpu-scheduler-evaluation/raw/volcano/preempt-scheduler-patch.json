@@ -1,0 +1,5 @@
+{
+  "data": {
+    "volcano-scheduler.conf": "actions: \"allocate, backfill, preempt\"\ntiers:\n- plugins:\n  - name: priority\n  - name: gang\n    enablePreemptable: false\n  - name: conformance\n- plugins:\n  - name: overcommit\n  - name: drf\n    enablePreemptable: false\n  - name: predicates\n  - name: proportion\n  - name: nodeorder\n  - name: binpack\n"
+  }
+}

@@ -1,0 +1,46 @@
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+  name: khalil-volcano-quota
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  weight: 1
+  reclaimable: true
+  capability:
+    cpu: "2"
+    memory: 4Gi
+    nvidia.com/gpu: "1"
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: PodGroup
+metadata:
+  namespace: gpu-dev
+  name: khalil-volcano-quota-holder-pg
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  minMember: 1
+  minResources:
+    cpu: 100m
+    memory: 128Mi
+    nvidia.com/gpu: "1"
+  queue: khalil-volcano-quota
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: PodGroup
+metadata:
+  namespace: gpu-dev
+  name: khalil-volcano-quota-waiter-pg
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  minMember: 1
+  minResources:
+    cpu: 100m
+    memory: 128Mi
+    nvidia.com/gpu: "1"
+  queue: khalil-volcano-quota

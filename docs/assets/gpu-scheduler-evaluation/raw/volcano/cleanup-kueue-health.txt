@@ -1,0 +1,2 @@
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                  SELECTOR
+kueue-controller-manager   1/1     1            1           22h   manager      k8s.m.daocloud.io/kueue/kueue:v0.19.0   control-plane=controller-manager

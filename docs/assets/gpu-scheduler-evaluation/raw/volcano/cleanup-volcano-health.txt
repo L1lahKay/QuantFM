@@ -1,0 +1,4 @@
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS            IMAGES                                              SELECTOR
+volcano-admission     1/1     1            1           26m   admission             docker.io/volcanosh/vc-webhook-manager:v1.15.1      app=volcano-admission
+volcano-controllers   1/1     1            1           26m   volcano-controllers   docker.io/volcanosh/vc-controller-manager:v1.15.1   app=volcano-controller
+volcano-scheduler     1/1     1            1           26m   volcano-scheduler     docker.io/volcanosh/vc-scheduler:v1.15.1            app=volcano-scheduler

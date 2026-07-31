@@ -1,0 +1,160 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-07-31T06:13:55Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "khalil-kueue-probe-fzzd9",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27861444",
+                "uid": "230fe682-f4c7-44a8-b129-8f43b6225e77"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-07-31T06:13:55Z",
+            "message": "Created pod: khalil-kueue-probe-fzzd9-cp6l4",
+            "metadata": {
+                "creationTimestamp": "2026-07-31T06:13:55Z",
+                "name": "khalil-kueue-probe-fzzd9.18c74b2d6d16d48d",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27861449",
+                "uid": "4a0793cd-be4d-4e5f-b4d3-823e07ad31e2"
+            },
+            "reason": "SuccessfulCreate",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "action": "Stopped",
+            "apiVersion": "v1",
+            "eventTime": "2026-07-31T06:13:55.757360Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "khalil-kueue-probe-fzzd9",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27861448",
+                "uid": "230fe682-f4c7-44a8-b129-8f43b6225e77"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Missing Workload; unable to restore pod templates",
+            "metadata": {
+                "creationTimestamp": "2026-07-31T06:13:55Z",
+                "name": "khalil-kueue-probe-fzzd9.18c74b2d6d702601",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27861451",
+                "uid": "c682d030-0535-450b-9941-45abe5ba9d1a"
+            },
+            "reason": "Stopped",
+            "reportingComponent": "batch/job-kueue-controller",
+            "reportingInstance": "batch/job-kueue-controller-kueue-controller-manager-84bd4bb856-hzdmm",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "action": "CreatedWorkload",
+            "apiVersion": "v1",
+            "eventTime": "2026-07-31T06:13:55.767057Z",
+            "firstTimestamp": null,
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "khalil-kueue-probe-fzzd9",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27861448",
+                "uid": "230fe682-f4c7-44a8-b129-8f43b6225e77"
+            },
+            "kind": "Event",
+            "lastTimestamp": null,
+            "message": "Created Workload: gpu-dev/job-khalil-kueue-probe-fzzd9-82a26",
+            "metadata": {
+                "creationTimestamp": "2026-07-31T06:13:55Z",
+                "name": "khalil-kueue-probe-fzzd9.18c74b2d6e043415",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27861455",
+                "uid": "83250690-a8a1-408a-87af-7b372fb66b09"
+            },
+            "reason": "CreatedWorkload",
+            "reportingComponent": "batch/job-kueue-controller",
+            "reportingInstance": "batch/job-kueue-controller-kueue-controller-manager-84bd4bb856-hzdmm",
+            "source": {},
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-07-31T06:13:55Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "khalil-kueue-probe-fzzd9",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27861448",
+                "uid": "230fe682-f4c7-44a8-b129-8f43b6225e77"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-07-31T06:13:55Z",
+            "message": "Deleted pod: khalil-kueue-probe-fzzd9-cp6l4",
+            "metadata": {
+                "creationTimestamp": "2026-07-31T06:13:55Z",
+                "name": "khalil-kueue-probe-fzzd9.18c74b2d6f896319",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27861458",
+                "uid": "2ff3f048-c385-4852-8b49-6d6c176060e6"
+            },
+            "reason": "SuccessfulDelete",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        },
+        {
+            "apiVersion": "v1",
+            "count": 1,
+            "eventTime": null,
+            "firstTimestamp": "2026-07-31T06:13:55Z",
+            "involvedObject": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "khalil-kueue-probe-fzzd9",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27861448",
+                "uid": "230fe682-f4c7-44a8-b129-8f43b6225e77"
+            },
+            "kind": "Event",
+            "lastTimestamp": "2026-07-31T06:13:55Z",
+            "message": "Job suspended",
+            "metadata": {
+                "creationTimestamp": "2026-07-31T06:13:55Z",
+                "name": "khalil-kueue-probe-fzzd9.18c74b2d6f900447",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27861460",
+                "uid": "aeb3f901-4649-4c3e-af61-8130889eb925"
+            },
+            "reason": "Suspended",
+            "reportingComponent": "job-controller",
+            "reportingInstance": "",
+            "source": {
+                "component": "job-controller"
+            },
+            "type": "Normal"
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

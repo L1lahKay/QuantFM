@@ -100,10 +100,16 @@ class TemporalRegimeMoE(nn.Module):
                 token_index, weights = token_index[keep], weights[keep]
             accepted += token_index.numel()
             expert_hidden = expert(flat_hidden[token_index])
+            # Autocast may produce BF16/FP16 expert outputs for an FP32 input
+            # buffer. Accumulate in ``routed`` dtype because index_add_ does not
+            # permit mixed source/destination dtypes.
+            contribution = expert_hidden.to(routed.dtype) * weights.to(
+                routed.dtype
+            ).unsqueeze(-1)
             routed.index_add_(
                 0,
                 token_index,
-                expert_hidden * weights.to(expert_hidden.dtype).unsqueeze(-1),
+                contribution,
             )
         output = flat_hidden + self.shared_expert(flat_hidden) + routed
         auxiliary = route.auxiliary_loss(

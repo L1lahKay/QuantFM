@@ -36,10 +36,35 @@ done_days() {
   echo "$n"
 }
 
+manifest_ready() {
+  python3 - "$WORKDIR/data/manifest.json" "$DATES_FILE" <<'PY' >/dev/null 2>&1
+import json
+import sys
+from pathlib import Path
+
+manifest_path, dates_path = map(Path, sys.argv[1:3])
+payload = json.loads(manifest_path.read_text())
+shards = payload.get("shards", [])
+expected = {line.strip() for line in dates_path.read_text().splitlines() if line.strip()}
+actual = {item.get("date") for item in shards}
+raise SystemExit(0 if shards and expected <= actual else 1)
+PY
+}
+
+pipeline_complete() {
+  local done_count="$1"
+  (( done_count >= TOTAL_DAYS )) || return 1
+  # 流式消费模式会按日删除 token，因此没有完整 manifest 可校验。
+  [[ -f "$WORKDIR/data/.prune_embedded_tokens" ]] || manifest_ready
+}
+
 start_driver() {
   [[ -f "$ENV_FILE" ]] && source "$ENV_FILE"
   log "启动并行驱动（NGROUPS=$NGROUPS CLEAN_WORKERS=$CLEAN_WORKERS，resume）…"
-  NGROUPS="$NGROUPS" CLEAN_WORKERS="$CLEAN_WORKERS" TOKENIZE_WORKERS="$TOKENIZE_WORKERS" \
+  WORKDIR="$WORKDIR" DATES_FILE="$DATES_FILE" VOCAB="${VOCAB:-quant_fm/runs/medium_300m/data/vocab.json}" \
+    SZ_FILE="${SZ_FILE:-quant_fm/data/oos2026_liquid_sz.txt}" \
+    SH_FILE="${SH_FILE:-quant_fm/data/oos2026_liquid_sh.txt}" \
+    NGROUPS="$NGROUPS" CLEAN_WORKERS="$CLEAN_WORKERS" TOKENIZE_WORKERS="$TOKENIZE_WORKERS" \
     nohup bash quant_fm/scripts/run_medium_parallel_days.sh >> "$DRIVER_LOG" 2>&1 &
   log "已启动 pid=$!"
 }
@@ -50,8 +75,8 @@ mkdir -p "$WORKDIR/parallel"
 restarts=0
 while true; do
   dn="$(done_days)"
-  if [[ -f "$WORKDIR/data/manifest.json" ]] || [[ "$dn" -ge "$TOTAL_DAYS" ]]; then
-    log "✅ 完成 (done=$dn/$TOTAL_DAYS, manifest=$([[ -f $WORKDIR/data/manifest.json ]] && echo yes || echo no))；退出。"
+  if pipeline_complete "$dn"; then
+    log "✅ 完成 (done=$dn/$TOTAL_DAYS, manifest=valid-or-pruned)；退出。"
     exit 0
   fi
 

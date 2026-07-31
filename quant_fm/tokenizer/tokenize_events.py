@@ -14,7 +14,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import polars as pl
+from pylob.event_ordering import validate_order_if_present
 
+from quant_fm.tokenizer.artifact_contract import write_token_contract
 from quant_fm.tokenizer.transforms import add_derived_fields
 from quant_fm.tokenizer.vocab import CATEGORICAL_SOURCE
 
@@ -44,7 +46,11 @@ INDEX_COLUMNS = ("symbol", "security_id", "date", "int_time", "event_idx")
 
 def tokenize_frame(events: pl.DataFrame, vocab: Vocab) -> pl.DataFrame:
     """对单个规范标的日数据帧进行分词。"""
-    df = add_derived_fields(events)  # 先算 price_rel、log_volume 等连续特征
+    validate_order_if_present(events, version=vocab.event_ordering_version)
+    df = add_derived_fields(
+        events,
+        transform_version=vocab.feature_transform_version,
+    )  # 先算 price_rel、log_volume 等连续特征
     out_cols: dict[str, np.ndarray] = {}
 
     for tok_name, (kind, src) in TOKEN_FIELDS.items():
@@ -73,7 +79,10 @@ def tokenize_path(
     tokens = tokenize_frame(events, vocab)
     dst = Path(dst)
     dst.parent.mkdir(parents=True, exist_ok=True)
-    tokens.write_parquet(dst)
+    temporary = dst.with_suffix(".parquet.tmp")
+    tokens.write_parquet(temporary)
+    temporary.replace(dst)
+    write_token_contract(dst, vocab)
     return tokens.height
 
 

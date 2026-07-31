@@ -1,0 +1,423 @@
+2026/07/31 07:42:13 maxprocs: Leaving GOMAXPROCS=64: CPU quota undefined
+I0731 07:42:13.577731       1 flags.go:57] FLAG: --add-dir-header="false"
+I0731 07:42:13.577782       1 flags.go:57] FLAG: --alsologtostderr="false"
+I0731 07:42:13.577795       1 flags.go:57] FLAG: --alsologtostderrthreshold="0"
+I0731 07:42:13.577803       1 flags.go:57] FLAG: --ca-cert-file=""
+I0731 07:42:13.577812       1 flags.go:57] FLAG: --cache-dump-dir="/tmp"
+I0731 07:42:13.577819       1 flags.go:57] FLAG: --cache-dumper="true"
+I0731 07:42:13.577828       1 flags.go:57] FLAG: --csi-storage="false"
+I0731 07:42:13.577835       1 flags.go:57] FLAG: --default-queue="default"
+I0731 07:42:13.577842       1 flags.go:57] FLAG: --disable-default-scheduler-config="false"
+I0731 07:42:13.577848       1 flags.go:57] FLAG: --enable-healthz="true"
+I0731 07:42:13.577855       1 flags.go:57] FLAG: --enable-metrics="true"
+I0731 07:42:13.577863       1 flags.go:57] FLAG: --enable-pprof="false"
+I0731 07:42:13.577869       1 flags.go:57] FLAG: --feature-gates=""
+I0731 07:42:13.577887       1 flags.go:57] FLAG: --gate-removal-worker-num="5"
+I0731 07:42:13.577895       1 flags.go:57] FLAG: --healthz-address=":11251"
+I0731 07:42:13.577902       1 flags.go:57] FLAG: --ignored-provisioners="[]"
+I0731 07:42:13.577919       1 flags.go:57] FLAG: --kube-api-burst="2000"
+I0731 07:42:13.577925       1 flags.go:57] FLAG: --kube-api-qps="2000"
+I0731 07:42:13.577955       1 flags.go:57] FLAG: --kubeconfig=""
+I0731 07:42:13.577963       1 flags.go:57] FLAG: --leader-elect="false"
+I0731 07:42:13.577969       1 flags.go:57] FLAG: --leader-elect-lease-duration="15s"
+I0731 07:42:13.577988       1 flags.go:57] FLAG: --leader-elect-renew-deadline="10s"
+I0731 07:42:13.577995       1 flags.go:57] FLAG: --leader-elect-resource-lock="leases"
+I0731 07:42:13.578002       1 flags.go:57] FLAG: --leader-elect-resource-name="volcano"
+I0731 07:42:13.578008       1 flags.go:57] FLAG: --leader-elect-resource-namespace="volcano-system"
+I0731 07:42:13.578015       1 flags.go:57] FLAG: --leader-elect-retry-period="2s"
+I0731 07:42:13.578021       1 flags.go:57] FLAG: --legacy-stderr-threshold-behavior="false"
+I0731 07:42:13.578028       1 flags.go:57] FLAG: --listen-address=":8080"
+I0731 07:42:13.578035       1 flags.go:57] FLAG: --lock-object-namespace=""
+I0731 07:42:13.578041       1 flags.go:57] FLAG: --log-backtrace-at=":0"
+I0731 07:42:13.578055       1 flags.go:57] FLAG: --log-dir=""
+I0731 07:42:13.578065       1 flags.go:57] FLAG: --log-file=""
+I0731 07:42:13.578071       1 flags.go:57] FLAG: --log-file-max-size="1800"
+I0731 07:42:13.578079       1 flags.go:57] FLAG: --log-flush-frequency="5s"
+I0731 07:42:13.578087       1 flags.go:57] FLAG: --logtostderr="true"
+I0731 07:42:13.578093       1 flags.go:57] FLAG: --master=""
+I0731 07:42:13.578100       1 flags.go:57] FLAG: --minimum-feasible-nodes="100"
+I0731 07:42:13.578108       1 flags.go:57] FLAG: --minimum-percentage-nodes-to-find="5"
+I0731 07:42:13.578115       1 flags.go:57] FLAG: --node-selector="[]"
+I0731 07:42:13.578131       1 flags.go:57] FLAG: --node-worker-threads="20"
+I0731 07:42:13.578139       1 flags.go:57] FLAG: --one-output="false"
+I0731 07:42:13.578145       1 flags.go:57] FLAG: --percentage-nodes-to-find="0"
+I0731 07:42:13.578151       1 flags.go:57] FLAG: --plugins-dir=""
+I0731 07:42:13.578157       1 flags.go:57] FLAG: --priority-class="true"
+I0731 07:42:13.578163       1 flags.go:57] FLAG: --resource-sync-timeout="1m0s"
+I0731 07:42:13.578170       1 flags.go:57] FLAG: --resync-period="0s"
+I0731 07:42:13.578177       1 flags.go:57] FLAG: --schedule-period="1s"
+I0731 07:42:13.578183       1 flags.go:57] FLAG: --scheduler-conf="/volcano.scheduler/volcano-scheduler.conf"
+I0731 07:42:13.578190       1 flags.go:57] FLAG: --scheduler-name="[volcano]"
+I0731 07:42:13.578208       1 flags.go:57] FLAG: --scheduler-sharding-mode="none"
+I0731 07:42:13.578214       1 flags.go:57] FLAG: --scheduler-sharding-name="volcano"
+I0731 07:42:13.578234       1 flags.go:57] FLAG: --skip-headers="false"
+I0731 07:42:13.578242       1 flags.go:57] FLAG: --skip-log-headers="false"
+I0731 07:42:13.578248       1 flags.go:57] FLAG: --stderrthreshold="0"
+I0731 07:42:13.578261       1 flags.go:57] FLAG: --tls-cert-file=""
+I0731 07:42:13.578267       1 flags.go:57] FLAG: --tls-private-key-file=""
+I0731 07:42:13.578273       1 flags.go:57] FLAG: --v="3"
+I0731 07:42:13.578280       1 flags.go:57] FLAG: --version="false"
+I0731 07:42:13.578286       1 flags.go:57] FLAG: --vmodule=""
+W0731 07:42:13.578349       1 client_config.go:682] Neither --kubeconfig nor --master was specified.  Using the inClusterConfig.  This might not work.
+I0731 07:42:13.587347       1 registry.go:397] setting kube:feature gate emulation version to 1.35, min compatibility version to 1.34
+I0731 07:42:13.588287       1 cache.go:537] Creating default queue and root queue
+I0731 07:42:13.592856       1 cache.go:469] Queue root already exists, skip creating.
+I0731 07:42:13.597024       1 cache.go:469] Queue default already exists, skip creating.
+I0731 07:42:13.597454       1 cache.go:598] no registered bind method, new a default one
+I0731 07:42:13.601187       1 scheduler.go:159] Finished loading scheduler config. Final state: actions=[allocate backfill preempt], plugins=[priority gang conformance overcommit drf predicates proportion nodeorder binpack]
+I0731 07:42:13.602859       1 reflector.go:367] "Starting reflector" type="*v1.Node" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.602928       1 reflector.go:411] "Listing and watching" type="*v1.Node" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.602974       1 reflector.go:367] "Starting reflector" type="*v1.PersistentVolumeClaim" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603030       1 reflector.go:411] "Listing and watching" type="*v1.PersistentVolumeClaim" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603119       1 reflector.go:367] "Starting reflector" type="*v1beta1.PodGroup" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603188       1 reflector.go:411] "Listing and watching" type="*v1beta1.PodGroup" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603312       1 reflector.go:367] "Starting reflector" type="*v1.ReplicaSet" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603337       1 reflector.go:411] "Listing and watching" type="*v1.ReplicaSet" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603365       1 reflector.go:367] "Starting reflector" type="*v1.ReplicationController" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603427       1 reflector.go:411] "Listing and watching" type="*v1.ReplicationController" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603562       1 reflector.go:367] "Starting reflector" type="*v1.ResourceSlice" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603719       1 reflector.go:411] "Listing and watching" type="*v1.ResourceSlice" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603694       1 reflector.go:367] "Starting reflector" type="*v1.ResourceClaim" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603760       1 reflector.go:367] "Starting reflector" type="*v1.Pod" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603774       1 reflector.go:411] "Listing and watching" type="*v1.ResourceClaim" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603901       1 reflector.go:411] "Listing and watching" type="*v1.Pod" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603905       1 reflector.go:367] "Starting reflector" type="*v1.CSINode" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603931       1 reflector.go:367] "Starting reflector" type="*v1.Namespace" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603943       1 reflector.go:367] "Starting reflector" type="*v1.DeviceClass" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603774       1 reflector.go:367] "Starting reflector" type="*v1.ResourceQuota" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603968       1 reflector.go:411] "Listing and watching" type="*v1.CSINode" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604018       1 reflector.go:411] "Listing and watching" type="*v1.ResourceQuota" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604009       1 reflector.go:367] "Starting reflector" type="*v1alpha1.Numatopology" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604032       1 reflector.go:411] "Listing and watching" type="*v1.Namespace" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604058       1 reflector.go:411] "Listing and watching" type="*v1.DeviceClass" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.603706       1 reflector.go:367] "Starting reflector" type="*v1beta1.Queue" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604163       1 reflector.go:411] "Listing and watching" type="*v1beta1.Queue" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604217       1 reflector.go:411] "Listing and watching" type="*v1alpha1.Numatopology" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604203       1 reflector.go:367] "Starting reflector" type="*v1.StatefulSet" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604295       1 reflector.go:411] "Listing and watching" type="*v1.StatefulSet" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604194       1 reflector.go:367] "Starting reflector" type="*v1.Service" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604332       1 reflector.go:367] "Starting reflector" type="*v1.VolumeAttachment" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604361       1 reflector.go:367] "Starting reflector" type="*v1.PodDisruptionBudget" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604397       1 reflector.go:411] "Listing and watching" type="*v1.PodDisruptionBudget" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604359       1 reflector.go:367] "Starting reflector" type="*v1.PriorityClass" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.605337       1 reflector.go:411] "Listing and watching" type="*v1.PriorityClass" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.605611       1 reflector.go:411] "Listing and watching" type="*v1.Service" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.604377       1 reflector.go:367] "Starting reflector" type="*v1.PersistentVolume" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.605766       1 reflector.go:411] "Listing and watching" type="*v1.PersistentVolume" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.605806       1 reflector.go:411] "Listing and watching" type="*v1.VolumeAttachment" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.606130       1 reflector.go:367] "Starting reflector" type="*v1alpha1.HyperNode" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.606169       1 reflector.go:367] "Starting reflector" type="*v1.StorageClass" resyncPeriod="0s" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.606195       1 reflector.go:411] "Listing and watching" type="*v1alpha1.HyperNode" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.606299       1 reflector.go:411] "Listing and watching" type="*v1.StorageClass" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.609812       1 reflector.go:446] "Caches populated" type="*v1.ReplicationController" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.610169       1 reflector.go:446] "Caches populated" type="*v1.ResourceClaim" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.610168       1 reflector.go:446] "Caches populated" type="*v1beta1.PodGroup" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.610244       1 reflector.go:446] "Caches populated" type="*v1.ResourceQuota" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.610382       1 reflector.go:446] "Caches populated" type="*v1.PersistentVolumeClaim" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.610414       1 reflector.go:446] "Caches populated" type="*v1.ResourceSlice" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.610371       1 event_handlers.go:1209] Add ResourceQuota <gpu-dev/gpu-quota> in cache, with spec: map[limits.cpu:{{128 0} {<nil>} 128 DecimalSI} limits.memory:{{549755813888 0} {<nil>}  BinarySI} limits.nvidia.com/gpu:{{4 0} {<nil>} 4 DecimalSI} requests.cpu:{{64 0} {<nil>} 64 DecimalSI} requests.memory:{{274877906944 0} {<nil>}  BinarySI} requests.nvidia.com/gpu:{{4 0} {<nil>} 4 DecimalSI}].
+I0731 07:42:13.610648       1 reflector.go:446] "Caches populated" type="*v1.PodDisruptionBudget" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.610832       1 reflector.go:446] "Caches populated" type="*v1.CSINode" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.611275       1 reflector.go:446] "Caches populated" type="*v1alpha1.Numatopology" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.611760       1 reflector.go:446] "Caches populated" type="*v1.Node" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.612753       1 reflector.go:446] "Caches populated" type="*v1.StorageClass" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.612844       1 reflector.go:446] "Caches populated" type="*v1alpha1.HyperNode" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.613343       1 reflector.go:446] "Caches populated" type="*v1.PriorityClass" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.613863       1 reflector.go:446] "Caches populated" type="*v1beta1.Queue" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.613971       1 reflector.go:446] "Caches populated" type="*v1.Namespace" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.615628       1 reflector.go:446] "Caches populated" type="*v1.StatefulSet" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.615774       1 reflector.go:446] "Caches populated" type="*v1.DeviceClass" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.616082       1 reflector.go:446] "Caches populated" type="*v1.VolumeAttachment" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.616464       1 reflector.go:446] "Caches populated" type="*v1.PersistentVolume" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.619729       1 reflector.go:446] "Caches populated" type="*v1.Service" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.619999       1 reflector.go:446] "Caches populated" type="*v1.ReplicaSet" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+I0731 07:42:13.620992       1 reflector.go:446] "Caches populated" type="*v1.Pod" reflector="pkg/mod/k8s.io/client-go@v0.35.3/tools/cache/reflector.go:289"
+W0731 07:42:13.621433       1 node_info.go:359] received argument of nil node, no need to set other resources for 
+W0731 07:42:13.621479       1 node_info.go:254] the argument node is null.
+I0731 07:42:13.621499       1 event_handlers.go:445] Added pod <khalil/dense230m-oos-release-20260728-nl57n> into cache.
+I0731 07:42:13.621552       1 event_handlers.go:445] Added pod <kube-system/local-path-provisioner-5c4dc5d66d-hfr4n> into cache.
+I0731 07:42:13.621601       1 event_handlers.go:445] Added pod <kube-system/metrics-server-786d997795-bdpkb> into cache.
+I0731 07:42:13.621632       1 event_handlers.go:445] Added pod <kuboard/metrics-scraper-6b796b74bc-wr6px> into cache.
+I0731 07:42:13.621669       1 event_handlers.go:445] Added pod <node-feature-discovery/nfd-node-feature-discovery-worker-9p48r> into cache.
+I0731 07:42:13.621697       1 event_handlers.go:445] Added pod <volcano-system/volcano-admission-569b8b4545-hd7fz> into cache.
+I0731 07:42:13.621764       1 event_handlers.go:445] Added pod <volcano-system/volcano-admission-init-kj6s5> into cache.
+I0731 07:42:13.621816       1 event_handlers.go:445] Added pod <volcano-system/volcano-scheduler-7d5c9bb94f-st784> into cache.
+I0731 07:42:13.621902       1 event_handlers.go:445] Added pod <gpu-dev/dylan-trainer-ac4218e-f5sjk> into cache.
+I0731 07:42:13.621943       1 event_handlers.go:445] Added pod <khalil/dense230m-oos-release-20260728-fb8g5> into cache.
+I0731 07:42:13.621983       1 event_handlers.go:445] Added pod <kube-system/coredns-c4dbffb5f-kl2wl> into cache.
+I0731 07:42:13.622011       1 event_handlers.go:445] Added pod <nvidia-device-plugin/nvdp-nvidia-device-plugin-4grgz> into cache.
+I0731 07:42:13.622065       1 event_handlers.go:445] Added pod <khalil/dense230m-historical-embeddings-20260728-z6vtq> into cache.
+I0731 07:42:13.622103       1 event_handlers.go:445] Added pod <khalil/dense230m-oos-signal-20260728-wlx5f> into cache.
+I0731 07:42:13.622136       1 event_handlers.go:445] Added pod <node-feature-discovery/nfd-node-feature-discovery-gc-7b756b5b96-pvr8c> into cache.
+I0731 07:42:13.622163       1 event_handlers.go:445] Added pod <node-feature-discovery/nfd-node-feature-discovery-master-86795df55f-n6pxq> into cache.
+I0731 07:42:13.622186       1 event_handlers.go:445] Added pod <registry/registry-56bf56cbf4-5b7sd> into cache.
+I0731 07:42:13.622221       1 event_handlers.go:445] Added pod <khalil/dense230m-oos-release-v2-20260728-2vg8n> into cache.
+I0731 07:42:13.622250       1 event_handlers.go:445] Added pod <kueue-system/kueue-controller-manager-84bd4bb856-hzdmm> into cache.
+I0731 07:42:13.622293       1 event_handlers.go:445] Added pod <volcano-system/volcano-controllers-7c87f8cb95-lcmqv> into cache.
+I0731 07:42:13.622320       1 event_handlers.go:445] Added pod <volcano-system/volcano-scheduler-786498f9db-kfhms> into cache.
+I0731 07:42:13.702716       1 cache.go:877] Start metrics collection, metricsConf is map[]
+I0731 07:42:13.702772       1 cache.go:882] The interval for querying metrics data is 30s
+I0731 07:42:13.702819       1 cache.go:885] scheduler wait for handlers sync
+I0731 07:42:13.702906       1 cache.go:1771] The metrics type is not set in the volcano scheduler configmap file. As a result, the CPU and memory load information of the node is not collected.
+I0731 07:42:13.702926       1 event_handlers.go:789] "No need to update hyperNode cache when node added or deleted"
+W0731 07:42:13.702980       1 node_info.go:359] received argument of nil node, no need to set other resources for 
+W0731 07:42:13.703014       1 node_info.go:254] the argument node is null.
+I0731 07:42:13.803859       1 cache.go:887] scheduler finished handlers sync
+I0731 07:42:13.803889       1 scheduler.go:114] Scheduler completes Initialization and start to run
+I0731 07:42:13.804422       1 cache.go:1581] "SnapShot for scheduling" jobNum=0 QueueNum=3 NodeNum=1
+I0731 07:42:13.804480       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:13.804503       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:13.804527       1 session.go:279] Open Session b800212e-f91e-4cd7-8c51-8ac4293fbd46 with <0> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:13.808270       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:13.808464       1 session.go:577] Close Session b800212e-f91e-4cd7-8c51-8ac4293fbd46
+I0731 07:42:14.809949       1 cache.go:1581] "SnapShot for scheduling" jobNum=0 QueueNum=3 NodeNum=1
+I0731 07:42:14.810033       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:14.810058       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:14.810092       1 session.go:279] Open Session 311ac7d9-acae-4a32-b607-3c3369a93f33 with <0> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:14.810770       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:14.810883       1 session.go:577] Close Session 311ac7d9-acae-4a32-b607-3c3369a93f33
+I0731 07:42:15.434665       1 event_handlers.go:500] Deleted pod <volcano-system/volcano-scheduler-786498f9db-kfhms> from cache.
+I0731 07:42:15.812067       1 cache.go:1581] "SnapShot for scheduling" jobNum=0 QueueNum=3 NodeNum=1
+I0731 07:42:15.812122       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:15.812148       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:15.812179       1 session.go:279] Open Session 11720c7a-f47c-4c1c-958c-fe7dd255a411 with <0> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:15.812794       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:15.812903       1 session.go:577] Close Session 11720c7a-f47c-4c1c-958c-fe7dd255a411
+I0731 07:42:16.813750       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:16.813832       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:16.813862       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:16.813890       1 session.go:279] Open Session 0c362abb-21ae-488d-8b19-65580effda36 with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:16.814759       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:16.823036       1 session.go:577] Close Session 0c362abb-21ae-488d-8b19-65580effda36
+I0731 07:42:17.823892       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:17.823977       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:17.824009       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:17.824037       1 session.go:279] Open Session 84deec46-15af-4af2-a982-c9594f9cdafd with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:17.824934       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:17.825189       1 session.go:577] Close Session 84deec46-15af-4af2-a982-c9594f9cdafd
+I0731 07:42:18.268774       1 event_handlers.go:1191] Update ResourceQuota <gpu-dev/gpu-quota> in cache, with spec: map[limits.cpu:{{128 0} {<nil>} 128 DecimalSI} limits.memory:{{549755813888 0} {<nil>}  BinarySI} limits.nvidia.com/gpu:{{4 0} {<nil>} 4 DecimalSI} requests.cpu:{{64 0} {<nil>} 64 DecimalSI} requests.memory:{{274877906944 0} {<nil>}  BinarySI} requests.nvidia.com/gpu:{{4 0} {<nil>} 4 DecimalSI}].
+I0731 07:42:18.272160       1 event_handlers.go:445] Added pod <gpu-dev/khalil-volcano-preempt-victim-g6qgz> into cache.
+I0731 07:42:18.825742       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:18.825804       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:18.825832       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:18.825861       1 session.go:279] Open Session 4ccadbb8-2abe-4554-a49b-d96105724779 with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:18.826653       1 allocate.go:138] Try to allocate resource to 1 Queues
+I0731 07:42:18.826713       1 allocate.go:328] "Try to allocate resource" queue="khalil-volcano-preempt" job="gpu-dev/khalil-volcano-preempt-victim-pg" nominatedHyperNode="" taskNum=1
+I0731 07:42:18.826769       1 allocate.go:777] There are <1> nodes for Job <gpu-dev/khalil-volcano-preempt-victim-pg>
+I0731 07:42:18.826969       1 allocate.go:956] Binding Task <gpu-dev/khalil-volcano-preempt-victim-g6qgz> to node <gpu-dev-01>
+I0731 07:42:18.827031       1 statement.go:277] After allocated Task <gpu-dev/khalil-volcano-preempt-victim-g6qgz> to Node <gpu-dev-01>: idle <cpu 63085.00, memory 539520716800.00, ephemeral-storage 1015515997412000.00, hugepages-1Gi 0.00, hugepages-2Mi 0.00, nvidia.com/gpu 5000.00, pods 96.00>, used <cpu 915.00, memory 1153433600.00, nvidia.com/gpu 3000.00, pods 14.00>, releasing <cpu 0.00, memory 0.00>
+I0731 07:42:18.827210       1 statement.go:307] Allocating operations ...
+I0731 07:42:18.827277       1 allocate.go:855] "SubJob ready, return statement" job="gpu-dev/khalil-volcano-preempt-victim-pg" subJob="gpu-dev/khalil-volcano-preempt-victim-pg"
+I0731 07:42:18.827300       1 statement.go:393] Committing operations ...
+I0731 07:42:18.827390       1 proportion.go:326] Queue <khalil-volcano-preempt> is overused: deserved <cpu 100.00, memory 134217728.00, ephemeral-storage 0.00, hugepages-1Gi 0.00, hugepages-2Mi 0.00, nvidia.com/gpu 3000.00, pods 1.00>, allocated <cpu 100.00, memory 134217728.00, nvidia.com/gpu 3000.00, pods 1.00>, share <1>
+I0731 07:42:18.827451       1 allocate.go:295] Queue <khalil-volcano-preempt> is overused, ignore it.
+I0731 07:42:18.832335       1 cache.go:992] bind ok, latency 4.035266ms
+I0731 07:42:18.850204       1 session.go:577] Close Session 4ccadbb8-2abe-4554-a49b-d96105724779
+I0731 07:42:19.851282       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:19.851354       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:19.851384       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:19.851452       1 session.go:279] Open Session 25418bd6-4284-4a18-8275-10c8538ac97f with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:19.852402       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:19.861587       1 session.go:577] Close Session 25418bd6-4284-4a18-8275-10c8538ac97f
+I0731 07:42:20.862972       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:20.863042       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:20.863070       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:20.863098       1 session.go:279] Open Session 6713b145-d63c-410b-a3ab-91cd392cfa74 with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:20.863963       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:20.864426       1 session.go:577] Close Session 6713b145-d63c-410b-a3ab-91cd392cfa74
+I0731 07:42:21.865847       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:21.865913       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:21.865942       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:21.865972       1 session.go:279] Open Session 0cdfe749-8da1-4770-8236-c98300ff788b with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:21.866876       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:21.867236       1 session.go:577] Close Session 0cdfe749-8da1-4770-8236-c98300ff788b
+I0731 07:42:22.868512       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:22.868567       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:22.868594       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:22.868621       1 session.go:279] Open Session cdf4a2ab-21ff-4fc5-af33-21fb7e7134ec with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:22.869475       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:22.869798       1 session.go:577] Close Session cdf4a2ab-21ff-4fc5-af33-21fb7e7134ec
+I0731 07:42:23.871424       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:23.871502       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:23.871535       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:23.871565       1 session.go:279] Open Session bfd386b2-e6e3-4918-90b4-357b8c164429 with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:23.872736       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:23.882916       1 session.go:577] Close Session bfd386b2-e6e3-4918-90b4-357b8c164429
+I0731 07:42:24.884437       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:24.884517       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:24.884545       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:24.884574       1 session.go:279] Open Session 10fb17d3-0d03-4e45-b2eb-1e126f45eb6f with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:24.885511       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:24.885899       1 session.go:577] Close Session 10fb17d3-0d03-4e45-b2eb-1e126f45eb6f
+I0731 07:42:25.887595       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:25.887697       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:25.887725       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:25.887754       1 session.go:279] Open Session 6441caf3-0dcb-4af4-83c0-44e809f9bc78 with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:25.888715       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:25.889050       1 session.go:577] Close Session 6441caf3-0dcb-4af4-83c0-44e809f9bc78
+I0731 07:42:26.881710       1 event_handlers.go:1191] Update ResourceQuota <gpu-dev/gpu-quota> in cache, with spec: map[limits.cpu:{{128 0} {<nil>} 128 DecimalSI} limits.memory:{{549755813888 0} {<nil>}  BinarySI} limits.nvidia.com/gpu:{{4 0} {<nil>} 4 DecimalSI} requests.cpu:{{64 0} {<nil>} 64 DecimalSI} requests.memory:{{274877906944 0} {<nil>}  BinarySI} requests.nvidia.com/gpu:{{4 0} {<nil>} 4 DecimalSI}].
+I0731 07:42:26.884947       1 event_handlers.go:445] Added pod <gpu-dev/khalil-volcano-preempt-high-mkfxh> into cache.
+I0731 07:42:26.890108       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:26.890202       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:26.890233       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:26.890264       1 session.go:279] Open Session c8e186a3-b46f-4f75-af22-b9b64d81b35d with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:26.891283       1 allocate.go:138] Try to allocate resource to 1 Queues
+I0731 07:42:26.891327       1 allocate.go:328] "Try to allocate resource" queue="khalil-volcano-preempt" job="gpu-dev/khalil-volcano-preempt-high-pg" nominatedHyperNode="" taskNum=1
+I0731 07:42:26.891361       1 proportion.go:350] Queue <khalil-volcano-preempt>: deserved <cpu 200.00, memory 268435456.00, ephemeral-storage 0.00, hugepages-1Gi 0.00, hugepages-2Mi 0.00, nvidia.com/gpu 3000.00, pods 2.00>, allocated <cpu 100.00, memory 134217728.00, nvidia.com/gpu 3000.00, pods 1.00>; Candidates total request <cpu 100.00, memory 134217728.00, nvidia.com/gpu 1000.00, pods 1.00>
+I0731 07:42:26.891427       1 allocate.go:745] Queue <khalil-volcano-preempt> is overused when considering task <khalil-volcano-preempt-high-mkfxh>, ignore it.
+I0731 07:42:26.891469       1 statement.go:366] Discarding operations ...
+I0731 07:42:26.891926       1 preempt.go:350] Considering Task <gpu-dev/khalil-volcano-preempt-high-mkfxh> on Node <gpu-dev-01>.
+I0731 07:42:26.891973       1 proportion.go:350] Queue <khalil-volcano-preempt>: deserved <cpu 200.00, memory 268435456.00, ephemeral-storage 0.00, hugepages-1Gi 0.00, hugepages-2Mi 0.00, nvidia.com/gpu 3000.00, pods 2.00>, allocated <cpu 100.00, memory 134217728.00, nvidia.com/gpu 3000.00, pods 1.00>; Candidates total request <cpu 100.00, memory 134217728.00, nvidia.com/gpu 1000.00, pods 1.00>
+I0731 07:42:26.892029       1 preempt.go:394] Try to preempt Task <gpu-dev/khalil-volcano-preempt-victim-g6qgz> for Task <gpu-dev/khalil-volcano-preempt-high-mkfxh>
+I0731 07:42:26.892113       1 preempt.go:406] Preempted <cpu 100.00, memory 134217728.00, nvidia.com/gpu 3000.00, pods 1.00> for Task <gpu-dev/khalil-volcano-preempt-high-mkfxh> requested <cpu 100.00, memory 134217728.00, nvidia.com/gpu 1000.00, pods 1.00>.
+I0731 07:42:26.892174       1 statement.go:171] After pipelined Task <gpu-dev/khalil-volcano-preempt-high-mkfxh> to Node <gpu-dev-01>: idle <cpu 63085.00, memory 539520716800.00, ephemeral-storage 1015515997412000.00, hugepages-1Gi 0.00, hugepages-2Mi 0.00, nvidia.com/gpu 5000.00, pods 96.00>, used <cpu 915.00, memory 1153433600.00, nvidia.com/gpu 3000.00, pods 14.00>, releasing <cpu 100.00, memory 134217728.00, nvidia.com/gpu 3000.00, pods 1.00>
+I0731 07:42:26.892333       1 statement.go:393] Committing operations ...
+I0731 07:42:26.892415       1 statement.go:393] Committing operations ...
+I0731 07:42:26.892452       1 cache.go:271] Evicting pod gpu-dev/khalil-volcano-preempt-victim-g6qgz, because of preempt
+I0731 07:42:26.903495       1 cache.go:1101] Updating pod condition for gpu-dev/khalil-volcano-preempt-high-mkfxh to (PodScheduled==False)
+I0731 07:42:26.903582       1 cache.go:1107] Updating pod nominatedNodeName for gpu-dev/khalil-volcano-preempt-high-mkfxh from () to (gpu-dev-01)
+I0731 07:42:26.927429       1 session.go:577] Close Session c8e186a3-b46f-4f75-af22-b9b64d81b35d
+I0731 07:42:27.928889       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:27.928963       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:27.928994       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:27.929026       1 session.go:279] Open Session d28f11d3-00bd-40b5-b0b9-baf9b34dfb14 with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:27.929852       1 allocate.go:138] Try to allocate resource to 1 Queues
+I0731 07:42:27.929894       1 allocate.go:328] "Try to allocate resource" queue="khalil-volcano-preempt" job="gpu-dev/khalil-volcano-preempt-high-pg" nominatedHyperNode="" taskNum=1
+I0731 07:42:27.929940       1 allocate.go:777] There are <1> nodes for Job <gpu-dev/khalil-volcano-preempt-high-pg>
+I0731 07:42:27.930102       1 allocate.go:956] Binding Task <gpu-dev/khalil-volcano-preempt-high-mkfxh> to node <gpu-dev-01>
+I0731 07:42:27.930157       1 statement.go:277] After allocated Task <gpu-dev/khalil-volcano-preempt-high-mkfxh> to Node <gpu-dev-01>: idle <cpu 62985.00, memory 539386499072.00, ephemeral-storage 1015515997412000.00, hugepages-1Gi 0.00, hugepages-2Mi 0.00, nvidia.com/gpu 4000.00, pods 95.00>, used <cpu 1015.00, memory 1287651328.00, nvidia.com/gpu 4000.00, pods 15.00>, releasing <cpu 100.00, memory 134217728.00, nvidia.com/gpu 3000.00, pods 1.00>
+I0731 07:42:27.930324       1 statement.go:307] Allocating operations ...
+I0731 07:42:27.930382       1 allocate.go:855] "SubJob ready, return statement" job="gpu-dev/khalil-volcano-preempt-high-pg" subJob="gpu-dev/khalil-volcano-preempt-high-pg"
+I0731 07:42:27.930407       1 statement.go:393] Committing operations ...
+I0731 07:42:27.930480       1 proportion.go:326] Queue <khalil-volcano-preempt> is overused: deserved <cpu 100.00, memory 134217728.00, ephemeral-storage 0.00, hugepages-1Gi 0.00, hugepages-2Mi 0.00, nvidia.com/gpu 1000.00, pods 1.00>, allocated <cpu 100.00, memory 134217728.00, nvidia.com/gpu 1000.00, pods 1.00>, share <1>
+I0731 07:42:27.930525       1 allocate.go:295] Queue <khalil-volcano-preempt> is overused, ignore it.
+I0731 07:42:27.952499       1 cache.go:992] bind ok, latency 4.322867ms
+I0731 07:42:27.952936       1 session.go:577] Close Session d28f11d3-00bd-40b5-b0b9-baf9b34dfb14
+I0731 07:42:28.953923       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:28.953983       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:28.954013       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:28.954040       1 session.go:279] Open Session 932f46f4-4149-4b44-bd62-8358828238cb with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:28.955069       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:28.963149       1 session.go:577] Close Session 932f46f4-4149-4b44-bd62-8358828238cb
+I0731 07:42:29.536539       1 event_handlers.go:1191] Update ResourceQuota <gpu-dev/gpu-quota> in cache, with spec: map[limits.cpu:{{128 0} {<nil>} 128 DecimalSI} limits.memory:{{549755813888 0} {<nil>}  BinarySI} limits.nvidia.com/gpu:{{4 0} {<nil>} 4 DecimalSI} requests.cpu:{{64 0} {<nil>} 64 DecimalSI} requests.memory:{{274877906944 0} {<nil>}  BinarySI} requests.nvidia.com/gpu:{{4 0} {<nil>} 4 DecimalSI}].
+I0731 07:42:29.964385       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:29.964443       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:29.964472       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:29.964501       1 session.go:279] Open Session 41659d79-2493-45a4-97b3-53faad9b0d00 with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:29.965370       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:29.974685       1 session.go:577] Close Session 41659d79-2493-45a4-97b3-53faad9b0d00
+I0731 07:42:30.512936       1 event_handlers.go:500] Deleted pod <gpu-dev/khalil-volcano-preempt-victim-g6qgz> from cache.
+E0731 07:42:30.975512       1 job_info.go:778] Failed to clone subJob gpu-dev/khalil-volcano-preempt-victim-pg for job gpu-dev/khalil-volcano-preempt-victim-pg
+I0731 07:42:30.975597       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:30.975643       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:30.975670       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:30.975695       1 session.go:279] Open Session 2b910351-2f2a-4f91-bb0b-031ae3b2e6e6 with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:30.976546       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:30.984852       1 session.go:577] Close Session 2b910351-2f2a-4f91-bb0b-031ae3b2e6e6
+E0731 07:42:31.985428       1 job_info.go:778] Failed to clone subJob gpu-dev/khalil-volcano-preempt-victim-pg for job gpu-dev/khalil-volcano-preempt-victim-pg
+I0731 07:42:31.985513       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:31.985558       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:31.985584       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:31.985611       1 session.go:279] Open Session 906fb7fe-8e77-4ab5-92c5-dd8c42994d1b with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:31.986493       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:31.996302       1 session.go:577] Close Session 906fb7fe-8e77-4ab5-92c5-dd8c42994d1b
+E0731 07:42:32.997677       1 job_info.go:778] Failed to clone subJob gpu-dev/khalil-volcano-preempt-victim-pg for job gpu-dev/khalil-volcano-preempt-victim-pg
+I0731 07:42:32.997762       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:32.997818       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:32.997845       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:32.997875       1 session.go:279] Open Session 746a7c11-7ee2-4620-90fc-e1778f62424a with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:32.998708       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:32.999132       1 session.go:577] Close Session 746a7c11-7ee2-4620-90fc-e1778f62424a
+E0731 07:42:34.001680       1 job_info.go:778] Failed to clone subJob gpu-dev/khalil-volcano-preempt-victim-pg for job gpu-dev/khalil-volcano-preempt-victim-pg
+I0731 07:42:34.001827       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:34.001942       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:34.001995       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:34.002043       1 session.go:279] Open Session c3335ced-4b72-4edf-a59b-b049dfc2a22c with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:34.005482       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:34.005878       1 session.go:577] Close Session c3335ced-4b72-4edf-a59b-b049dfc2a22c
+E0731 07:42:35.007309       1 job_info.go:778] Failed to clone subJob gpu-dev/khalil-volcano-preempt-victim-pg for job gpu-dev/khalil-volcano-preempt-victim-pg
+I0731 07:42:35.007403       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:35.007453       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:35.007482       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:35.007510       1 session.go:279] Open Session b7fa02d0-3d5e-48dc-befe-d8ec8d6628fe with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:35.008480       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:35.008923       1 session.go:577] Close Session b7fa02d0-3d5e-48dc-befe-d8ec8d6628fe
+E0731 07:42:36.009897       1 job_info.go:778] Failed to clone subJob gpu-dev/khalil-volcano-preempt-victim-pg for job gpu-dev/khalil-volcano-preempt-victim-pg
+I0731 07:42:36.009973       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:36.010010       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:36.010035       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:36.010060       1 session.go:279] Open Session 3e3bf062-5c06-467d-90f4-acc95c3f38d5 with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:36.010916       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:36.011284       1 session.go:577] Close Session 3e3bf062-5c06-467d-90f4-acc95c3f38d5
+E0731 07:42:37.012217       1 job_info.go:778] Failed to clone subJob gpu-dev/khalil-volcano-preempt-victim-pg for job gpu-dev/khalil-volcano-preempt-victim-pg
+I0731 07:42:37.012314       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:37.012364       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:37.012392       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:37.012419       1 session.go:279] Open Session 46031389-148f-4e0a-8c0a-886451b026d9 with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:37.013319       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:37.013617       1 session.go:577] Close Session 46031389-148f-4e0a-8c0a-886451b026d9
+E0731 07:42:38.014388       1 job_info.go:778] Failed to clone subJob gpu-dev/khalil-volcano-preempt-victim-pg for job gpu-dev/khalil-volcano-preempt-victim-pg
+I0731 07:42:38.014476       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:38.014517       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:38.014544       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:38.014572       1 session.go:279] Open Session 0e328f5c-fe95-4a7e-8c23-b8d649adc17c with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:38.015484       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:38.015818       1 session.go:577] Close Session 0e328f5c-fe95-4a7e-8c23-b8d649adc17c
+E0731 07:42:39.016255       1 job_info.go:778] Failed to clone subJob gpu-dev/khalil-volcano-preempt-victim-pg for job gpu-dev/khalil-volcano-preempt-victim-pg
+I0731 07:42:39.016328       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:39.016370       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:39.016396       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:39.016421       1 session.go:279] Open Session ff1fd245-d303-40f2-a977-88fb9c697b46 with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:39.017245       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:39.017522       1 session.go:577] Close Session ff1fd245-d303-40f2-a977-88fb9c697b46
+E0731 07:42:40.018511       1 job_info.go:778] Failed to clone subJob gpu-dev/khalil-volcano-preempt-victim-pg for job gpu-dev/khalil-volcano-preempt-victim-pg
+I0731 07:42:40.018627       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:40.018698       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:40.018738       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:40.018768       1 session.go:279] Open Session ed4c0ef7-74ae-4fc5-b933-7dcc03a3b4ce with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:40.019576       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:40.019871       1 session.go:577] Close Session ed4c0ef7-74ae-4fc5-b933-7dcc03a3b4ce
+E0731 07:42:41.021185       1 job_info.go:778] Failed to clone subJob gpu-dev/khalil-volcano-preempt-victim-pg for job gpu-dev/khalil-volcano-preempt-victim-pg
+I0731 07:42:41.021273       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:41.021327       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:41.021352       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:41.021380       1 session.go:279] Open Session 75ff8719-4c25-48f7-a43b-b01a467a8ce6 with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:41.022248       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:41.022589       1 session.go:577] Close Session 75ff8719-4c25-48f7-a43b-b01a467a8ce6
+I0731 07:42:41.884091       1 event_handlers.go:1191] Update ResourceQuota <gpu-dev/gpu-quota> in cache, with spec: map[limits.cpu:{{128 0} {<nil>} 128 DecimalSI} limits.memory:{{549755813888 0} {<nil>}  BinarySI} limits.nvidia.com/gpu:{{4 0} {<nil>} 4 DecimalSI} requests.cpu:{{64 0} {<nil>} 64 DecimalSI} requests.memory:{{274877906944 0} {<nil>}  BinarySI} requests.nvidia.com/gpu:{{4 0} {<nil>} 4 DecimalSI}].
+E0731 07:42:42.023643       1 job_info.go:778] Failed to clone subJob gpu-dev/khalil-volcano-preempt-victim-pg for job gpu-dev/khalil-volcano-preempt-victim-pg
+I0731 07:42:42.023730       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:42.023774       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:42.023802       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:42.023827       1 session.go:279] Open Session a1293f69-0700-4547-aca1-3270f2bce94f with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:42.024528       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:42.049871       1 session.go:577] Close Session a1293f69-0700-4547-aca1-3270f2bce94f
+E0731 07:42:43.051236       1 job_info.go:778] Failed to clone subJob gpu-dev/khalil-volcano-preempt-victim-pg for job gpu-dev/khalil-volcano-preempt-victim-pg
+I0731 07:42:43.051357       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:43.051428       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:43.051457       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:43.051485       1 session.go:279] Open Session fed0ecb5-d1db-4d49-b4a6-b3bbcba533e6 with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:43.052273       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:43.052684       1 session.go:577] Close Session fed0ecb5-d1db-4d49-b4a6-b3bbcba533e6
+I0731 07:42:43.703854       1 cache.go:1771] The metrics type is not set in the volcano scheduler configmap file. As a result, the CPU and memory load information of the node is not collected.
+E0731 07:42:44.054185       1 job_info.go:778] Failed to clone subJob gpu-dev/khalil-volcano-preempt-victim-pg for job gpu-dev/khalil-volcano-preempt-victim-pg
+I0731 07:42:44.054293       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:44.054344       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:44.054371       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:44.054399       1 session.go:279] Open Session c768806b-d902-4279-a539-edace82aebdf with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:44.055289       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:44.055621       1 session.go:577] Close Session c768806b-d902-4279-a539-edace82aebdf
+E0731 07:42:45.056104       1 job_info.go:778] Failed to clone subJob gpu-dev/khalil-volcano-preempt-victim-pg for job gpu-dev/khalil-volcano-preempt-victim-pg
+I0731 07:42:45.056193       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:45.056249       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:45.056277       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:45.056307       1 session.go:279] Open Session 6d11614a-7515-4a84-807c-0872003ad561 with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:45.057124       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:45.057434       1 session.go:577] Close Session 6d11614a-7515-4a84-807c-0872003ad561
+E0731 07:42:46.058954       1 job_info.go:778] Failed to clone subJob gpu-dev/khalil-volcano-preempt-victim-pg for job gpu-dev/khalil-volcano-preempt-victim-pg
+I0731 07:42:46.059091       1 cache.go:1581] "SnapShot for scheduling" jobNum=2 QueueNum=3 NodeNum=1
+I0731 07:42:46.059165       1 session.go:1036] Start adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:46.059192       1 session.go:1079] Finish adjusting jobs' network topology spec according to hyperNodeTierNameMap map[]
+I0731 07:42:46.059220       1 session.go:279] Open Session bde94958-5581-4533-9b8f-2749fb807336 with <2> Job and <3> Queues. HyperNodesReadyToSchedule: true
+I0731 07:42:46.059967       1 allocate.go:138] Try to allocate resource to 0 Queues
+I0731 07:42:46.060365       1 session.go:577] Close Session bde94958-5581-4533-9b8f-2749fb807336

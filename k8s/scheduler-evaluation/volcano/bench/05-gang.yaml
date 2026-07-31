@@ -1,0 +1,87 @@
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+  name: khalil-volcano-gang
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  weight: 1
+  reclaimable: true
+  capability:
+    cpu: "2"
+    memory: 4Gi
+    nvidia.com/gpu: "1"
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: PodGroup
+metadata:
+  namespace: gpu-dev
+  name: khalil-volcano-gang-pg
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  minMember: 2
+  minResources:
+    cpu: 200m
+    memory: 256Mi
+    nvidia.com/gpu: "2"
+  queue: khalil-volcano-gang
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  namespace: gpu-dev
+  name: khalil-volcano-gang
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  parallelism: 2
+  completions: 2
+  completionMode: Indexed
+  backoffLimit: 0
+  activeDeadlineSeconds: 120
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        evaluation.quantfm/owner: khalil
+        evaluation.quantfm/suite: volcano-v1-15-1
+        evaluation.quantfm/scenario: gang
+      annotations:
+        scheduling.k8s.io/group-name: khalil-volcano-gang-pg
+    spec:
+      schedulerName: volcano
+      runtimeClassName: nvidia
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 2
+      nodeSelector:
+        accelerator: nvidia
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: gang-member
+          image: registry.zs/gpu-dev/dylan-trainer:ac4218e
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              echo "APP_START_UTC=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ) index=${JOB_COMPLETION_INDEX:-unknown}"
+              echo "VISIBLE_GPU_COUNT=$(nvidia-smi -L | wc -l)"
+              sleep 8
+              echo "APP_FINISH_UTC=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ) index=${JOB_COMPLETION_INDEX:-unknown}"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: 250m
+              memory: 256Mi
+              nvidia.com/gpu: "1"

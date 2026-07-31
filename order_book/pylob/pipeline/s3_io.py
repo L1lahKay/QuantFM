@@ -31,15 +31,19 @@ class ObjectReader(Protocol):
         ...
 
 
-def build_storage_options(config: MinioConfig) -> dict[str, str]:
+def build_storage_options(config: MinioConfig) -> dict[str, str | int]:
     """Return Polars/object_store credentials for an S3-compatible endpoint."""
     endpoint = normalize_endpoint(config.endpoint)
     scheme = "https" if config.secure else "http"
-    opts: dict[str, str] = {
+    opts: dict[str, str | int] = {
         "aws_access_key_id": config.access_key,
         "aws_secret_access_key": config.secret_key,
         "aws_endpoint_url": f"{scheme}://{endpoint}",
         "aws_region": "us-east-1",
+        # Polars >=1.37 delegates this option to Rust object_store.  The explicit
+        # budget protects all callers, while the pipeline adds a coarser retry
+        # around schema + collect so a fresh scan/client is built when needed.
+        "max_retries": 2,
     }
     if not config.secure:
         # MinIO plain HTTP：Polars/object_store 需显式允许

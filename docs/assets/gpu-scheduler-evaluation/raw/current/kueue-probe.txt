@@ -1,0 +1,20 @@
+PROBE_CLIENT_START 2026-07-31T06:23:27.571Z
+NAME                              STATUS     COMPLETIONS   DURATION   AGE   CONTAINERS   IMAGES                                      SELECTOR
+job.batch/dylan-trainer-ac4218e   Complete   1/1           33s        41m   trainer      registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=110bfe69-6575-4ca9-9ef2-fc52756683bb
+
+NAME                              READY   STATUS      RESTARTS   AGE   IP           NODE         NOMINATED NODE   READINESS GATES
+pod/dylan-trainer-ac4218e-f5sjk   0/1     Completed   0          41m   10.52.0.91   gpu-dev-01   <none>           <none>
+JOB_SUBMIT_CLIENT 2026-07-31T06:23:27.834Z
+JOB_CREATED_NAME khalil-kueue-probe-gcx7r
+POLL attempt=0 client_at=2026-07-31T06:23:28.118Z job=[2026-07-31T06:23:28Z suspend=true active= succeeded=] pod=[]
+POLL attempt=1 client_at=2026-07-31T06:23:29.814Z job=[2026-07-31T06:23:28Z suspend=true active= succeeded=] pod=[]
+POLL attempt=2 client_at=2026-07-31T06:23:31.521Z job=[2026-07-31T06:23:28Z suspend=true active= succeeded=] pod=[]
+POLL attempt=3 client_at=2026-07-31T06:23:33.213Z job=[2026-07-31T06:23:28Z suspend=true active= succeeded=] pod=[]
+POLL attempt=4 client_at=2026-07-31T06:23:34.933Z job=[2026-07-31T06:23:28Z suspend=true active= succeeded=] pod=[]
+LAST SEEN   TYPE     REASON            OBJECT                         MESSAGE
+9s          Normal   Suspended         job/khalil-kueue-probe-gcx7r   Job suspended
+9s          Normal   CreatedWorkload   job/khalil-kueue-probe-gcx7r   Created Workload: gpu-dev/job-khalil-kueue-probe-gcx7r-bfcb1
+NO_POD_LOGS Job remained gated before Pod creation
+RESULT SUSPENDED_NO_POD
+PROBE_CLIENT_END 2026-07-31T06:23:38.282Z
+job.batch "khalil-kueue-probe-gcx7r" deleted from gpu-dev namespace

@@ -1,0 +1,79 @@
+# Atomically promote the verified staging directory to the PVC's runs subpath.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: khalil-quantfm-runs-activate-20260731
+  namespace: khalil
+  labels:
+    app.kubernetes.io/name: quantfm
+    app.kubernetes.io/component: storage-migration-activate
+    owner: khalil
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 300
+  ttlSecondsAfterFinished: 604800
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: quantfm
+        app.kubernetes.io/component: storage-migration-activate
+        owner: khalil
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        accelerator: nvidia
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      securityContext:
+        runAsUser: 1006
+        runAsGroup: 1009
+        fsGroup: 1009
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: activate
+          image: ubuntu:22.04
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-lc"]
+          args:
+            - |
+              set -euo pipefail
+              pvc_root=/mnt/quantfm
+              stage_dir="$pvc_root/runs.migrating-20260731"
+              active_dir="$pvc_root/runs"
+              empty_backup="$pvc_root/runs.empty-precutover-20260731"
+
+              test -f "$pvc_root/migration-20260731.complete"
+              test -f "$pvc_root/migration-20260731.report"
+              test -f "$pvc_root/migration-20260731.verified"
+              test -d "$stage_dir"
+              test -d "$active_dir"
+              test ! -e "$empty_backup"
+              if find "$active_dir" -mindepth 1 -print -quit | grep -q .; then
+                echo "ERROR: active runs directory is not empty" >&2
+                exit 6
+              fi
+
+              mv "$active_dir" "$empty_backup"
+              if ! mv "$stage_dir" "$active_dir"; then
+                mv "$empty_backup" "$active_dir"
+                exit 7
+              fi
+              touch "$pvc_root/migration-20260731.activated"
+              sync
+              echo "MIGRATION_ACTIVATE_PASS"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          volumeMounts:
+            - name: quantfm-data
+              mountPath: /mnt/quantfm
+      volumes:
+        - name: quantfm-data
+          persistentVolumeClaim:
+            claimName: quantfm-data

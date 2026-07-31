@@ -436,11 +436,14 @@ class MatchingEngine(ABC):
 
     def _purge_level_front(self, price_level: deque) -> None:
         """弹出队头已失效或已不在活动订单索引中的订单，摊还 O(1)."""
-        while price_level and (
-            price_level[0].quantity <= 0
-            or self.orders.get(price_level[0].order_id) is not price_level[0]
-        ):
+        while price_level:
+            order = price_level[0]
+            indexed = self.orders.get(order.order_id)
+            if order.quantity > 0 and indexed is order:
+                break
             price_level.popleft()
+            if indexed is order:
+                self.orders.pop(order.order_id, None)
 
     def _compact_book(self) -> None:
         """防御性清理无效订单，保证价格档只包含活动订单."""
@@ -633,22 +636,27 @@ class MatchingEngine(ABC):
         all_prices.update(self.asks.keys())
         all_prices = sorted(all_prices)
 
+        # Aggregate every order once, then update cumulative executable volume
+        # while walking prices from low to high.  The previous implementation
+        # rescanned the complete bid/ask book for every candidate price, which
+        # is quadratic in the number of price levels and dominates active-stock
+        # replays around the opening/closing auctions.
+        buy_at_price = {
+            price: sum(order.quantity for order in orders if order.quantity > 0)
+            for price, orders in self.bids.items()
+        }
+        sell_at_price = {
+            price: sum(order.quantity for order in orders if order.quantity > 0)
+            for price, orders in self.asks.items()
+        }
+        buy_volume = sum(buy_at_price.values())
+        sell_volume = 0
         max_volume = 0
         best_price = None
 
         self.logger.debug("集合竞价价格分析:")
         for price in all_prices:
-            # 计算在此价格上的可成交量
-            buy_volume = sum(
-                sum(order.quantity for order in orders if order.quantity > 0)
-                for p, orders in self.bids.items()
-                if p >= price
-            )
-            sell_volume = sum(
-                sum(order.quantity for order in orders if order.quantity > 0)
-                for p, orders in self.asks.items()
-                if p <= price
-            )
+            sell_volume += sell_at_price.get(price, 0)
 
             volume = min(buy_volume, sell_volume)
             self.logger.debug(
@@ -658,6 +666,11 @@ class MatchingEngine(ABC):
             if volume > max_volume:
                 max_volume = volume
                 best_price = price
+
+            # At the next (higher) candidate price, bids at this price are no
+            # longer executable.  Update after evaluation so p >= price keeps
+            # exactly the original boundary semantics and tie-breaking.
+            buy_volume -= buy_at_price.get(price, 0)
 
         if best_price is not None:
             self.logger.debug(
@@ -802,18 +815,23 @@ class MatchingEngine(ABC):
     def _match_order(self, taker_order: Order):
         """核心撮合逻辑（连续竞价）- 处理限价单."""
         if taker_order.side == Side.BUY:
-            for best_price in list(self.asks):
-                if taker_order.quantity <= 0 or taker_order.price < best_price:
+            # SortedDict.peekitem(0) is O(log P) and avoids copying all P price
+            # keys for every incoming order.  On liquid symbols the old
+            # ``list(self.asks)`` made a non-crossing order O(P) before doing
+            # any useful work.
+            while taker_order.quantity > 0 and self.asks:
+                best_price, price_level = self.asks.peekitem(0)
+                self._purge_level_front(price_level)
+                if not price_level:
+                    del self.asks[best_price]
+                    continue
+                if taker_order.price < best_price:
                     break
-
-                price_level = self.asks[best_price]
-                orders_to_remove = []
 
                 while taker_order.quantity > 0 and price_level:
                     maker_order = price_level[0]
 
                     if maker_order.quantity <= 0:
-                        orders_to_remove.append(maker_order)
                         price_level.popleft()
                         continue
 
@@ -834,30 +852,27 @@ class MatchingEngine(ABC):
                     taker_order.quantity -= trade_quantity
 
                     if maker_order.quantity <= 0:
-                        orders_to_remove.append(maker_order)
                         price_level.popleft()
                         self.logger.debug(f"订单 {maker_order.order_id} 已完全成交。")
-
-                for order in orders_to_remove:
-                    if order.order_id in self.orders:
-                        del self.orders[order.order_id]
+                        self.orders.pop(maker_order.order_id, None)
 
                 if not price_level:
                     del self.asks[best_price]
 
         else:  # Side.SELL
-            for best_price in list(reversed(self.bids)):
-                if taker_order.quantity <= 0 or taker_order.price > best_price:
+            while taker_order.quantity > 0 and self.bids:
+                best_price, price_level = self.bids.peekitem(-1)
+                self._purge_level_front(price_level)
+                if not price_level:
+                    del self.bids[best_price]
+                    continue
+                if taker_order.price > best_price:
                     break
-
-                price_level = self.bids[best_price]
-                orders_to_remove = []
 
                 while taker_order.quantity > 0 and price_level:
                     maker_order = price_level[0]
 
                     if maker_order.quantity <= 0:
-                        orders_to_remove.append(maker_order)
                         price_level.popleft()
                         continue
 
@@ -878,13 +893,9 @@ class MatchingEngine(ABC):
                     taker_order.quantity -= trade_quantity
 
                     if maker_order.quantity <= 0:
-                        orders_to_remove.append(maker_order)
                         price_level.popleft()
                         self.logger.debug(f"订单 {maker_order.order_id} 已完全成交。")
-
-                for order in orders_to_remove:
-                    if order.order_id in self.orders:
-                        del self.orders[order.order_id]
+                        self.orders.pop(maker_order.order_id, None)
 
                 if not price_level:
                     del self.bids[best_price]

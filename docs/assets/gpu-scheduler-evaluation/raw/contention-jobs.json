@@ -1,0 +1,233 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {
+                "annotations": {
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"metadata\":{\"annotations\":{},\"labels\":{\"experiment\":\"bare-contention\",\"owner\":\"khalil\"},\"name\":\"bare-holder-5gpu\",\"namespace\":\"khalil-scheduler-bench\"},\"spec\":{\"activeDeadlineSeconds\":120,\"backoffLimit\":0,\"template\":{\"metadata\":{\"labels\":{\"experiment\":\"bare-contention\",\"owner\":\"khalil\",\"role\":\"holder\"}},\"spec\":{\"containers\":[{\"args\":[\"set -euo pipefail\\necho \\\"HOLDER_START $(date -u +%Y-%m-%dT%H:%M:%SZ)\\\"\\necho \\\"VISIBLE_GPUS $(nvidia-smi -L | wc -l)\\\"\\nsleep 30\\necho \\\"HOLDER_END $(date -u +%Y-%m-%dT%H:%M:%SZ)\\\"\\n\"],\"command\":[\"/bin/bash\",\"-lc\"],\"image\":\"ubuntu:22.04\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"holder\",\"resources\":{\"limits\":{\"cpu\":\"500m\",\"memory\":\"256Mi\",\"nvidia.com/gpu\":\"5\"},\"requests\":{\"cpu\":\"100m\",\"memory\":\"64Mi\",\"nvidia.com/gpu\":\"5\"}}}],\"nodeSelector\":{\"accelerator\":\"nvidia\"},\"restartPolicy\":\"Never\",\"runtimeClassName\":\"nvidia\",\"terminationGracePeriodSeconds\":0}}}}\n"
+                },
+                "creationTimestamp": "2026-07-30T07:29:48Z",
+                "generation": 1,
+                "labels": {
+                    "experiment": "bare-contention",
+                    "owner": "khalil"
+                },
+                "name": "bare-holder-5gpu",
+                "namespace": "khalil-scheduler-bench",
+                "resourceVersion": "27552603",
+                "uid": "33e5b175-4b66-4989-9922-f6a2c619de2e"
+            },
+            "spec": {
+                "activeDeadlineSeconds": 120,
+                "backoffLimit": 0,
+                "completionMode": "NonIndexed",
+                "completions": 1,
+                "manualSelector": false,
+                "parallelism": 1,
+                "podReplacementPolicy": "TerminatingOrFailed",
+                "selector": {
+                    "matchLabels": {
+                        "batch.kubernetes.io/controller-uid": "33e5b175-4b66-4989-9922-f6a2c619de2e"
+                    }
+                },
+                "suspend": false,
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "batch.kubernetes.io/controller-uid": "33e5b175-4b66-4989-9922-f6a2c619de2e",
+                            "batch.kubernetes.io/job-name": "bare-holder-5gpu",
+                            "controller-uid": "33e5b175-4b66-4989-9922-f6a2c619de2e",
+                            "experiment": "bare-contention",
+                            "job-name": "bare-holder-5gpu",
+                            "owner": "khalil",
+                            "role": "holder"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "args": [
+                                    "set -euo pipefail\necho \"HOLDER_START $(date -u +%Y-%m-%dT%H:%M:%SZ)\"\necho \"VISIBLE_GPUS $(nvidia-smi -L | wc -l)\"\nsleep 30\necho \"HOLDER_END $(date -u +%Y-%m-%dT%H:%M:%SZ)\"\n"
+                                ],
+                                "command": [
+                                    "/bin/bash",
+                                    "-lc"
+                                ],
+                                "image": "ubuntu:22.04",
+                                "imagePullPolicy": "IfNotPresent",
+                                "name": "holder",
+                                "resources": {
+                                    "limits": {
+                                        "cpu": "500m",
+                                        "memory": "256Mi",
+                                        "nvidia.com/gpu": "5"
+                                    },
+                                    "requests": {
+                                        "cpu": "100m",
+                                        "memory": "64Mi",
+                                        "nvidia.com/gpu": "5"
+                                    }
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "nodeSelector": {
+                            "accelerator": "nvidia"
+                        },
+                        "restartPolicy": "Never",
+                        "runtimeClassName": "nvidia",
+                        "schedulerName": "default-scheduler",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 0
+                    }
+                }
+            },
+            "status": {
+                "completionTime": "2026-07-30T07:30:22Z",
+                "conditions": [
+                    {
+                        "lastProbeTime": "2026-07-30T07:30:22Z",
+                        "lastTransitionTime": "2026-07-30T07:30:22Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "SuccessCriteriaMet"
+                    },
+                    {
+                        "lastProbeTime": "2026-07-30T07:30:22Z",
+                        "lastTransitionTime": "2026-07-30T07:30:22Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "Complete"
+                    }
+                ],
+                "ready": 0,
+                "startTime": "2026-07-30T07:29:48Z",
+                "succeeded": 1,
+                "terminating": 0,
+                "uncountedTerminatedPods": {}
+            }
+        },
+        {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {
+                "annotations": {
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"metadata\":{\"annotations\":{},\"labels\":{\"experiment\":\"bare-contention\",\"owner\":\"khalil\"},\"name\":\"bare-waiter-5gpu\",\"namespace\":\"khalil-scheduler-bench\"},\"spec\":{\"activeDeadlineSeconds\":120,\"backoffLimit\":0,\"template\":{\"metadata\":{\"labels\":{\"experiment\":\"bare-contention\",\"owner\":\"khalil\",\"role\":\"waiter\"}},\"spec\":{\"containers\":[{\"args\":[\"set -euo pipefail\\necho \\\"WAITER_START $(date -u +%Y-%m-%dT%H:%M:%SZ)\\\"\\necho \\\"VISIBLE_GPUS $(nvidia-smi -L | wc -l)\\\"\\nsleep 10\\necho \\\"WAITER_END $(date -u +%Y-%m-%dT%H:%M:%SZ)\\\"\\n\"],\"command\":[\"/bin/bash\",\"-lc\"],\"image\":\"ubuntu:22.04\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"waiter\",\"resources\":{\"limits\":{\"cpu\":\"500m\",\"memory\":\"256Mi\",\"nvidia.com/gpu\":\"5\"},\"requests\":{\"cpu\":\"100m\",\"memory\":\"64Mi\",\"nvidia.com/gpu\":\"5\"}}}],\"nodeSelector\":{\"accelerator\":\"nvidia\"},\"restartPolicy\":\"Never\",\"runtimeClassName\":\"nvidia\",\"terminationGracePeriodSeconds\":0}}}}\n"
+                },
+                "creationTimestamp": "2026-07-30T07:29:50Z",
+                "generation": 1,
+                "labels": {
+                    "experiment": "bare-contention",
+                    "owner": "khalil"
+                },
+                "name": "bare-waiter-5gpu",
+                "namespace": "khalil-scheduler-bench",
+                "resourceVersion": "27552660",
+                "uid": "1155157a-4d0d-4b24-9656-f4f3e8ca8c58"
+            },
+            "spec": {
+                "activeDeadlineSeconds": 120,
+                "backoffLimit": 0,
+                "completionMode": "NonIndexed",
+                "completions": 1,
+                "manualSelector": false,
+                "parallelism": 1,
+                "podReplacementPolicy": "TerminatingOrFailed",
+                "selector": {
+                    "matchLabels": {
+                        "batch.kubernetes.io/controller-uid": "1155157a-4d0d-4b24-9656-f4f3e8ca8c58"
+                    }
+                },
+                "suspend": false,
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "batch.kubernetes.io/controller-uid": "1155157a-4d0d-4b24-9656-f4f3e8ca8c58",
+                            "batch.kubernetes.io/job-name": "bare-waiter-5gpu",
+                            "controller-uid": "1155157a-4d0d-4b24-9656-f4f3e8ca8c58",
+                            "experiment": "bare-contention",
+                            "job-name": "bare-waiter-5gpu",
+                            "owner": "khalil",
+                            "role": "waiter"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "args": [
+                                    "set -euo pipefail\necho \"WAITER_START $(date -u +%Y-%m-%dT%H:%M:%SZ)\"\necho \"VISIBLE_GPUS $(nvidia-smi -L | wc -l)\"\nsleep 10\necho \"WAITER_END $(date -u +%Y-%m-%dT%H:%M:%SZ)\"\n"
+                                ],
+                                "command": [
+                                    "/bin/bash",
+                                    "-lc"
+                                ],
+                                "image": "ubuntu:22.04",
+                                "imagePullPolicy": "IfNotPresent",
+                                "name": "waiter",
+                                "resources": {
+                                    "limits": {
+                                        "cpu": "500m",
+                                        "memory": "256Mi",
+                                        "nvidia.com/gpu": "5"
+                                    },
+                                    "requests": {
+                                        "cpu": "100m",
+                                        "memory": "64Mi",
+                                        "nvidia.com/gpu": "5"
+                                    }
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "nodeSelector": {
+                            "accelerator": "nvidia"
+                        },
+                        "restartPolicy": "Never",
+                        "runtimeClassName": "nvidia",
+                        "schedulerName": "default-scheduler",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 0
+                    }
+                }
+            },
+            "status": {
+                "completionTime": "2026-07-30T07:30:36Z",
+                "conditions": [
+                    {
+                        "lastProbeTime": "2026-07-30T07:30:36Z",
+                        "lastTransitionTime": "2026-07-30T07:30:36Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "SuccessCriteriaMet"
+                    },
+                    {
+                        "lastProbeTime": "2026-07-30T07:30:36Z",
+                        "lastTransitionTime": "2026-07-30T07:30:36Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "Complete"
+                    }
+                ],
+                "ready": 0,
+                "startTime": "2026-07-30T07:29:50Z",
+                "succeeded": 1,
+                "terminating": 0,
+                "uncountedTerminatedPods": {}
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

@@ -1,0 +1,33 @@
+ADMIN_KUBECONFIG_PATH=/etc/rancher/k3s/k3s.yaml
+ADMIN_CONTEXT=default
+NAMESPACE=gpu-dev
+EVALUATION_BEGIN utc=2026-07-31T08:06:18.097Z monotonic_ns=2781164394734691
+PREFLIGHT_RUNNING_GPU_REQUEST_TOTAL=0
+GPU_DEV_QUOTA_HARD=4 USED=0
+SERVER_DRY_RUN 01-quota-holder.yaml
+job.batch/khalil-bare-quota-holder serverside-applied (server dry run)
+SERVER_DRY_RUN 02-quota-waiter.yaml
+job.batch/khalil-bare-quota-waiter serverside-applied (server dry run)
+SERVER_DRY_RUN_COMPLETE utc=2026-07-31T08:06:20.402Z monotonic_ns=2781166699191034
+HOLDER_CREATE_BEGIN utc=2026-07-31T08:06:20.453Z monotonic_ns=2781166749571153
+job.batch/khalil-bare-quota-holder created
+HOLDER_CREATE_RETURN utc=2026-07-31T08:06:20.771Z monotonic_ns=2781167068416482
+pod/khalil-bare-quota-holder-v45v8 condition met
+HOLDER_READY_OBSERVED utc=2026-07-31T08:06:23.621Z monotonic_ns=2781169918796246
+HOLDER_POD=khalil-bare-quota-holder-v45v8 UID=4cf63337-82c7-4aeb-b109-5be0af64dd76 QUOTA_USED_GPU=4
+WAITER_CREATE_BEGIN utc=2026-07-31T08:06:24.421Z monotonic_ns=2781170718058680
+job.batch/khalil-bare-quota-waiter created
+WAITER_CREATE_RETURN utc=2026-07-31T08:06:24.763Z monotonic_ns=2781171060691060
+QUOTA_REJECTION_OBSERVED utc=2026-07-31T08:06:25.309Z monotonic_ns=2781171606157385
+DURING waiter_pods=NONE quota_rejection=true
+job.batch/khalil-bare-quota-holder condition met
+HOLDER_COMPLETE_OBSERVED utc=2026-07-31T08:06:48.760Z monotonic_ns=2781195057460409
+job.batch/khalil-bare-quota-waiter condition met
+WAITER_COMPLETE_OBSERVED utc=2026-07-31T08:07:08.873Z monotonic_ns=2781215169905185
+FINAL WAITER_POD=khalil-bare-quota-waiter-2xwz9 SCHEDULER=default-scheduler
+RESULT quota_full_failedcreate=true release_then_run=true waiter_complete=true scheduler=default-scheduler
+CLEANUP_BEGIN utc=2026-07-31T08:07:10.976Z monotonic_ns=2781217273699609
+job.batch "khalil-bare-quota-holder" deleted from gpu-dev namespace
+job.batch "khalil-bare-quota-waiter" deleted from gpu-dev namespace
+CLEANUP_END utc=2026-07-31T08:07:11.298Z monotonic_ns=2781217595359828
+EVALUATION_COMPLETE utc=2026-07-31T08:07:11.840Z monotonic_ns=2781218136291224

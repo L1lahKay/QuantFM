@@ -220,9 +220,9 @@ uv run python -m torch.distributed.run --standalone --nproc_per_node=8 \
   --config quant_fm/pretrain/config_v2_100m.yaml
 ```
 
-续训继续使用 `--resume <checkpoint>` 或 `--resume auto`。配置中的 `book.state_timing`
-和 `pooling.version` 会写入 checkpoint metadata；`pooling.method/outputs` 不会在 FM
-训练中执行，需在 embedding 阶段显式选择。
+续训继续使用 `--resume <checkpoint>` 或 `--resume auto`。配置中的 `book.state_timing`、
+`pooling.version/method/outputs/stride` 都会写入 checkpoint metadata；pooling 本身不在 FM
+训练中执行，embedding 入口默认从 checkpoint 读取这些冻结值。命令行覆盖只用于显式研究。
 
 ## Artifact 和加载约束
 
@@ -234,7 +234,9 @@ schema_version / vocab_version / vocab_sha256
 field_specs（含顺序）
 field_fusion / scalar_fields / continuous_normalizers
 target_specs
-book_state_timing / context_horizon / pooling_version
+book_state_timing / context_horizon / pooling_version/method/outputs/stride
+event_ordering_version / feature_transform_version
+pretrain_data_contract（manifest/vocab 指纹与 train/validation/vocab-fit 日期边界）
 model / train_state
 ```
 
@@ -257,7 +259,10 @@ model = load_checkpoint(
 )
 ```
 
-loader 会校验 artifact version、schema、vocab SHA-256、FieldSpec 和 input/target 顺序；
+每个新 checkpoint 还必须有同名 `.contract.json`，将 checkpoint 实际 SHA-256 绑定到
+`pretrain_data_contract_v2`。其中 `effective_training_end` 保守取训练、vocab 拟合和用于
+checkpoint 选择的 validation 日期三者最晚值。loader 会校验 artifact version、schema、
+vocab SHA-256、FieldSpec、input/target 顺序及 sidecar 与 checkpoint payload；
 v2 resume 还逐项核对 field sizes、模型宽深/head/FFN/dropout/RoPE、fusion/scalar、
 normalizer、book/context/pooling 和 Backbone-MoE 配置及 target specs。
 旧 checkpoint 缺少融合字段时默认 `legacy_sum`，仍按 v1 路径加载。
@@ -275,9 +280,13 @@ normalizer、book/context/pooling 和 Backbone-MoE 配置及 target specs。
 ├── validation_windows.json  # 配置未指定共享路径时
 ├── tb/
 ├── best.pt
+├── best.pt.contract.json
 ├── final_resume.pt
+├── final_resume.pt.contract.json
 ├── final.pt
-└── step*.pt
+├── final.pt.contract.json
+├── step*.pt
+└── step*.pt.contract.json
 ```
 
 `best.pt` 按固定验证窗口上的配置损失选择。TensorBoard 记录 train loss/lr、raw 与

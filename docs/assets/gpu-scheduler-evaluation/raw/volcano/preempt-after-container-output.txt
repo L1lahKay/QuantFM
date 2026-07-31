@@ -1,0 +1,3 @@
+[pod/khalil-volcano-preempt-high-mkfxh/preemptor] APP_START_UTC=2026-07-31T07:42:31.279Z role=preemptor
+[pod/khalil-volcano-preempt-high-mkfxh/preemptor] VISIBLE_GPU_COUNT=1
+[pod/khalil-volcano-preempt-high-mkfxh/preemptor] APP_FINISH_UTC=2026-07-31T07:42:39.465Z role=preemptor

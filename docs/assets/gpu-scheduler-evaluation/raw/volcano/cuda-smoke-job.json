@@ -1,0 +1,121 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"metadata\":{\"annotations\":{},\"labels\":{\"evaluation.quantfm/owner\":\"khalil\",\"evaluation.quantfm/suite\":\"volcano-v1-15-1\"},\"name\":\"khalil-volcano-smoke\",\"namespace\":\"gpu-dev\"},\"spec\":{\"activeDeadlineSeconds\":120,\"backoffLimit\":0,\"template\":{\"metadata\":{\"annotations\":{\"scheduling.k8s.io/group-name\":\"khalil-volcano-smoke-pg\"},\"labels\":{\"evaluation.quantfm/owner\":\"khalil\",\"evaluation.quantfm/scenario\":\"smoke\",\"evaluation.quantfm/suite\":\"volcano-v1-15-1\"}},\"spec\":{\"containers\":[{\"command\":[\"/bin/sh\",\"-c\",\"set -eu\\necho \\\"APP_START_UTC=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\\\"\\necho \\\"CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-unset}\\\"\\nnvidia-smi -L\\necho \\\"VISIBLE_GPU_COUNT=$(nvidia-smi -L | wc -l)\\\"\\npython -c 'import torch; print(\\\"TORCH_VERSION=\\\" + str(torch.__version__)); print(\\\"TORCH_CUDA_AVAILABLE=\\\" + str(torch.cuda.is_available()).lower()); assert torch.cuda.is_available(); x = torch.tensor([6.0], device=\\\"cuda\\\") * 7; torch.cuda.synchronize(); print(\\\"CUDA_TENSOR_RESULT=\\\" + str(int(x.item())))'\\nsleep 4\\necho \\\"APP_FINISH_UTC=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\\\"\\n\"],\"image\":\"registry.zs/gpu-dev/dylan-trainer:ac4218e\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"gpu-probe\",\"resources\":{\"limits\":{\"cpu\":\"2\",\"memory\":\"2Gi\",\"nvidia.com/gpu\":\"1\"},\"requests\":{\"cpu\":\"500m\",\"memory\":\"1Gi\",\"nvidia.com/gpu\":\"1\"}}}],\"nodeSelector\":{\"accelerator\":\"nvidia\"},\"restartPolicy\":\"Never\",\"runtimeClassName\":\"nvidia\",\"schedulerName\":\"volcano\",\"terminationGracePeriodSeconds\":2,\"tolerations\":[{\"effect\":\"NoSchedule\",\"key\":\"nvidia.com/gpu\",\"operator\":\"Exists\"}]}},\"ttlSecondsAfterFinished\":600}}\n"
+        },
+        "creationTimestamp": "2026-07-31T07:48:02Z",
+        "generation": 1,
+        "labels": {
+            "evaluation.quantfm/owner": "khalil",
+            "evaluation.quantfm/suite": "volcano-v1-15-1"
+        },
+        "name": "khalil-volcano-smoke",
+        "namespace": "gpu-dev",
+        "resourceVersion": "27884115",
+        "uid": "65bbe070-ad97-44d3-b8bc-f55eb35653c4"
+    },
+    "spec": {
+        "activeDeadlineSeconds": 120,
+        "backoffLimit": 0,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "selector": {
+            "matchLabels": {
+                "batch.kubernetes.io/controller-uid": "65bbe070-ad97-44d3-b8bc-f55eb35653c4"
+            }
+        },
+        "suspend": false,
+        "template": {
+            "metadata": {
+                "annotations": {
+                    "scheduling.k8s.io/group-name": "khalil-volcano-smoke-pg"
+                },
+                "labels": {
+                    "batch.kubernetes.io/controller-uid": "65bbe070-ad97-44d3-b8bc-f55eb35653c4",
+                    "batch.kubernetes.io/job-name": "khalil-volcano-smoke",
+                    "controller-uid": "65bbe070-ad97-44d3-b8bc-f55eb35653c4",
+                    "evaluation.quantfm/owner": "khalil",
+                    "evaluation.quantfm/scenario": "smoke",
+                    "evaluation.quantfm/suite": "volcano-v1-15-1",
+                    "job-name": "khalil-volcano-smoke"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "command": [
+                            "/bin/sh",
+                            "-c",
+                            "set -eu\necho \"APP_START_UTC=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\"\necho \"CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-unset}\"\nnvidia-smi -L\necho \"VISIBLE_GPU_COUNT=$(nvidia-smi -L | wc -l)\"\npython -c 'import torch; print(\"TORCH_VERSION=\" + str(torch.__version__)); print(\"TORCH_CUDA_AVAILABLE=\" + str(torch.cuda.is_available()).lower()); assert torch.cuda.is_available(); x = torch.tensor([6.0], device=\"cuda\") * 7; torch.cuda.synchronize(); print(\"CUDA_TENSOR_RESULT=\" + str(int(x.item())))'\nsleep 4\necho \"APP_FINISH_UTC=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\"\n"
+                        ],
+                        "image": "registry.zs/gpu-dev/dylan-trainer:ac4218e",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "gpu-probe",
+                        "resources": {
+                            "limits": {
+                                "cpu": "2",
+                                "memory": "2Gi",
+                                "nvidia.com/gpu": "1"
+                            },
+                            "requests": {
+                                "cpu": "500m",
+                                "memory": "1Gi",
+                                "nvidia.com/gpu": "1"
+                            }
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File"
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "nodeSelector": {
+                    "accelerator": "nvidia"
+                },
+                "restartPolicy": "Never",
+                "runtimeClassName": "nvidia",
+                "schedulerName": "volcano",
+                "securityContext": {},
+                "terminationGracePeriodSeconds": 2,
+                "tolerations": [
+                    {
+                        "effect": "NoSchedule",
+                        "key": "nvidia.com/gpu",
+                        "operator": "Exists"
+                    }
+                ]
+            }
+        },
+        "ttlSecondsAfterFinished": 600
+    },
+    "status": {
+        "completionTime": "2026-07-31T07:48:16Z",
+        "conditions": [
+            {
+                "lastProbeTime": "2026-07-31T07:48:16Z",
+                "lastTransitionTime": "2026-07-31T07:48:16Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+            },
+            {
+                "lastProbeTime": "2026-07-31T07:48:16Z",
+                "lastTransitionTime": "2026-07-31T07:48:16Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+            }
+        ],
+        "ready": 0,
+        "startTime": "2026-07-31T07:48:02Z",
+        "succeeded": 1,
+        "terminating": 0,
+        "uncountedTerminatedPods": {}
+    }
+}

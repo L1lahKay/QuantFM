@@ -1,5 +1,6 @@
 import torch
 
+from quant_fm.moe.backbone import SparseMoEFeedForward
 from quant_fm.moe.config import BackboneMoEConfig
 from quant_fm.pretrain.dataset import FIELD_ORDER
 from quant_fm.pretrain.model import OrderFlowFM
@@ -107,3 +108,26 @@ def test_sparse_moe_eval_is_independent_of_batch_capacity() -> None:
 
     for field in expected:
         assert torch.allclose(expected[field], actual[field][:1], atol=1e-6)
+
+
+def test_sparse_moe_supports_bfloat16_autocast_with_float32_inputs() -> None:
+    config = BackboneMoEConfig(
+        enabled=True,
+        layer_indices=(0,),
+        n_routed_experts=2,
+        top_k=1,
+        shared_expert_hidden=8,
+        routed_expert_hidden=12,
+        capacity_factor=2.0,
+    )
+    model = SparseMoEFeedForward(8, config)
+    inputs = torch.randn(2, 4, 8, requires_grad=True)
+
+    with torch.autocast("cpu", dtype=torch.bfloat16):
+        output = model(inputs)
+        loss = output.hidden.square().mean() + output.auxiliary_loss
+
+    assert output.hidden.dtype == inputs.dtype
+    loss.backward()
+    assert inputs.grad is not None
+    assert torch.isfinite(inputs.grad).all()

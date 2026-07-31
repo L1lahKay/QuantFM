@@ -1,0 +1,44 @@
+# One-update integration test for image -> GPU -> migrated PVC -> checkpoint.
+# The Job replaces RUNTIME_RUN_ID with its unique Pod name before execution.
+seed: 20260731
+
+data:
+  manifest: quant_fm/runs/pilot/data/manifest.json
+  vocab: quant_fm/runs/pilot/data/vocab.json
+  context: 256
+  stride: 256
+  min_len: 16
+  cache_size: 2
+  num_workers: 0
+  min_validation_dates: 1
+  min_test_dates: 1
+
+model:
+  d_model: 128
+  n_layers: 2
+  n_heads: 4
+  ffn_mult: 2.0
+  dropout: 0.0
+  max_seq_len: 512
+  rope_theta: 10000.0
+
+optim:
+  lr: 1.0e-4
+  weight_decay: 0.0
+  betas: [0.9, 0.95]
+  grad_clip: 1.0
+  warmup_steps: 1
+  max_steps: 1
+  batch_size: 1
+  grad_accum: 1
+  precision: bf16
+
+runtime:
+  out_dir: /mnt/quantfm/runs/k8s_pvc_smoke/RUNTIME_RUN_ID
+  log_every: 1
+  eval_every: 999999
+  val_max_batches: 1
+  save_best: false
+  ckpt_every: 1
+  fsdp: false
+  device: cuda

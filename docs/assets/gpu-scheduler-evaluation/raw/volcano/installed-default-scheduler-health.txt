@@ -1,0 +1,5 @@
+NAME                                READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS          IMAGES                                     SELECTOR
+deployment.apps/volcano-scheduler   1/1     1            1           23m   volcano-scheduler   docker.io/volcanosh/vc-scheduler:v1.15.1   app=volcano-scheduler
+
+NAME                                     READY   STATUS    RESTARTS   AGE   IP           NODE         NOMINATED NODE   READINESS GATES
+pod/volcano-scheduler-786498f9db-kfhms   1/1     Running   0          23m   10.52.0.95   gpu-dev-01   <none>           <none>

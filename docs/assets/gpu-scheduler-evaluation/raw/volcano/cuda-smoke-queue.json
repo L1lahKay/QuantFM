@@ -1,0 +1,37 @@
+{
+    "apiVersion": "scheduling.volcano.sh/v1beta1",
+    "kind": "Queue",
+    "metadata": {
+        "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"scheduling.volcano.sh/v1beta1\",\"kind\":\"Queue\",\"metadata\":{\"annotations\":{},\"labels\":{\"evaluation.quantfm/owner\":\"khalil\",\"evaluation.quantfm/suite\":\"volcano-v1-15-1\"},\"name\":\"khalil-volcano-smoke\"},\"spec\":{\"capability\":{\"cpu\":\"2\",\"memory\":\"4Gi\",\"nvidia.com/gpu\":\"1\"},\"reclaimable\":true,\"weight\":1}}\n"
+        },
+        "creationTimestamp": "2026-07-31T07:48:01Z",
+        "generation": 2,
+        "labels": {
+            "evaluation.quantfm/owner": "khalil",
+            "evaluation.quantfm/suite": "volcano-v1-15-1"
+        },
+        "name": "khalil-volcano-smoke",
+        "resourceVersion": "27884120",
+        "uid": "8320f1a3-04cc-41bf-9e23-d3cb739c0f12"
+    },
+    "spec": {
+        "capability": {
+            "cpu": "2",
+            "memory": "4Gi",
+            "nvidia.com/gpu": "1"
+        },
+        "dequeueStrategy": "traverse",
+        "parent": "root",
+        "reclaimable": true,
+        "weight": 1
+    },
+    "status": {
+        "allocated": {
+            "cpu": "0",
+            "memory": "0"
+        },
+        "reservation": {},
+        "state": "Open"
+    }
+}

@@ -21,6 +21,7 @@ import argparse
 import json
 import logging
 import math
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -32,6 +33,11 @@ import yaml
 from torch.utils.data import DataLoader
 
 from quant_fm.manifest.build_manifest import Manifest
+from quant_fm.manifest.validation import (
+    validate_manifest_shards,
+    validate_manifest_vocab_contract,
+)
+from quant_fm.pretrain.data_contract import build_pretrain_data_contract
 from quant_fm.pretrain.dataset import (
     DEFAULT_TARGET_FIELDS,
     EventWindowDataset,
@@ -48,11 +54,27 @@ from quant_fm.tokenizer.vocab import PAD_ID
 from quant_fm.tokenizer.vocab_v2 import VocabV2
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Sequence
 
     from quant_fm.pretrain.model import OrderFlowFM
 
 logger = logging.getLogger(__name__)
+
+
+def evaluation_batch_size(cfg: Mapping[str, object], device: torch.device) -> int:
+    """解析 v1 ``batch_size`` 或 v2 ``micro_batch_size`` 的评估 batch。"""
+    if device.type == "cpu":
+        return 1
+    optim = cfg.get("optim")
+    if not isinstance(optim, Mapping):
+        msg = "config.optim must be a mapping"
+        raise TypeError(msg)
+    value = optim.get("micro_batch_size", optim.get("batch_size", 1))
+    batch_size = int(value)  # type: ignore[arg-type]
+    if batch_size < 1:
+        msg = "evaluation batch size must be positive"
+        raise ValueError(msg)
+    return batch_size
 
 
 @dataclass(slots=True)
@@ -508,22 +530,41 @@ def main() -> None:
     device = resolve_device(args.device)
     vocab_path = Path(cfg["data"]["vocab"])
     vocab = _load_vocab(vocab_path)
+    manifest_path = Path(cfg["data"]["manifest"])
+    manifest = Manifest.load(manifest_path)
+    validate_manifest_vocab_contract(manifest, vocab, context="pretrain evaluation")
+    shards = manifest.split(args.split)
+    if not shards:
+        msg = f"no shards for split={args.split}"
+        raise SystemExit(msg)
+    train_shards = manifest.split("train")
+    if not train_shards:
+        msg = "no shards for split=train; cannot estimate unigram entropy"
+        raise SystemExit(msg)
+    selected_by_path = {shard.path: shard for shard in [*shards, *train_shards]}
+    validate_manifest_shards(
+        manifest,
+        vocab,
+        shards=list(selected_by_path.values()),
+        context="pretrain evaluation",
+    )
+    expected_pretrain_data_contract = build_pretrain_data_contract(
+        manifest_path=manifest_path,
+        manifest=manifest,
+        vocab_path=vocab_path,
+        vocab=vocab,
+    )
     model = load_checkpoint(
         args.checkpoint,
         device,
         vocab_path=vocab_path,
+        expected_pretrain_data_contract=expected_pretrain_data_contract,
     )
     target_fields = tuple(
         cfg["model"].get(
             "target_fields", model.cfg.target_fields or DEFAULT_TARGET_FIELDS
         )
     )
-
-    manifest = Manifest.load(Path(cfg["data"]["manifest"]))
-    shards = manifest.split(args.split)
-    if not shards:
-        msg = f"no shards for split={args.split}"
-        raise SystemExit(msg)
     data = cfg["data"]
     dataset_options = {
         "context": data["context"],
@@ -537,7 +578,7 @@ def main() -> None:
     else:
         ds = EventWindowDataset(shards, **dataset_options)
         collate_fn = collate_windows
-    batch_size = 1 if str(device).startswith("cpu") else int(cfg["optim"]["batch_size"])
+    batch_size = evaluation_batch_size(cfg, device)
     plan_path = args.validation_plan
     if plan_path is None:
         plan_path = args.out.with_suffix(".windows.json")
@@ -568,10 +609,6 @@ def main() -> None:
         num_workers=0,
     )
 
-    train_shards = manifest.split("train")
-    if not train_shards:
-        msg = "no shards for split=train; cannot estimate unigram entropy"
-        raise SystemExit(msg)
     if isinstance(vocab, VocabV2):
         train_ds = EventWindowDatasetV2(
             train_shards,

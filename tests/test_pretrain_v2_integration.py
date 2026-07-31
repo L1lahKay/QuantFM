@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import hashlib
+import json
 
 import numpy as np
 import polars as pl
@@ -25,6 +25,7 @@ from quant_fm.pretrain.train import (  # noqa: E402
     _validate_resume_metadata,
     load_checkpoint,
 )
+from quant_fm.tokenizer.artifact_contract import stable_vocab_sha256  # noqa: E402
 from quant_fm.tokenizer.field_spec import FieldSpec  # noqa: E402
 from quant_fm.tokenizer.fit_bins_v2 import fit_vocab_v2  # noqa: E402
 from quant_fm.tokenizer.tokenize_events_v2 import tokenize_frame_v2  # noqa: E402
@@ -96,9 +97,31 @@ def _model_config(vocab, vocab_path) -> OrderFlowFMConfig:
         field_dim=4,
         schema_version=vocab.schema_version,
         vocab_version=vocab.VOCAB_VERSION,
-        vocab_sha256=hashlib.sha256(vocab_path.read_bytes()).hexdigest(),
+        vocab_sha256=stable_vocab_sha256(vocab),
         field_specs=tuple(spec.to_dict() for spec in vocab.field_specs),
+        event_ordering_version=vocab.event_ordering_version,
+        feature_transform_version=vocab.feature_transform_version,
     )
+
+
+def _pretrain_contract(vocab) -> dict[str, object]:
+    date = str(vocab.fit_dates[0])
+    return {
+        "format_version": "pretrain_data_contract_v2",
+        "manifest_sha256": "a" * 64,
+        "vocab_artifact_sha256": "b" * 64,
+        "vocab_sha256": stable_vocab_sha256(vocab),
+        "schema_version": vocab.schema_version,
+        "event_ordering_version": vocab.event_ordering_version,
+        "feature_transform_version": vocab.feature_transform_version,
+        "manifest_train_start": date,
+        "manifest_train_end": date,
+        "manifest_validation_start": date,
+        "manifest_validation_end": date,
+        "vocab_fit_start": date,
+        "vocab_fit_end": date,
+        "effective_training_end": date,
+    }
 
 
 def test_v2_dataset_model_and_masked_loss_connect_end_to_end(tmp_path) -> None:
@@ -153,7 +176,12 @@ def test_v2_checkpoint_requires_exact_vocab_artifact(tmp_path) -> None:
     config = _model_config(vocab, vocab_path)
     model = OrderFlowFM(config)
     checkpoint = tmp_path / "model.pt"
-    _save_checkpoint(model, config, checkpoint)
+    _save_checkpoint(
+        model,
+        config,
+        checkpoint,
+        pretrain_data_contract=_pretrain_contract(vocab),
+    )
 
     loaded = load_checkpoint(checkpoint, torch.device("cpu"), vocab_path=vocab_path)
     assert loaded.cfg.vocab_version == "2.0"
@@ -161,9 +189,47 @@ def test_v2_checkpoint_requires_exact_vocab_artifact(tmp_path) -> None:
         load_checkpoint(checkpoint, torch.device("cpu"))
 
     tampered = tmp_path / "tampered_vocab.json"
-    tampered.write_text(vocab.to_json() + "\n", encoding="utf-8")
+    tampered_payload = json.loads(vocab.to_json())
+    tampered_payload["sampling"] = {"tampered": True}
+    tampered.write_text(json.dumps(tampered_payload), encoding="utf-8")
     with pytest.raises(ValueError, match="vocab_sha256"):
         load_checkpoint(checkpoint, torch.device("cpu"), vocab_path=tampered)
+
+
+def test_v2_checkpoint_rejects_token_semantics_metadata_mismatch(tmp_path) -> None:
+    vocab, vocab_path, _ = _artifacts(tmp_path)
+    config = _model_config(vocab, vocab_path)
+    checkpoint = tmp_path / "model.pt"
+    _save_checkpoint(
+        OrderFlowFM(config),
+        config,
+        checkpoint,
+        pretrain_data_contract=_pretrain_contract(vocab),
+    )
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+    payload["config"]["event_ordering_version"] = "local_time_v1"
+    torch.save(payload, checkpoint)
+
+    with pytest.raises(ValueError, match="checkpoint SHA-256"):
+        load_checkpoint(checkpoint, torch.device("cpu"), vocab_path=vocab_path)
+
+
+def test_explicit_v2_checkpoint_without_data_contract_is_legacy_only(tmp_path) -> None:
+    vocab, vocab_path, _ = _artifacts(tmp_path)
+    config = _model_config(vocab, vocab_path)
+    checkpoint = tmp_path / "model.pt"
+    _save_checkpoint(OrderFlowFM(config), config, checkpoint)
+
+    with pytest.raises(ValueError, match="data contract is missing"):
+        load_checkpoint(checkpoint, torch.device("cpu"), vocab_path=vocab_path)
+
+    diagnostic = load_checkpoint(
+        checkpoint,
+        torch.device("cpu"),
+        vocab_path=vocab_path,
+        allow_missing_pretrain_data_contract=True,
+    )
+    assert diagnostic.cfg.vocab_sha256 == stable_vocab_sha256(vocab)
 
 
 def test_v2_resume_rejects_same_shape_configuration_changes(tmp_path) -> None:

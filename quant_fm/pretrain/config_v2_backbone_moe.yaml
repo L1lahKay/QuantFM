@@ -46,7 +46,11 @@ loss:
     tok_delta_t_bin: {type: ordinal_ce, weight: 0.5, ordinal_weight: 0.25}
 
 book: {state_timing: post_event}
-pooling: {version: hierarchical_v1, method: multi_scale}
+pooling:
+  version: hierarchical_selected_v2
+  method: multi_scale
+  stride: 512
+  outputs: [mean_all, last_256, continuous_pm, close_30m]
 optim:
   lr: 2.0e-4
   weight_decay: 0.1

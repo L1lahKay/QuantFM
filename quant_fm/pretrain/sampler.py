@@ -25,6 +25,7 @@ class ShardAwareDistributedSampler(Sampler[int]):
         shuffle: bool = True,
         seed: int = 0,
         drop_last: bool = False,
+        samples_per_rank_multiple: int = 1,
     ) -> None:
         if not hasattr(dataset, "window_shard_index"):
             msg = "dataset must expose window_shard_index(index)"
@@ -32,17 +33,24 @@ class ShardAwareDistributedSampler(Sampler[int]):
         if num_replicas < 1 or not 0 <= rank < num_replicas:
             msg = "invalid num_replicas/rank"
             raise ValueError(msg)
+        if samples_per_rank_multiple < 1:
+            msg = "samples_per_rank_multiple must be positive"
+            raise ValueError(msg)
         self.dataset = dataset
         self.num_replicas = num_replicas
         self.rank = rank
         self.shuffle = shuffle
         self.seed = seed
         self.drop_last = drop_last
+        self.samples_per_rank_multiple = samples_per_rank_multiple
         self.epoch = 0
+        group = num_replicas * samples_per_rank_multiple
         if drop_last:
-            self.num_samples = len(dataset) // num_replicas
+            self.num_samples = (len(dataset) // group) * samples_per_rank_multiple
         else:
-            self.num_samples = math.ceil(len(dataset) / num_replicas)
+            self.num_samples = (
+                math.ceil(len(dataset) / group) * samples_per_rank_multiple
+            )
         self.total_size = self.num_samples * num_replicas
 
     def __len__(self) -> int:

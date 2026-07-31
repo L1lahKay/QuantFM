@@ -6,8 +6,8 @@
 
 与 ``build_manifest.scan_token_dir`` 的区别：
 * **先按日期过滤，再登记**——只收本轮要抽的天，避免重复；
-* **跳过 sha256**（置空）——embedding 抽取只用到 path/date/symbol/market，
-  逐文件哈希在这里纯属浪费（长窗口下省掉数千次全文件读）。
+* **冻结 parquet 与 sidecar SHA-256**——即使行数不变，替换 token 内容也会在
+  embedding 缓存命中前被拒绝。
 
 用法::
 
@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -27,8 +28,32 @@ from pathlib import Path
 import pyarrow.parquet as pq
 
 from quant_fm.manifest.build_manifest import Manifest, ShardEntry
+from quant_fm.tokenizer.artifact_contract import (
+    assert_token_contract_matches,
+    stable_vocab_sha256,
+    token_contract_path,
+)
+from quant_fm.tokenizer.vocab import Vocab
+from quant_fm.tokenizer.vocab_v2 import VocabV2
 
 logger = logging.getLogger(__name__)
+
+
+def _sha256(path: Path, *, chunk_size: int = 8 << 20) -> str:
+    """Return the full streaming SHA-256 of one artifact."""
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(chunk_size), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _contract_sha256(path: Path) -> str | None:
+    """Hash the small decode/semantics sidecar without rereading token parquet."""
+    sidecar = token_contract_path(path)
+    if not sidecar.is_file():
+        return None
+    return _sha256(sidecar)
 
 
 def write_day_index(tokens_dir: Path, day: str) -> Path:
@@ -49,6 +74,8 @@ def write_day_index(tokens_dir: Path, day: str) -> Path:
                 "date": day,
                 "path": str(path.resolve()),
                 "rows": int(rows),
+                "sha256": _sha256(path),
+                "data_contract_sha256": _contract_sha256(path),
             }
         )
     index_dir = tokens_dir.parent / "data" / "shard_index"
@@ -103,8 +130,11 @@ def _entries_from_day_indexes(
                         date=date,
                         path=str(shard),
                         rows=int(item["rows"]),
-                        sha256="",
+                        sha256=str(item.get("sha256") or _sha256(shard)),
                         split=split,
+                        data_contract_sha256=(
+                            item.get("data_contract_sha256") or _contract_sha256(shard)
+                        ),
                     )
                 )
     except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
@@ -169,8 +199,9 @@ def scan_dates(
                         date=date,
                         path=str(shard.resolve()),
                         rows=int(rows),
-                        sha256="",  # embedding 不需要，省掉全文件哈希
+                        sha256=_sha256(shard),
                         split=split,
+                        data_contract_sha256=_contract_sha256(shard),
                     )
                 )
     return entries
@@ -192,11 +223,29 @@ def build_adhoc_manifest(
         include_dates=_read_dates(include_dates_file) or None,
         split=split,
     )
+    vocab = None
+    if vocab_path is not None:
+        payload = json.loads(vocab_path.read_text(encoding="utf-8"))
+        vocab = (
+            VocabV2.load(vocab_path)
+            if payload.get("vocab_version") == VocabV2.VOCAB_VERSION
+            else Vocab.load(vocab_path)
+        )
+        for entry in entries:
+            assert_token_contract_matches(Path(entry.path), vocab)
     manifest = Manifest(
         shards=entries,
         train_end=None,
         val_end=None,
         vocab_path=str(vocab_path) if vocab_path else None,
+        vocab_sha256=stable_vocab_sha256(vocab) if vocab is not None else None,
+        schema_version=vocab.schema_version if vocab is not None else "cn_l2_v1",
+        event_ordering_version=(
+            vocab.event_ordering_version if vocab is not None else None
+        ),
+        feature_transform_version=(
+            vocab.feature_transform_version if vocab is not None else None
+        ),
     )
     out.parent.mkdir(parents=True, exist_ok=True)
     manifest.save(out)

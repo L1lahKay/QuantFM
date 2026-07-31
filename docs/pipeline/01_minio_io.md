@@ -21,7 +21,7 @@ make check-minio
 
 代码优先读取环境变量；未配置时回退到 `~/.mc/config.json` 的 `myminio` alias。推荐显式加载环境文件，因为读写端可能使用不同密钥。
 
-完整变量说明见 [MinIO 读写指南](../minio_setup.md)。
+完整变量说明见 [MinIO 读写指南](../data/minio_setup.md)。
 
 ## 对象布局
 

@@ -1,0 +1,247 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {
+                "creationTimestamp": "2026-07-31T08:06:20Z",
+                "generation": 1,
+                "labels": {
+                    "experiment": "bare-current-quota",
+                    "owner": "khalil",
+                    "role": "holder"
+                },
+                "name": "khalil-bare-quota-holder",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27888386",
+                "uid": "bc5363fe-0c45-4261-9a66-5167a123a713"
+            },
+            "spec": {
+                "activeDeadlineSeconds": 120,
+                "backoffLimit": 0,
+                "completionMode": "NonIndexed",
+                "completions": 1,
+                "manualSelector": false,
+                "parallelism": 1,
+                "podReplacementPolicy": "TerminatingOrFailed",
+                "selector": {
+                    "matchLabels": {
+                        "batch.kubernetes.io/controller-uid": "bc5363fe-0c45-4261-9a66-5167a123a713"
+                    }
+                },
+                "suspend": false,
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "batch.kubernetes.io/controller-uid": "bc5363fe-0c45-4261-9a66-5167a123a713",
+                            "batch.kubernetes.io/job-name": "khalil-bare-quota-holder",
+                            "controller-uid": "bc5363fe-0c45-4261-9a66-5167a123a713",
+                            "experiment": "bare-current-quota",
+                            "job-name": "khalil-bare-quota-holder",
+                            "owner": "khalil",
+                            "role": "holder"
+                        }
+                    },
+                    "spec": {
+                        "automountServiceAccountToken": false,
+                        "containers": [
+                            {
+                                "args": [
+                                    "python - \u003c\u003c'PY'\nimport datetime\nimport time\nimport torch\n\nprint(f\"APP_START_UTC={datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')}\", flush=True)\ncount = torch.cuda.device_count()\nprint(f\"VISIBLE_GPU_COUNT={count}\", flush=True)\nassert count == 4, count\nvalues = []\nfor index in range(count):\n    value = torch.ones(1024, device=f\"cuda:{index}\").sum()\n    values.append(int(value.item()))\ntorch.cuda.synchronize()\nprint(f\"CUDA_DEVICE_RESULTS={values}\", flush=True)\ntime.sleep(18)\nprint(f\"APP_FINISH_UTC={datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')}\", flush=True)\nPY\n"
+                                ],
+                                "command": [
+                                    "/bin/sh",
+                                    "-ceu"
+                                ],
+                                "image": "registry.zs/gpu-dev/dylan-trainer:ac4218e",
+                                "imagePullPolicy": "IfNotPresent",
+                                "name": "holder",
+                                "resources": {
+                                    "limits": {
+                                        "cpu": "2",
+                                        "memory": "2Gi",
+                                        "nvidia.com/gpu": "4"
+                                    },
+                                    "requests": {
+                                        "cpu": "500m",
+                                        "memory": "1Gi",
+                                        "nvidia.com/gpu": "4"
+                                    }
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "nodeSelector": {
+                            "accelerator": "nvidia"
+                        },
+                        "restartPolicy": "Never",
+                        "runtimeClassName": "nvidia",
+                        "schedulerName": "default-scheduler",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 0,
+                        "tolerations": [
+                            {
+                                "effect": "NoSchedule",
+                                "key": "nvidia.com/gpu",
+                                "operator": "Exists"
+                            }
+                        ]
+                    }
+                },
+                "ttlSecondsAfterFinished": 3600
+            },
+            "status": {
+                "completionTime": "2026-07-31T08:06:48Z",
+                "conditions": [
+                    {
+                        "lastProbeTime": "2026-07-31T08:06:48Z",
+                        "lastTransitionTime": "2026-07-31T08:06:48Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "SuccessCriteriaMet"
+                    },
+                    {
+                        "lastProbeTime": "2026-07-31T08:06:48Z",
+                        "lastTransitionTime": "2026-07-31T08:06:48Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "Complete"
+                    }
+                ],
+                "ready": 0,
+                "startTime": "2026-07-31T08:06:20Z",
+                "succeeded": 1,
+                "terminating": 0,
+                "uncountedTerminatedPods": {}
+            }
+        },
+        {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "metadata": {
+                "creationTimestamp": "2026-07-31T08:06:24Z",
+                "generation": 1,
+                "labels": {
+                    "experiment": "bare-current-quota",
+                    "owner": "khalil",
+                    "role": "waiter"
+                },
+                "name": "khalil-bare-quota-waiter",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27888482",
+                "uid": "0e3ae50e-79c6-4380-95af-c6f3e94bd0f9"
+            },
+            "spec": {
+                "activeDeadlineSeconds": 180,
+                "backoffLimit": 0,
+                "completionMode": "NonIndexed",
+                "completions": 1,
+                "manualSelector": false,
+                "parallelism": 1,
+                "podReplacementPolicy": "TerminatingOrFailed",
+                "selector": {
+                    "matchLabels": {
+                        "batch.kubernetes.io/controller-uid": "0e3ae50e-79c6-4380-95af-c6f3e94bd0f9"
+                    }
+                },
+                "suspend": false,
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "batch.kubernetes.io/controller-uid": "0e3ae50e-79c6-4380-95af-c6f3e94bd0f9",
+                            "batch.kubernetes.io/job-name": "khalil-bare-quota-waiter",
+                            "controller-uid": "0e3ae50e-79c6-4380-95af-c6f3e94bd0f9",
+                            "experiment": "bare-current-quota",
+                            "job-name": "khalil-bare-quota-waiter",
+                            "owner": "khalil",
+                            "role": "waiter"
+                        }
+                    },
+                    "spec": {
+                        "automountServiceAccountToken": false,
+                        "containers": [
+                            {
+                                "args": [
+                                    "python - \u003c\u003c'PY'\nimport datetime\nimport time\nimport torch\n\nprint(f\"APP_START_UTC={datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')}\", flush=True)\ncount = torch.cuda.device_count()\nprint(f\"VISIBLE_GPU_COUNT={count}\", flush=True)\nassert count == 1, count\nvalue = torch.tensor([20, 22], device=\"cuda\").sum()\ntorch.cuda.synchronize()\nprint(f\"CUDA_TENSOR_RESULT={int(value.item())}\", flush=True)\ntime.sleep(4)\nprint(f\"APP_FINISH_UTC={datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')}\", flush=True)\nPY\n"
+                                ],
+                                "command": [
+                                    "/bin/sh",
+                                    "-ceu"
+                                ],
+                                "image": "registry.zs/gpu-dev/dylan-trainer:ac4218e",
+                                "imagePullPolicy": "IfNotPresent",
+                                "name": "waiter",
+                                "resources": {
+                                    "limits": {
+                                        "cpu": "2",
+                                        "memory": "2Gi",
+                                        "nvidia.com/gpu": "1"
+                                    },
+                                    "requests": {
+                                        "cpu": "500m",
+                                        "memory": "1Gi",
+                                        "nvidia.com/gpu": "1"
+                                    }
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "nodeSelector": {
+                            "accelerator": "nvidia"
+                        },
+                        "restartPolicy": "Never",
+                        "runtimeClassName": "nvidia",
+                        "schedulerName": "default-scheduler",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 0,
+                        "tolerations": [
+                            {
+                                "effect": "NoSchedule",
+                                "key": "nvidia.com/gpu",
+                                "operator": "Exists"
+                            }
+                        ]
+                    }
+                },
+                "ttlSecondsAfterFinished": 3600
+            },
+            "status": {
+                "completionTime": "2026-07-31T08:07:08Z",
+                "conditions": [
+                    {
+                        "lastProbeTime": "2026-07-31T08:07:08Z",
+                        "lastTransitionTime": "2026-07-31T08:07:08Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "SuccessCriteriaMet"
+                    },
+                    {
+                        "lastProbeTime": "2026-07-31T08:07:08Z",
+                        "lastTransitionTime": "2026-07-31T08:07:08Z",
+                        "message": "Reached expected number of succeeded pods",
+                        "reason": "CompletionsReached",
+                        "status": "True",
+                        "type": "Complete"
+                    }
+                ],
+                "ready": 0,
+                "startTime": "2026-07-31T08:06:24Z",
+                "succeeded": 1,
+                "terminating": 0,
+                "uncountedTerminatedPods": {}
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

@@ -1,0 +1,32 @@
+# Deny by default. In particular, never send the 310 GiB runs tree, the local
+# virtual environment, Git metadata, or the credential-bearing handout to the
+# image builder.
+**
+
+!.dockerignore
+!Dockerfile.gpu
+!.python-version
+!pyproject.toml
+!uv.lock
+!README.md
+
+!order_book/
+!order_book/**/
+!order_book/pyproject.toml
+!order_book/README.md
+!order_book/*.py
+!order_book/**/*.py
+
+!quant_fm/
+!quant_fm/**/
+!quant_fm/*.py
+!quant_fm/**/*.py
+!quant_fm/pretrain/*.yaml
+!quant_fm/data/*.txt
+
+# These exclusions come last so negated source patterns cannot re-include
+# generated data or Python caches.
+quant_fm/runs/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/

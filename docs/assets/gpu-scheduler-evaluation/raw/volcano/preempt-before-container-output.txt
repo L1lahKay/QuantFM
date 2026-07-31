@@ -1,0 +1,2 @@
+[pod/khalil-volcano-preempt-victim-g6qgz/victim] APP_START_UTC=2026-07-31T07:42:22.478Z role=victim
+[pod/khalil-volcano-preempt-victim-g6qgz/victim] VISIBLE_GPU_COUNT=3

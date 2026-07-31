@@ -138,7 +138,7 @@ v2 还必须验证：
 - 正式数据还应记录 raw replay 输入与代码版本，并检查 `book_valid_post` 覆盖率及真实
   快照逐档一致率；通过 schema 转换不等于已证明盘口来源真实。
 
-更详细的原始字段映射见 [raw_to_events_tokens.md](../raw_to_events_tokens.md)。
+更详细的原始字段映射见 [raw_to_events_tokens.md](../data/raw_to_events_tokens.md)。
 
 ## 存储策略
 

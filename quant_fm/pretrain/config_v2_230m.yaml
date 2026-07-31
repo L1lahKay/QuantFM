@@ -16,6 +16,8 @@ data:
   validation_plan: quant_fm/runs/v2_shared/validation_windows.json
   validation_seed: 42
   validation_windows: 800
+  min_validation_dates: 5
+  min_test_dates: 5
 
 model:
   d_model: 1024
@@ -46,8 +48,9 @@ book:
   state_timing: post_event
 
 pooling:
-  version: hierarchical_v1
+  version: hierarchical_selected_v2
   method: multi_scale
+  stride: 512
   outputs: [mean_all, last_256, continuous_pm, close_30m]
 
 optim:

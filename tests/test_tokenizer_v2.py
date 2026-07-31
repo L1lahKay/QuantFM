@@ -6,11 +6,17 @@ import numpy as np
 import polars as pl
 import pytest
 
+from quant_fm.tokenizer.artifact_contract import read_token_contract
 from quant_fm.tokenizer.field_spec import FieldSpec
 from quant_fm.tokenizer.fit_bins_v2 import fit_vocab_v2
+from quant_fm.tokenizer.storage_encoding_v2 import (
+    StorageEncodingMetadataV2,
+    dequantize_frame_v2,
+)
 from quant_fm.tokenizer.tokenize_events_v2 import (
     coverage_report_v2,
     tokenize_frame_v2,
+    tokenize_path_v2,
 )
 from quant_fm.tokenizer.vocab import N_SPECIAL as V1_N_SPECIAL
 from quant_fm.tokenizer.vocab import PAD_ID as V1_PAD_ID
@@ -198,6 +204,43 @@ def test_tokenize_v2_outputs_bin_and_scalar_channels(tmp_path) -> None:
     assert report.actual_n_bins["feature"] == vocab.binned["feature"].actual_n_bins
     assert report.missing_rate["feature"] == pytest.approx(3 / 5)
     assert report.unknown_rate["side"] == pytest.approx(1 / 5)
+
+
+def test_tokenize_path_v2_writes_contract_bound_q16_storage(tmp_path) -> None:
+    source = tmp_path / "events.parquet"
+    destination = tmp_path / "tokens.parquet"
+    frame = _frame()
+    frame.write_parquet(source)
+    vocab = fit_vocab_v2(
+        [source],
+        field_specs=_specs(),
+        max_samples_per_field=20,
+        categorical_values={
+            "evt_type": ("ADD", "CANCEL", "EXEC"),
+            "side": ("B", "S", "N"),
+        },
+    )
+    expected = tokenize_frame_v2(frame, vocab)
+
+    assert tokenize_path_v2(source, destination, vocab) == frame.height
+
+    physical = pl.read_parquet(destination)
+    contract = read_token_contract(destination)
+    metadata = StorageEncodingMetadataV2.from_dict(contract["storage_encoding"])
+    decoded = dequantize_frame_v2(physical, metadata, vocab=vocab)
+
+    assert physical.schema["tok_evt_type"] == pl.UInt8
+    assert physical.schema["tok_feature_bin"] == pl.UInt8
+    assert physical.schema["val_feature"] == pl.Int16
+    assert physical.schema["val_raw"] == pl.Int16
+    for field in vocab.token_field_sizes():
+        assert decoded[field].to_list() == expected[field].to_list()
+    for field in vocab.input_value_fields:
+        error = np.abs(decoded[field].to_numpy() - expected[field].to_numpy())
+        clip = next(
+            item.clip for item in metadata.scalar_fields if item.column == field
+        )
+        assert float(error.max()) <= clip / (2 * 32767) + 2e-7
 
 
 def test_vocab_v2_loader_rejects_v1_artifact(tmp_path) -> None:

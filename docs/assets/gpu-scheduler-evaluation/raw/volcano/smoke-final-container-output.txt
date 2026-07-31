@@ -1,0 +1,5 @@
+[pod/khalil-volcano-smoke-4qqdh/gpu-probe] APP_START_UTC=2026-07-31T07:40:35.744Z
+[pod/khalil-volcano-smoke-4qqdh/gpu-probe] CUDA_VISIBLE_DEVICES=unset
+[pod/khalil-volcano-smoke-4qqdh/gpu-probe] GPU 0: NVIDIA GeForce RTX 5090 (UUID: GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8)
+[pod/khalil-volcano-smoke-4qqdh/gpu-probe] VISIBLE_GPU_COUNT=1
+[pod/khalil-volcano-smoke-4qqdh/gpu-probe] APP_FINISH_UTC=2026-07-31T07:40:40.159Z

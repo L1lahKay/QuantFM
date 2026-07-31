@@ -1,0 +1,389 @@
+job_version: "1.0"
+job_id: v2_backbone_moe_300d_storage_safe
+status: IMPLEMENTATION_REQUIRED
+objective: >-
+  在不挤爆本地磁盘、不污染验证/测试日期的前提下，完成 FULL cn_l2_v2
+  Backbone-MoE 的 300 日训练、60 日验证和 100 日一次性测试。
+
+# 这是 Codex 控制作业的唯一机器合同，不是当前 train.py 可直接读取的训练配置。
+# launcher 必须 fail closed：任何 required gate 未 PASS 时禁止 torchrun。
+workspace: /home/khalil/DataCleaning7.3/QuantFM
+owner_run_root: quant_fm/runs/v2_backbone_moe_300d_storage_safe
+controller_state: quant_fm/runs/v2_backbone_moe_300d_storage_safe/controller_state.json
+controller_lock: quant_fm/runs/v2_backbone_moe_300d_storage_safe/controller.lock
+generated_train_config: quant_fm/runs/v2_backbone_moe_300d_storage_safe/config.snapshot.yaml
+
+ownership:
+  delete_only_under:
+    - quant_fm/runs/v2_backbone_moe_300d_storage_safe/stage
+    - quant_fm/runs/v2_backbone_moe_300d_storage_safe/cache
+    - quant_fm/runs/v2_backbone_moe_300d_storage_safe/run
+  never_delete_or_overwrite:
+    - quant_fm/runs/cont60
+    - quant_fm/runs/oos2026_dense230
+    - quant_fm/runs/medium_300m
+    - quant_fm/runs/backbone_moe_v1
+    - quant_fm/runs/dense_230m_v1
+  remote_prefix_isolation_required: true
+  credentials_in_files: false
+
+source:
+  raw:
+    endpoint_env: MINIO_READ_ENDPOINT
+    default_endpoint: "192.168.2.11:9000"
+    bucket: zeus-cn-quote
+    dataset: china_stock
+  artifact_store:
+    endpoint_env: MINIO_WRITE_ENDPOINT
+    default_endpoint: "192.168.2.11:9100"
+    bucket_env: MINIO_OUTPUT_BUCKET
+    default_bucket: model-cache
+    prefix_suffix: v2_backbone_moe_300d_storage_safe
+    require_independent_capacity_pool: true
+    capacity_policy: >-
+      远端可用容量必须大于 pilot 实测投影的 1.25 倍；无法查询或证明容量时，
+      状态进入 AWAITING_REMOTE_CAPACITY_ATTESTATION，禁止全量语料生产。
+
+date_contract:
+  plan: quant_fm/runs/v2_backbone_moe_300d/plan/training_plan.json
+  train_dates: quant_fm/runs/v2_backbone_moe_300d/plan/benchmark_train_dates.txt
+  validation_dates: quant_fm/runs/v2_backbone_moe_300d/plan/benchmark_validation_dates.txt
+  test_dates: quant_fm/runs/v2_backbone_moe_300d/plan/benchmark_test_dates.txt
+  expected:
+    train: {days: 300, start: "2024-01-02", end: "2025-04-01"}
+    validation: {days: 60, start: "2025-04-02", end: "2025-07-01"}
+    test: {days: 100, start: "2025-07-02", end: "2025-11-26"}
+    locked_oos: {days: 153, start: "2025-11-27", end: "2026-07-28"}
+  require_exact_lists: true
+  require_strict_order: true
+  require_pairwise_disjoint: true
+  test_access_policy: once_after_candidate_frozen
+  locked_oos_access_policy: forbidden_during_development
+
+science_contract:
+  schema_version: cn_l2_v2
+  vocab_version: "2.0"
+  field_specs: FULL_FIELD_SPECS_V2
+  require_all_book_fields: true
+  book_state_timing: post_event
+  vocab_fit_scope: exact_train_dates_only
+  normalize_loss_by_train_entropy: true
+  loss_targets:
+    tok_evt_type: {type: ce, weight: 1.0}
+    tok_side: {type: ce, weight: 1.0}
+    tok_price_bin: {type: ordinal_ce, weight: 1.0, ordinal_weight: 0.5}
+    tok_volume_bin: {type: ordinal_ce, weight: 0.5, ordinal_weight: 0.25}
+    tok_delta_t_bin: {type: ordinal_ce, weight: 0.5, ordinal_weight: 0.25}
+  purge_for_t_plus_2_ranker_days: 2
+
+local_storage_contract:
+  observed_at_utc: "2026-07-29"
+  observed_filesystem_total_gib: 995.6
+  observed_free_gib: 158.6
+  tmp_is_same_filesystem: true
+  min_free_to_start_gib: 150
+  task_added_hard_limit_gib: 80
+  components:
+    stage_gib: 40
+    shared_token_cache_gib: 20
+    checkpoints_including_partials_gib: 15
+    metadata_logs_and_outputs_gib: 5
+  watermarks:
+    check_interval_seconds: 30
+    pause_producer_free_below_gib: 90
+    pause_task_usage_above_gib: 70
+    resume_producer_free_at_or_above_gib: 100
+    resume_task_usage_below_gib: 60
+    orderly_stop_free_below_gib: 70
+    orderly_stop_task_usage_at_or_above_gib: 80
+    forbid_new_writes_free_below_gib: 60
+    min_free_inodes: 5000000
+  accounting_must_include:
+    - completed_files
+    - partial_files
+    - live_download_reservations
+    - checkpoint_temporary_files
+    - filesystem_blocks_not_only_apparent_size
+  concurrency:
+    max_active_dates: 1
+    max_concurrent_remote_downloads_per_node: 8
+    one_shared_cache_for_all_ranks: true
+    interprocess_reservation_ledger_required: true
+  emergency_checkpoint_reserve_gib: 4
+  guard_policy: >-
+    所有重型写入前必须先成功预留；预留失败时暂停或退出，禁止提高阈值。
+    低于禁止写水位时依赖最近稳定 checkpoint，不得冒险再写大型文件。
+
+vocab_pipeline:
+  implementation: streaming_summary_v2
+  pass_a:
+    scope: train_only
+    action: >-
+      raw 到因果 FULL V2 仅在单日/股票批内存在；更新可合并统计、类别计数和
+      确定性分层 bottom-k reservoir；每日 summary 原子提交后清理中间数据。
+    persist_full_events: false
+  pass_b:
+    scope: train_only
+    action: >-
+      使用冻结 encoding 边界流式生成训练 pack，并累计精确 occupancy、NA、UNK
+      与类别计数；所有训练日 commit 完成后再生成最终 vocab_v2.json。
+    require_exact_occupancy: true
+  forbid_validation_or_test_reads_during_fit: true
+  resumable_daily_summaries: true
+
+sampling:
+  mode: deterministic_stock_day_stratified_windows
+  context: 2048
+  stride_inside_selected_window: 2048
+  target_windows_per_stock_day: 4
+  min_windows_per_nonempty_stock_day: 1
+  max_windows_per_stock_day: 8
+  low_activity_policy: all_unique_non_overlapping_windows
+  never_cross_session_or_lunch_break: true
+  strata:
+    - open_or_continuous_auction_start
+    - normal_session_dynamic
+    - high_volatility_or_large_trade
+    - close_or_rare_book_state
+  deterministic_key: [dataset_id, seed, epoch, date, market, symbol, stratum]
+  dynamic_resample_each_epoch: true
+  coverage_audit_required: true
+  estimated_with_5000_stocks:
+    windows_per_epoch: 6000000
+    event_positions_per_epoch: 12288000000
+    optimizer_updates_per_epoch: 46875
+
+packing:
+  format: parquet_row_group_pack_v2
+  target_pack_mib: 96
+  max_pack_mib: 256
+  content_addressed_by_sha256: true
+  token_dtype: smallest_unsigned_after_range_check
+  scalar_dtype: int16_symmetric_q16
+  decoded_scalar_dtype: float32
+  scalar_quant_max: 32767
+  scalar_scale_source: frozen_vocab_normalizer_clip_per_field
+  storage_encoding_version: token_uint_scalar_q16_v1
+  legacy_float_scalar_read_compatible: true
+  reject_integer_scalar_without_contract: true
+  training_only_pack_may_omit_redundant_index_columns: true
+  manifest_format: parquet_index_plus_small_root_json
+  manifest_forbids_absolute_local_paths: true
+  manifest_fields:
+    - logical_sample_id
+    - split
+    - date
+    - market
+    - symbol
+    - rows
+    - window_count
+    - object_key
+    - object_size_bytes
+    - object_sha256
+    - row_group_id
+  commit_protocol:
+    local_partial_suffix: .partial
+    validations: [schema, rows, size, sha256, parquet_footer]
+    immutable_remote_objects: true
+    day_commit_marker: COMMITTED.json
+    delete_local_only_after_remote_commit_readback: true
+
+cache:
+  max_gib: 20
+  content_addressed: true
+  shared_across_ranks_and_workers: true
+  one_download_per_cold_object_per_node: true
+  download_reservation_required: true
+  verify_sha256_before_publish: true
+  publish_with_atomic_replace: true
+  eviction: lru_unpinned
+  readers_pin_objects: true
+  partials_count_toward_limit: true
+  stale_partial_cleanup_requires_lock_check: true
+  memory_cache_shards_per_worker: 2
+
+training:
+  base_config: quant_fm/pretrain/config_v2_backbone_moe_300d.yaml
+  world_size: 8
+  micro_batch_size: 2
+  grad_accum: 8
+  effective_sequences_per_update: 128
+  precision: bf16
+  num_workers_per_rank: 4
+  prefetch_factor: 1
+  initial_epochs: 2
+  max_epochs: 3
+  estimated_updates_after_two_epochs: 93750
+  estimated_max_updates: 140625
+  actual_update_budget_policy: derive_from_committed_coverage_before_launch
+  lr_schedule_policy: freeze_to_actual_three_epoch_max_before_first_update
+  warmup_updates: {policy: min_5000_or_approximately_point_one_epoch}
+  eval_every_updates: 5000
+  log_every_updates: 50
+  warmup_smoke_updates: 1000
+  third_epoch_gate:
+    required_validation_improvement: "max(0.2%, 2 * date_bootstrap_standard_error)"
+    forbid_if_last_three_validations_monotonic_worse: true
+    max_primary_head_regression: 0.01
+    require_router_health: true
+
+validation:
+  frequent_fixed_windows: 24000
+  require_all_60_dates_in_frequent_plan: true
+  full_streaming_validation_at_epoch_end: true
+  model_selection_split: validation_only
+  final_test_days: 100
+  final_test_runs: 1
+  test_must_not_change_model_or_hyperparameters: true
+
+checkpoint:
+  periodic_every_updates: 10000
+  keep_latest_periodic_resume: 2
+  keep_best: 1
+  keep_final: true
+  keep_final_resume: true
+  directory_hard_limit_gib: 15
+  atomic_protocol: [write_partial, fsync, lightweight_validate, os_replace, barrier]
+  delete_old_only_after_new_stable: true
+  resume_must_restore:
+    - model
+    - optimizer
+    - scaler
+    - update_step
+    - data_epoch
+    - sampler_cursor
+    - sampler_seed
+    - python_numpy_torch_cuda_rng
+    - dataset_id
+    - manifest_sha256
+  resume_auto_for_epoch_three: forbidden
+
+router_health:
+  require_all_experts_active: true
+  hard_stop_expert_fraction_below: 0.01
+  hard_stop_consecutive_evaluations: 3
+  warning_expert_fraction_below: 0.05
+  warning_expert_fraction_above: 0.50
+  warning_overflow_rate: 0.05
+  hard_stop_overflow_rate: 0.15
+  report_buckets: [month, volatility, liquidity]
+
+monitoring:
+  resource_interval_seconds: 30
+  process_gpu_checkpoint_interval_seconds: 300
+  structured_logs:
+    - disk_guard.jsonl
+    - resource_usage.jsonl
+    - producer.jsonl
+    - metrics.jsonl
+  status_files:
+    - controller_state.json
+    - run_metadata.json
+    - checkpoint_registry.json
+    - training_status.json
+    - training_report.md
+  max_automatic_restarts: 2
+  never_auto_restart_for:
+    - disk_capacity
+    - cuda_oom
+    - data_corruption
+    - schema_mismatch
+    - vocab_mismatch
+    - repeated_nccl_failure
+
+implementation_readiness:
+  full_launch_allowed: false
+  reusable_now:
+    date_plan_builder: quant_fm/scripts/build_moe_date_plan.py
+    model_and_loss: quant_fm/pretrain/train.py
+    v2_artifact_audit_base: quant_fm/scripts/audit_v2_artifacts.py
+    read_only_monitor: quant_fm/scripts/monitor_training.py
+  required_before_pilot:
+    - storage_guard_with_cross_process_reservations
+    - atomic_checkpoint_and_retention
+    - fail_closed_preflight
+    - safe_controller_and_owner_lock
+  required_before_full_corpus:
+    - full_market_causal_v2_producer
+    - streaming_vocab_summary_and_exact_occupancy
+    - immutable_remote_pack_commit_protocol
+    - remote_manifest_without_local_absolute_paths
+  required_before_full_training:
+    - shared_byte_bounded_remote_cache
+    - lazy_window_index
+    - pack_aware_distributed_sampler
+    - exact_sampler_cursor_resume
+    - router_load_and_overflow_telemetry
+    - remote_capacity_attestation
+
+phases:
+  - id: P0_IMPLEMENT_SAFETY
+    action: implement_and_test_control_plane
+    gate: all_p0_tests_pass
+  - id: P1_PREFLIGHT
+    action: readonly_contract_and_resource_audit
+    gate: preflight_report_pass_and_hash_current
+  - id: P2_FULL_V2_PILOT_5D
+    action: full_market_streaming_production_and_storage_measurement
+    selector: five_train_dates_covering_range_and_activity
+    gate: pilot_report_pass
+  - id: P3_RESUME_DRILL
+    action: 8gpu_100_to_200_update_interrupt_and_resume
+    gate: exact_state_and_sampler_continuity_pass
+  - id: P4_VOCAB_AND_CORPUS
+    action: train_only_streaming_vocab_then_committed_corpus
+    gate: corpus_and_remote_capacity_validation_pass
+  - id: P5_WARMUP_1K
+    action: 8gpu_training_warmup
+    gate: numerical_router_resource_and_checkpoint_health_pass
+  - id: P6_EPOCHS_1_AND_2
+    action: formal_training
+    gate: two_epoch_validation_report_complete
+  - id: P7_EPOCH_3_DECISION
+    action: validation_only_promotion_decision
+    gate: explicit_pass_or_skip_recorded
+  - id: P8_FINAL_VALIDATION_AND_TEST
+    action: freeze_candidate_then_one_test_run
+    gate: immutable_delivery_and_report_complete
+
+hard_stop_conditions:
+  - any_required_gate_fails
+  - disk_or_task_budget_reaches_orderly_stop
+  - non_finite_loss
+  - cuda_oom
+  - unrecoverable_rank_or_nccl_failure
+  - data_hash_schema_or_vocab_mismatch
+  - expert_collapse_or_sustained_overflow
+  - remote_commit_or_capacity_uncertain
+
+required_evidence:
+  - preflight_report.json
+  - pilot_storage_report.json
+  - remote_capacity_projection.json
+  - resume_drill_report.json
+  - vocab_audit.json
+  - corpus_audit.json
+  - config.snapshot.yaml
+  - run_metadata.json
+  - disk_guard.jsonl
+  - checkpoint_registry.json
+  - epoch_validation_reports
+  - frozen_candidate.sha256
+  - final_test_report.json
+
+target_controller_cli:
+  module: quant_fm.scripts.moe_trainctl
+  default_behavior: preflight_only
+  execute_requires_explicit_flag: true
+  commands:
+    - preflight
+    - pilot
+    - resume-drill
+    - fit-vocab
+    - build-corpus
+    - validate-corpus
+    - warmup
+    - launch
+    - status
+    - resume
+    - evaluate

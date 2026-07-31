@@ -1,0 +1,50 @@
+plan_version: "1.0"
+source:
+  endpoint: "192.168.2.11:9000"
+  bucket: zeus-cn-quote
+  dataset: china_stock
+  verified_complete_dates: 613
+  verified_range: ["2024-01-02", "2026-07-28"]
+
+strict_benchmark:
+  purpose: "唯一允许用于正式模型比较和OOS结论的轨道"
+  train: {days: 300, start: "2024-01-02", end: "2025-04-01"}
+  validation: {days: 60, start: "2025-04-02", end: "2025-07-01"}
+  test: {days: 100, start: "2025-07-02", end: "2025-11-26"}
+  locked_oos: {days: 153, start: "2025-11-27", end: "2026-07-28"}
+  vocab_fit_dates: train_only
+  max_data_epochs: 1
+  estimated_event_positions: 85000000000
+  estimated_optimizer_updates: 330000
+
+adaptation_2026q1:
+  purpose: "吸收2026年1至4月高波动后用于未来部署；不得回报该区间为OOS"
+  development_train: {days: 258, start: "2025-02-07", end: "2026-03-02"}
+  purge: {days: 2, start: "2026-03-03", end: "2026-03-04"}
+  validation: {days: 40, start: "2026-03-05", end: "2026-04-30"}
+  final_refit_train: {days: 300, start: "2025-02-07", end: "2026-04-30"}
+  shadow_oos: {days: 51, start: "2026-05-06", end: "2026-07-28"}
+  eligible_for_full_oos_claim: false
+  required_shadow_oos_days: 100
+  vocab_fit_dates: final_refit_train_only
+
+training_gates:
+  data:
+    - "snapshot/transaction/order三分区逐日完整"
+    - "vocab、normalizer和分箱只在对应train范围拟合"
+    - "validation/test/OOS日期不得进入vocab fit_dates"
+  pretrain:
+    - "per-field normalized CE优于copy和unigram baseline"
+    - "validation loss连续三个评估点不再显著改善后才允许停止"
+  router:
+    - "四个专家均有稳定负载，禁止expert collapse"
+    - "overflow_rate必须单独记录并进入验收报告"
+    - "按月份、波动桶、流动性桶检查expert fraction"
+  downstream:
+    - "Ranker标签T+2，边界purge=2个交易日"
+    - "模型选择只使用validation，不使用test或locked OOS"
+    - "同时报告RankIC、Top-K净收益、换手、MDD和相对全市场超额"
+
+promotion_rule:
+  strict_benchmark: "Test通过后仍须在locked OOS复验"
+  adaptation_2026q1: "shadow OOS累计满100日且未被用于调参后才可晋级"

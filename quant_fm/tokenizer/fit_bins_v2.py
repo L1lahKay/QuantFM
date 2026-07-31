@@ -16,9 +16,17 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import polars as pl
+from pylob.event_ordering import (
+    DEFAULT_EVENT_ORDERING_VERSION,
+    validate_order_if_present,
+)
 
 from quant_fm.tokenizer.field_spec import validate_field_specs
-from quant_fm.tokenizer.transforms import DERIVED_CONTINUOUS, add_derived_fields
+from quant_fm.tokenizer.transforms import (
+    DEFAULT_FEATURE_TRANSFORM_VERSION,
+    DERIVED_CONTINUOUS,
+    add_derived_fields,
+)
 from quant_fm.tokenizer.vocab_v2 import (
     BinnedFieldVocab,
     ContinuousNormalizer,
@@ -135,13 +143,19 @@ class _PriorityReservoir:
 
 
 def _prepare_frame(
-    frame: pl.DataFrame, field_specs: tuple[FieldSpec, ...]
+    frame: pl.DataFrame,
+    field_specs: tuple[FieldSpec, ...],
+    *,
+    feature_transform_version: str,
 ) -> pl.DataFrame:
     """按需生成 v1 兼容派生列，并检查所有 FieldSpec source 均存在。"""
     required = {spec.source for spec in field_specs}
     missing = required - set(frame.columns)
     if missing & set(DERIVED_CONTINUOUS):
-        frame = add_derived_fields(frame)
+        frame = add_derived_fields(
+            frame,
+            transform_version=feature_transform_version,
+        )
         missing = required - set(frame.columns)
     if missing:
         msg = f"input shard missing FieldSpec sources: {sorted(missing)}"
@@ -327,6 +341,8 @@ def fit_vocab_v2(
     categorical_values: Mapping[str, Sequence[str]] | None = None,
     normalizer_clip: float = 5.0,
     schema_version: str = "cn_l2_v2",
+    event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION,
+    feature_transform_version: str = DEFAULT_FEATURE_TRANSFORM_VERSION,
 ) -> VocabV2:
     """
     遍历完整训练流并拟合严格版本化的 v2 词表。
@@ -351,6 +367,10 @@ def fit_vocab_v2(
         连续双通道标准化后的绝对截断值。
     schema_version
         输入 schema 版本，写入 v2 artifact。
+    event_ordering_version
+        事件排序语义；存在索引列时拒绝交易所时间/序号倒置。
+    feature_transform_version
+        EW-VWAP 起始缺失与派生字段语义，冻结进词表。
 
     Returns
     -------
@@ -392,7 +412,12 @@ def fit_vocab_v2(
 
     # Pass 1: 全流统计、类别发现和分层样本计数。
     for path in ordered_paths:
-        frame = _prepare_frame(pl.read_parquet(path), field_specs)
+        frame = _prepare_frame(
+            pl.read_parquet(path),
+            field_specs,
+            feature_transform_version=feature_transform_version,
+        )
+        validate_order_if_present(frame, version=event_ordering_version)
         total_rows += frame.height
         if "date" in frame.columns:
             observed_dates.update(str(value) for value in frame["date"].drop_nulls())
@@ -444,7 +469,11 @@ def fit_vocab_v2(
 
     # Pass 2: 对所有 shard 生成稳定优先级；无“预算满后跳过后续文件”的分支。
     for path in ordered_paths:
-        frame = _prepare_frame(pl.read_parquet(path), field_specs)
+        frame = _prepare_frame(
+            pl.read_parquet(path),
+            field_specs,
+            feature_transform_version=feature_transform_version,
+        )
         strata = _strata_labels(frame, strata_tuple)
         for spec in binned_specs:
             values = frame[spec.source].cast(pl.Float64).to_numpy()
@@ -476,7 +505,11 @@ def fit_vocab_v2(
         for spec in numeric_specs
     }
     for path in ordered_paths:
-        frame = _prepare_frame(pl.read_parquet(path), field_specs)
+        frame = _prepare_frame(
+            pl.read_parquet(path),
+            field_specs,
+            feature_transform_version=feature_transform_version,
+        )
         for spec in numeric_specs:
             values = frame[spec.source].cast(pl.Float64).to_numpy()
             valid = np.isfinite(values) & _applicable_mask(frame, spec)
@@ -567,6 +600,8 @@ def fit_vocab_v2(
         binned=binned_vocab,
         schema_version=schema_version,
         fit_dates=effective_fit_dates,
+        event_ordering_version=event_ordering_version,
+        feature_transform_version=feature_transform_version,
         sampling={
             "method": "deterministic_stratified_priority_reservoir",
             "seed": seed,

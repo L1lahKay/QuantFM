@@ -70,6 +70,11 @@ class OrderFlowFMConfig:
     book_state_timing: str = "none"
     context_horizon: int = 0
     pooling_version: str = "flat_v1"
+    pooling_method: str = "mean"
+    pooling_outputs: tuple[str, ...] = ()
+    pooling_stride: int = 0
+    event_ordering_version: str = "local_time_v1"
+    feature_transform_version: str = "ew_vwap_future_backfill_v1"
     backbone_moe: BackboneMoEConfig = field(default_factory=BackboneMoEConfig)
 
     def __post_init__(self) -> None:
@@ -84,6 +89,19 @@ class OrderFlowFMConfig:
         )
         if invalid_layers:
             msg = f"backbone MoE layers out of range: {invalid_layers}"
+            raise ValueError(msg)
+        if not self.event_ordering_version or not self.feature_transform_version:
+            msg = "token data-semantics versions must be non-empty"
+            raise ValueError(msg)
+        if self.pooling_stride < 0:
+            msg = "pooling_stride must be non-negative"
+            raise ValueError(msg)
+        if (
+            self.pooling_stride
+            and self.context_horizon
+            and self.pooling_stride > self.context_horizon
+        ):
+            msg = "pooling_stride cannot exceed context_horizon"
             raise ValueError(msg)
 
     def target_sizes(self) -> dict[str, int]:
@@ -366,7 +384,15 @@ class OrderFlowFM(nn.Module):
 
         # [导读] 步骤2：过 N 层 Transformer（因果注意力 = 只能看过去的事件）
         cos, sin = self._get_rope(length, device, x.dtype)
-        full_mask = bool(key_mask.all())
+        # Callers that construct an all-valid batch already know this on the
+        # CPU.  Accepting the hint avoids ``bool(key_mask.all())`` forcing a
+        # GPU→CPU synchronization before every inference forward.
+        all_tokens_valid = batch.get("_all_tokens_valid")
+        full_mask = (
+            bool(all_tokens_valid)
+            if all_tokens_valid is not None
+            else bool(key_mask.all())
+        )
         auxiliary_losses: list[torch.Tensor] = []
         for block in self.blocks:
             x = block(x, cos, sin, key_mask, full_mask=full_mask)

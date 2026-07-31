@@ -56,6 +56,7 @@ def _canonicalize_one(payload: dict) -> tuple[str, str, int, str | None]:
 
 def _canonicalize_tokenize_one(payload: dict) -> tuple[str, str, int, str | None]:
     """Fuse clean→canonical→token to avoid two intermediate parquet round trips."""
+    from quant_fm.tokenizer.artifact_contract import write_token_contract
     from quant_fm.tokenizer.tokenize_events import tokenize_frame
     from quant_fm.tokenizer.vocab import Vocab
 
@@ -70,11 +71,13 @@ def _canonicalize_tokenize_one(payload: dict) -> tuple[str, str, int, str | None
             date=payload["date"],
             market=payload["market"],
         )
-        tokens = tokenize_frame(canonical, Vocab.load(Path(payload["vocab_path"])))
+        vocab = Vocab.load(Path(payload["vocab_path"]))
+        tokens = tokenize_frame(canonical, vocab)
         dst.parent.mkdir(parents=True, exist_ok=True)
         tmp = dst.with_suffix(".parquet.tmp")
         tokens.write_parquet(tmp)
         tmp.replace(dst)
+        write_token_contract(dst, vocab)
         return "written", str(dst), tokens.height, None
     except Exception as exc:
         return "error", str(dst), 0, str(exc)
@@ -158,13 +161,17 @@ def canonicalize_clean_dir(
             )
 
     if skipped:
-        logger.info("skip_existing: reused %d canonical symbol-days for %s", skipped, date)
+        logger.info(
+            "skip_existing: reused %d canonical symbol-days for %s", skipped, date
+        )
 
     if not pending:
         logger.info("nothing to canonicalize for %s", date)
         return []
 
-    workers = max(1, int(n_workers if n_workers is not None else default_canon_workers()))
+    workers = max(
+        1, int(n_workers if n_workers is not None else default_canon_workers())
+    )
     written: list[Path] = []
     errors = 0
 
@@ -233,8 +240,12 @@ def canonicalize_and_tokenize_clean_dir(
     n_workers: int | None = None,
 ) -> list[Path]:
     """Directly convert clean shards to final tokens in one worker pass."""
+    from quant_fm.tokenizer.artifact_contract import assert_token_contract_matches
+    from quant_fm.tokenizer.vocab import Vocab
+
     clean_dir = Path(clean_dir)
     tokens_dir = Path(tokens_dir)
+    vocab = Vocab.load(vocab_path)
     symbol_set = set(symbols) if symbols is not None else None
     pending: list[dict[str, str]] = []
     written: list[Path] = []
@@ -254,6 +265,14 @@ def canonicalize_and_tokenize_clean_dir(
                 continue
             dst = tokens_dir / market / symbol / f"{date}.parquet"
             if skip_existing and dst.exists():
+                try:
+                    assert_token_contract_matches(dst, vocab)
+                except ValueError as exc:
+                    msg = (
+                        f"refusing to overwrite incompatible token shard during "
+                        f"resume: {dst}; use a new tokens root ({exc})"
+                    )
+                    raise RuntimeError(msg) from exc
                 written.append(dst)
                 continue
             pending.append(
@@ -268,7 +287,9 @@ def canonicalize_and_tokenize_clean_dir(
 
     if not pending:
         return written
-    workers = max(1, int(n_workers if n_workers is not None else default_canon_workers()))
+    workers = max(
+        1, int(n_workers if n_workers is not None else default_canon_workers())
+    )
     errors: list[str] = []
     if workers == 1:
         results = (_canonicalize_tokenize_one(payload) for payload in pending)
@@ -282,7 +303,9 @@ def canonicalize_and_tokenize_clean_dir(
 
         ctx = mp.get_context("spawn")
         with ProcessPoolExecutor(max_workers=workers, mp_context=ctx) as pool:
-            futures = [pool.submit(_canonicalize_tokenize_one, item) for item in pending]
+            futures = [
+                pool.submit(_canonicalize_tokenize_one, item) for item in pending
+            ]
             for index, future in enumerate(as_completed(futures), start=1):
                 status, path, _rows, error = future.result()
                 if status == "written":

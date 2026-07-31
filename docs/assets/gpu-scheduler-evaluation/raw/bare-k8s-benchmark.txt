@@ -1,0 +1,129 @@
+BENCHMARK_START 2026-07-30T07:29:47.268Z
+namespace/khalil-scheduler-bench created
+namespace/khalil-quota-bench created
+EXPERIMENT_CONTENTION_START 2026-07-30T07:29:47.591Z
+job.batch/bare-holder-5gpu created
+HOLDER_SUBMITTED 2026-07-30T07:29:48.117Z
+pod/bare-holder-5gpu-xkds9 condition met
+HOLDER_READY 2026-07-30T07:29:50.727Z
+job.batch/bare-waiter-5gpu created
+WAITER_SUBMITTED 2026-07-30T07:29:51.015Z
+CONTENTTION_PENDING_SNAPSHOT 2026-07-30T07:29:54.022Z
+NAME                         STATUS    COMPLETIONS   DURATION   AGE   CONTAINERS   IMAGES         SELECTOR
+job.batch/bare-holder-5gpu   Running   0/1           6s         6s    holder       ubuntu:22.04   batch.kubernetes.io/controller-uid=33e5b175-4b66-4989-9922-f6a2c619de2e
+job.batch/bare-waiter-5gpu   Running   0/1           4s         4s    waiter       ubuntu:22.04   batch.kubernetes.io/controller-uid=1155157a-4d0d-4b24-9656-f4f3e8ca8c58
+
+NAME                         READY   STATUS    RESTARTS   AGE   IP           NODE         NOMINATED NODE   READINESS GATES
+pod/bare-holder-5gpu-xkds9   1/1     Running   0          6s    10.52.0.77   gpu-dev-01   <none>           <none>
+pod/bare-waiter-5gpu-z9459   0/1     Pending   0          3s    <none>       <none>       <none>           <none>
+LAST SEEN   TYPE      REASON             OBJECT                       MESSAGE
+3s          Warning   FailedScheduling   pod/bare-waiter-5gpu-z9459   0/1 nodes are available: 1 Insufficient nvidia.com/gpu. no new claims to deallocate, preemption: 0/1 nodes are available: 1 No preemption victims found for incoming pod.
+job.batch/bare-holder-5gpu condition met
+job.batch/bare-waiter-5gpu condition met
+CONTENTION_COMPLETE 2026-07-30T07:30:36.936Z
+NAME                         STATUS     COMPLETIONS   DURATION   AGE   CONTAINERS   IMAGES         SELECTOR
+job.batch/bare-holder-5gpu   Complete   1/1           34s        49s   holder       ubuntu:22.04   batch.kubernetes.io/controller-uid=33e5b175-4b66-4989-9922-f6a2c619de2e
+job.batch/bare-waiter-5gpu   Complete   1/1           46s        47s   waiter       ubuntu:22.04   batch.kubernetes.io/controller-uid=1155157a-4d0d-4b24-9656-f4f3e8ca8c58
+
+NAME                         READY   STATUS      RESTARTS   AGE   IP           NODE         NOMINATED NODE   READINESS GATES
+pod/bare-holder-5gpu-xkds9   0/1     Completed   0          49s   10.52.0.77   gpu-dev-01   <none>           <none>
+pod/bare-waiter-5gpu-z9459   0/1     Completed   0          46s   10.52.0.78   gpu-dev-01   <none>           <none>
+HOLDER_START 2026-07-30T07:29:50Z
+VISIBLE_GPUS 5
+HOLDER_END 2026-07-30T07:30:20Z
+WAITER_START 2026-07-30T07:30:24Z
+VISIBLE_GPUS 5
+WAITER_END 2026-07-30T07:30:34Z
+EXPERIMENT_QUOTA_START 2026-07-30T07:30:38.180Z
+resourcequota/bare-gpu-quota created
+job.batch/bare-over-quota-2gpu created
+OVER_QUOTA_JOB_SUBMITTED 2026-07-30T07:30:39.057Z
+NAME                           REQUEST                                                                    LIMIT                                                                AGE
+resourcequota/bare-gpu-quota   requests.cpu: 0/4, requests.memory: 0/16Gi, requests.nvidia.com/gpu: 0/1   limits.cpu: 0/8, limits.memory: 0/32Gi, limits.nvidia.com/gpu: 0/1   5s
+
+NAME                             STATUS    COMPLETIONS   DURATION   AGE   CONTAINERS   IMAGES         SELECTOR
+job.batch/bare-over-quota-2gpu   Running   0/1           4s         4s    over-quota   ubuntu:22.04   batch.kubernetes.io/controller-uid=d6a9a90a-faaa-4633-ba47-66d881243b09
+Name:                     bare-over-quota-2gpu
+Namespace:                khalil-quota-bench
+Selector:                 batch.kubernetes.io/controller-uid=d6a9a90a-faaa-4633-ba47-66d881243b09
+Labels:                   experiment=bare-quota
+                          owner=khalil
+Annotations:              <none>
+Parallelism:              1
+Completions:              1
+Completion Mode:          NonIndexed
+Suspend:                  false
+Backoff Limit:            0
+Start Time:               Thu, 30 Jul 2026 07:30:39 +0000
+Active Deadline Seconds:  60s
+Pods Statuses:            0 Active (0 Ready) / 0 Succeeded / 0 Failed
+Pod Template:
+  Labels:  batch.kubernetes.io/controller-uid=d6a9a90a-faaa-4633-ba47-66d881243b09
+           batch.kubernetes.io/job-name=bare-over-quota-2gpu
+           controller-uid=d6a9a90a-faaa-4633-ba47-66d881243b09
+           experiment=bare-quota
+           job-name=bare-over-quota-2gpu
+           owner=khalil
+  Containers:
+   over-quota:
+    Image:      ubuntu:22.04
+    Port:       <none>
+    Host Port:  <none>
+    Command:
+      /bin/bash
+      -lc
+    Args:
+      echo SHOULD_NOT_RUN; sleep 5
+    Limits:
+      cpu:             500m
+      memory:          256Mi
+      nvidia.com/gpu:  2
+    Requests:
+      cpu:             100m
+      memory:          64Mi
+      nvidia.com/gpu:  2
+    Environment:       <none>
+    Mounts:            <none>
+  Volumes:             <none>
+  Node-Selectors:      accelerator=nvidia
+  Tolerations:         <none>
+Events:
+  Type     Reason        Age   From            Message
+  ----     ------        ----  ----            -------
+  Warning  FailedCreate  4s    job-controller  Error creating: pods "bare-over-quota-2gpu-bzdrc" is forbidden: exceeded quota: bare-gpu-quota, requested: requests.nvidia.com/gpu=2, used: requests.nvidia.com/gpu=0, limited: requests.nvidia.com/gpu=1
+  Warning  FailedCreate  3s    job-controller  Error creating: pods "bare-over-quota-2gpu-6txkc" is forbidden: exceeded quota: bare-gpu-quota, requested: requests.nvidia.com/gpu=2, used: requests.nvidia.com/gpu=0, limited: requests.nvidia.com/gpu=1
+  Warning  FailedCreate  1s    job-controller  Error creating: pods "bare-over-quota-2gpu-n6b66" is forbidden: exceeded quota: bare-gpu-quota, requested: requests.nvidia.com/gpu=2, used: requests.nvidia.com/gpu=0, limited: requests.nvidia.com/gpu=1
+EXPERIMENT_QUOTA_CAPTURED 2026-07-30T07:30:44.014Z
+EXPERIMENT_PREEMPTION_START 2026-07-30T07:30:44.017Z
+priorityclass.scheduling.k8s.io/khalil-bench-low created
+priorityclass.scheduling.k8s.io/khalil-bench-high created
+pod/bare-preempt-low-5gpu created
+LOW_SUBMITTED 2026-07-30T07:30:44.849Z
+pod/bare-preempt-low-5gpu condition met
+LOW_READY 2026-07-30T07:30:47.963Z
+pod/bare-preempt-high-5gpu created
+HIGH_SUBMITTED 2026-07-30T07:30:48.334Z
+PREEMPTION_SNAPSHOT 2026-07-30T07:30:51.341Z
+NAME                     PRIORITY   PHASE     NODE         NOMINATED
+bare-preempt-high-5gpu   1000       Running   gpu-dev-01   <none>
+LAST SEEN   TYPE     REASON      OBJECT                      MESSAGE
+6s          Normal   Scheduled   pod/bare-preempt-low-5gpu   Successfully assigned khalil-scheduler-bench/bare-preempt-low-5gpu to gpu-dev-01
+3s          Normal   Preempted   pod/bare-preempt-low-5gpu   Preempted by pod 73b2fcf0-ae50-47ee-8af2-15560215aa5b on node gpu-dev-01
+6s          Normal   Pulled      pod/bare-preempt-low-5gpu   Container image "ubuntu:22.04" already present on machine and can be accessed by the pod
+6s          Normal   Created     pod/bare-preempt-low-5gpu   Container created
+4s          Normal   Started     pod/bare-preempt-low-5gpu   Container started
+2s          Normal   Killing     pod/bare-preempt-low-5gpu   Stopping container low
+LAST SEEN   TYPE      REASON             OBJECT                       MESSAGE
+3s          Warning   FailedScheduling   pod/bare-preempt-high-5gpu   0/1 nodes are available: 1 Insufficient nvidia.com/gpu.
+3s          Normal    Scheduled          pod/bare-preempt-high-5gpu   Successfully assigned khalil-scheduler-bench/bare-preempt-high-5gpu to gpu-dev-01
+3s          Normal    Pulled             pod/bare-preempt-high-5gpu   Container image "ubuntu:22.04" already present on machine and can be accessed by the pod
+3s          Normal    Created            pod/bare-preempt-high-5gpu   Container created
+2s          Normal    Started            pod/bare-preempt-high-5gpu   Container started
+pod/bare-preempt-high-5gpu condition met
+PREEMPTION_COMPLETE 2026-07-30T07:31:02.337Z
+NAME                     PRIORITY   PHASE       NODE         REASON
+bare-preempt-high-5gpu   1000       Succeeded   gpu-dev-01   <none>
+HIGH_START 2026-07-30T07:30:50Z
+VISIBLE_GPUS 5
+HIGH_END 2026-07-30T07:31:00Z
+BENCHMARK_END 2026-07-30T07:31:03.040Z

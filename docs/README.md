@@ -7,7 +7,20 @@
 1. [根 README](../README.md)：项目目标、架构、快速验证和目录结构；
 2. [复现与验证指南](REPRODUCIBILITY.md)：建议阅读路径、复现命令和实验边界；
 3. [项目与代码阅读指南](QuantFM.md)：面向新读者的模块与概念说明；
-4. [阶段进展](阶段进展.md)：当前实验与工程进展。
+4. [阶段进展](project/阶段进展.md)：当前实验与工程进展。
+
+## 目录结构
+
+| 目录 | 内容 |
+|------|------|
+| [`pipeline/`](pipeline/README.md) | 从 MinIO 数据接入到下游验收的逐阶段文档 |
+| [`architecture/`](architecture/) | V2、MoE、Tokenizer、Loss 与模型底层设计 |
+| [`data/`](data/) | MinIO、原始 L2、events 和 tokens 数据工作流 |
+| [`evaluation/`](evaluation/) | OOS、信号交付、回测契约与联调 |
+| [`operations/`](operations/) | CPU/GPU Kubernetes、PVC、调度评估和训练 runbook |
+| [`project/`](project/) | 分支说明、阶段进展和执行计划 |
+| [`research/`](research/) | 调研材料与历史方案 |
+| `assets/` | 文档图片与可复核的评估证据 |
 
 ## Pipeline 逐阶段文档
 
@@ -22,27 +35,39 @@
 | 6 | [OrderFlow FM 预训练](pipeline/06_pretraining.md) | 模型、FSDP、checkpoint 续训与监控 |
 | 7 | [股日 Embedding](pipeline/07_embeddings.md) | 冻结模型、分块编码与池化 |
 | 8 | [下游验收](pipeline/08_downstream_evaluation.md) | Ranker、RankIC、CPCV、DSR、严格执行面板与研究回测 |
+| 补充 | [OOS 加速与增量交付](pipeline/08_oos_acceleration.md) | 增量执行、缓存、并行与研究隔离 |
 
 以上阶段文档同时标注 v1 稳定路径与 v2 新路径。现有 MinIO/Pilot 一键编排默认仍走 v1；v2 的 schema、词表、训练和表征代码已经落地，但正式 v2 数据 artifact、checkpoint 与 OOS 结果仍待生成。
 
-## 工程操作
+## 数据与存储
 
 | 文档 | 说明 |
 |------|------|
-| [MinIO 读写指南](minio_setup.md) | endpoint、bucket、凭据和排错 |
-| [MinIO 数据工作流](minio_data_workflow.md) | 清洗、上传、恢复和磁盘策略 |
-| [原始 L2 到 events/tokens](raw_to_events_tokens.md) | 字段级转换细节 |
-| [严格 OOS 研究回测](严格OOS研究回测.md) | ReturnSpec、未来日历、冻结 score 评估与结果边界 |
-| [信号回测对接](信号回测对接文档.md) | 生产 `date/symbol/score` 交付契约 |
-| [下游回测对接](下游回测对接说明.md) | execution panel、成本与回测输入输出 |
+| [MinIO 读写指南](data/minio_setup.md) | endpoint、bucket、凭据和排错 |
+| [MinIO 数据工作流](data/minio_data_workflow.md) | 清洗、上传、恢复和磁盘策略 |
+| [原始 L2 到 events/tokens](data/raw_to_events_tokens.md) | 字段级转换细节 |
 | 进度查询 | `uv run python -m quant_fm.scripts.check_pipeline_progress` |
+
+## 评估与回测
+
+| 文档 | 说明 |
+|------|------|
+| [严格 OOS 研究回测](evaluation/严格OOS研究回测.md) | ReturnSpec、未来日历、冻结 score 评估与结果边界 |
+| [信号回测对接](evaluation/信号回测对接文档.md) | 生产 `date/symbol/score` 交付契约 |
+| [下游回测对接](evaluation/下游回测对接说明.md) | execution panel、成本与回测输入输出 |
+| [回测接口契约与小样本联调](evaluation/回测接口契约与小样本联调.md) | 最小交付样本、接口约束与联调验收 |
 
 ## 模型架构设计
 
 | 文档 | 说明 |
 |------|------|
-| [V2 性能与 Regime-MoE 代码改造方案](QuantFM-V2-性能与Regime-MoE代码改造方案.md) | 后续性能、Dense V2/Regime-MoE 路线；其中部分阶段仍是规划，不等同于当前实现 |
-| [模型底层 V2 代码改造指导](模型底层v2代码改造指导.md) | 本次已实现的盘口、Tokenizer、字段融合、Loss、池化与跨股票上下文设计依据 |
+| [V2 性能与 Regime-MoE 代码改造方案](architecture/QuantFM-V2-性能与Regime-MoE代码改造方案.md) | 后续性能、Dense V2/Regime-MoE 路线；其中部分阶段仍是规划，不等同于当前实现 |
+| [模型底层 V2 代码改造指导](architecture/模型底层v2代码改造指导.md) | 本次已实现的盘口、Tokenizer、字段融合、Loss、池化与跨股票上下文设计依据 |
+| [MoE 架构完整结构](architecture/MOE架构完整结构.md) | Backbone-MoE 组件、路由和张量流 |
+| [Token 修改完整方案](architecture/Token修改完整方案.md) | V1/V2 隔离、字段编码和 artifact 约束 |
+| [Loss 函数改进与已训练模型](architecture/Loss函数完整改进与已训练模型.md) | Loss 演进、已有实验和模型说明 |
+| [Loss 总结](architecture/Loss总结.md) | 排序、辅助与多期限 Loss 的代码口径 |
+| [Top 选股 Loss 最终方案](architecture/Top选股Loss最终方案.md) | Top-K 排序目标、数据血统和验收方案 |
 
 ## V2 代码入口
 
@@ -71,11 +96,26 @@ uv run python -m pytest -q
 | [OrderFlow FM](../quant_fm/README.md) | 模型与常用 Make 入口 |
 | [PyLOB](../order_book/README.md) | 撮合引擎子项目与公共 API |
 
-## 研究材料与历史记录
+## 运维与集群
+
+| 文档 | 说明 |
+|------|------|
+| [CPU K8s 使用手册](operations/CPU-K8S-完整使用手册-khalil.md) | CPU 集群接入、Job、日志和排障 |
+| [GPU K8s 使用与测试手册](operations/GPU-K8S-集群使用与测试手册-khalil.md) | GPU Job 规范、验证和故障定位 |
+| [GPU PVC 申请与迁移](operations/GPU-PVC-申请与迁移-khalil.md) | 存储申请、确认与迁移清单 |
+| [Kueue / Volcano 调度评估](operations/GPU-K8S-Kueue-Volcano-调度与存储评估报告.md) | 调度、配额、Gang、抢占和存储评估 |
+| [300 日 MoE 磁盘安全训练手册](operations/CODEX_MOE_300D_STORAGE_SAFE_RUNBOOK.md) | 容量闸门、checkpoint 轮转和恢复流程 |
+| [GPU 集群群公告文案](operations/GPU-K8S-群公告文案.md) | 面向使用者的简明规则 |
+| [GPU 调度与存储确认消息](operations/Reinhard-GPU-调度与存储确认消息.md) | 待管理员确认事项模板 |
+
+## 项目记录与研究材料
 
 这些文档提供背景，不作为当前代码接口的唯一事实来源：
 
-- [基于 LLM 的端到端量化策略调研](基于LLM的端对端量化策略调研_7.6Update.md)
-- [项目阶段进展](阶段进展.md)
+- [当前分支工作说明](project/BRANCH_WORK.md)
+- [项目进展与规划](project/项目进展与规划.md)
+- [Dense230M 训练期间并行工作计划](project/Dense230M训练期间并行工作计划.md)
+- [项目阶段进展](project/阶段进展.md)
+- [基于 LLM 的端到端量化策略调研](research/基于LLM的端对端量化策略调研_7.6Update.md)
 
 当历史文档与代码不一致时，以根 README、`docs/pipeline/` 和当前配置文件为准。

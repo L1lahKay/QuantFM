@@ -58,12 +58,13 @@ L1/L5/L10 imbalance 和 microprice 相对 mid 的 tick 偏移。
 trade/order parquet
   → 字段标准化
   → 按 symbol 过滤
-  → 合并并按 local_time/序号排序
+  → 合并并按交易所 int_time + serial + input order 稳定排序
   → OrderBookSH / OrderBookSZ 逐条回放
   → ADD / CANCEL / TRADE 事件与订单簿结果
 ```
 
-若目标是 v2 特征，逐事件分支必须改为：
+新默认契约为 `exchange_time_sequence_v2`；`local_time_v1` 只用于显式复现旧 artifact。
+若目标是 v2 特征，逐事件分支为：
 
 ```text
 按交易所时间 + exchange sequence 稳定排序
@@ -75,6 +76,10 @@ trade/order parquet
 
 禁止先完成整日回放，再从最终订单簿反推历史状态。`local_time` 可能包含接收延迟，
 不能作为同时间戳事件的首要排序键。
+
+历史 V1 token 若只保留排序后的 `event_idx`、没有源交易所 sequence，则同一
+`int_time` 内原始事件的先后关系无法从 token 反推或修复。排序审计会把这种分片
+单列为 provenance 失败；它只能用于显式 legacy 诊断，不能升级标记为 causal。
 
 ## 撤单一致性修复
 

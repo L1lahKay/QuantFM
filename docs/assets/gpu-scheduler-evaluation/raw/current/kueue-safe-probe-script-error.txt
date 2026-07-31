@@ -1,0 +1,29 @@
+PROBE_CLIENT_START 2026-07-31T06:22:39.502Z
+NAME                              STATUS     COMPLETIONS   DURATION   AGE   CONTAINERS   IMAGES                                      SELECTOR
+job.batch/dylan-trainer-ac4218e   Complete   1/1           33s        40m   trainer      registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=110bfe69-6575-4ca9-9ef2-fc52756683bb
+
+NAME                              READY   STATUS      RESTARTS   AGE   IP           NODE         NOMINATED NODE   READINESS GATES
+pod/dylan-trainer-ac4218e-f5sjk   0/1     Completed   0          40m   10.52.0.91   gpu-dev-01   <none>           <none>
+JOB_SUBMIT_CLIENT 2026-07-31T06:22:39.752Z
+JOB_CREATED_NAME khalil-kueue-probe-2xxkg
+POLL attempt=0 client_at=2026-07-31T06:22:40.042Z job=[2026-07-31T06:22:40Z suspend=true active= succeeded=] pod=[]
+POLL attempt=1 client_at=2026-07-31T06:22:41.761Z job=[2026-07-31T06:22:40Z suspend=true active= succeeded=] pod=[]
+POLL attempt=2 client_at=2026-07-31T06:22:43.484Z job=[2026-07-31T06:22:40Z suspend=true active= succeeded=] pod=[]
+POLL attempt=3 client_at=2026-07-31T06:22:45.173Z job=[2026-07-31T06:22:40Z suspend=true active= succeeded=] pod=[]
+POLL attempt=4 client_at=2026-07-31T06:22:46.882Z job=[2026-07-31T06:22:40Z suspend=true active= succeeded=] pod=[]
+POLL attempt=5 client_at=2026-07-31T06:22:48.603Z job=[2026-07-31T06:22:40Z suspend=true active= succeeded=] pod=[]
+POLL attempt=6 client_at=2026-07-31T06:22:50.303Z job=[2026-07-31T06:22:40Z suspend=true active= succeeded=] pod=[]
+POLL attempt=7 client_at=2026-07-31T06:22:52.048Z job=[2026-07-31T06:22:40Z suspend=true active= succeeded=] pod=[]
+POLL attempt=8 client_at=2026-07-31T06:22:53.765Z job=[2026-07-31T06:22:40Z suspend=true active= succeeded=] pod=[]
+POLL attempt=9 client_at=2026-07-31T06:22:55.463Z job=[2026-07-31T06:22:40Z suspend=true active= succeeded=] pod=[]
+LAST SEEN   TYPE     REASON            OBJECT                         MESSAGE
+18s         Normal   Suspended         job/khalil-kueue-probe-2xxkg   Job suspended
+18s         Normal   CreatedWorkload   job/khalil-kueue-probe-2xxkg   Created Workload: gpu-dev/job-khalil-kueue-probe-2xxkg-612aa
+error: error executing jsonpath "{.items[0].metadata.name}": Error executing template: array index out of bounds: index 0, length 0. Printing more information for debugging the template:
+	template was:
+		{.items[0].metadata.name}
+	object given to jsonpath engine was:
+		map[string]interface {}{"apiVersion":"v1", "items":[]interface {}{}, "kind":"List", "metadata":map[string]interface {}{"resourceVersion":""}}
+
+
+job.batch "khalil-kueue-probe-2xxkg" deleted from gpu-dev namespace

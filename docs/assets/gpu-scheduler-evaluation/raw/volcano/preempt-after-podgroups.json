@@ -1,0 +1,109 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "scheduling.volcano.sh/v1beta1",
+            "kind": "PodGroup",
+            "metadata": {
+                "annotations": {
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"scheduling.volcano.sh/v1beta1\",\"kind\":\"PodGroup\",\"metadata\":{\"annotations\":{},\"labels\":{\"evaluation.quantfm/owner\":\"khalil\",\"evaluation.quantfm/suite\":\"volcano-v1-15-1\"},\"name\":\"khalil-volcano-preempt-high-pg\",\"namespace\":\"gpu-dev\"},\"spec\":{\"minMember\":1,\"minResources\":{\"cpu\":\"100m\",\"memory\":\"128Mi\",\"nvidia.com/gpu\":\"1\"},\"priorityClassName\":\"khalil-volcano-high\",\"queue\":\"khalil-volcano-preempt\"}}\n"
+                },
+                "creationTimestamp": "2026-07-31T07:42:15Z",
+                "generation": 7,
+                "labels": {
+                    "evaluation.quantfm/owner": "khalil",
+                    "evaluation.quantfm/suite": "volcano-v1-15-1"
+                },
+                "name": "khalil-volcano-preempt-high-pg",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27882704",
+                "uid": "b0696c99-545f-4b93-8381-32282721380c"
+            },
+            "spec": {
+                "minMember": 1,
+                "minResources": {
+                    "cpu": "100m",
+                    "memory": "128Mi",
+                    "nvidia.com/gpu": "1"
+                },
+                "priorityClassName": "khalil-volcano-high",
+                "queue": "khalil-volcano-preempt"
+            },
+            "status": {
+                "conditions": [
+                    {
+                        "lastTransitionTime": "2026-07-31T07:42:26Z",
+                        "message": "1/1 tasks in gang unschedulable: pod group is not ready, 1 Pipelined, 1 minAvailable",
+                        "reason": "NotEnoughResources",
+                        "status": "True",
+                        "transitionID": "c8e186a3-b46f-4f75-af22-b9b64d81b35d",
+                        "type": "Unschedulable"
+                    },
+                    {
+                        "lastTransitionTime": "2026-07-31T07:42:42Z",
+                        "reason": "tasks in gang are ready to be scheduled",
+                        "status": "True",
+                        "transitionID": "a1293f69-0700-4547-aca1-3270f2bce94f",
+                        "type": "Scheduled"
+                    }
+                ],
+                "phase": "Completed",
+                "succeeded": 1
+            }
+        },
+        {
+            "apiVersion": "scheduling.volcano.sh/v1beta1",
+            "kind": "PodGroup",
+            "metadata": {
+                "annotations": {
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"scheduling.volcano.sh/v1beta1\",\"kind\":\"PodGroup\",\"metadata\":{\"annotations\":{\"volcano.sh/preemptable\":\"true\"},\"labels\":{\"evaluation.quantfm/owner\":\"khalil\",\"evaluation.quantfm/suite\":\"volcano-v1-15-1\"},\"name\":\"khalil-volcano-preempt-victim-pg\",\"namespace\":\"gpu-dev\"},\"spec\":{\"minMember\":1,\"minResources\":{\"cpu\":\"100m\",\"memory\":\"128Mi\",\"nvidia.com/gpu\":\"3\"},\"priorityClassName\":\"khalil-volcano-low\",\"queue\":\"khalil-volcano-preempt\"}}\n",
+                    "volcano.sh/preemptable": "true"
+                },
+                "creationTimestamp": "2026-07-31T07:42:15Z",
+                "generation": 10,
+                "labels": {
+                    "evaluation.quantfm/owner": "khalil",
+                    "evaluation.quantfm/suite": "volcano-v1-15-1"
+                },
+                "name": "khalil-volcano-preempt-victim-pg",
+                "namespace": "gpu-dev",
+                "resourceVersion": "27882648",
+                "uid": "9737f0b6-8210-4a41-9d6d-28476e88e7e2"
+            },
+            "spec": {
+                "minMember": 1,
+                "minResources": {
+                    "cpu": "100m",
+                    "memory": "128Mi",
+                    "nvidia.com/gpu": "3"
+                },
+                "priorityClassName": "khalil-volcano-low",
+                "queue": "khalil-volcano-preempt"
+            },
+            "status": {
+                "conditions": [
+                    {
+                        "lastTransitionTime": "2026-07-31T07:42:23Z",
+                        "reason": "tasks in gang are ready to be scheduled",
+                        "status": "True",
+                        "transitionID": "bfd386b2-e6e3-4918-90b4-357b8c164429",
+                        "type": "Scheduled"
+                    },
+                    {
+                        "lastTransitionTime": "2026-07-31T07:42:29Z",
+                        "message": "1/1 tasks in gang unschedulable: pod group is not ready, 1 Failed, 1 minAvailable",
+                        "reason": "NotEnoughResources",
+                        "status": "True",
+                        "transitionID": "41659d79-2493-45a4-97b3-53faad9b0d00",
+                        "type": "Unschedulable"
+                    }
+                ],
+                "phase": "Inqueue"
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

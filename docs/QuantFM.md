@@ -13,7 +13,7 @@
 - **V1 稳定主链**：`cn_l2_v1` + `vocab.json` + 直接字段 embedding 求和，现有 MinIO / smoke / 302M 产物继续使用该路径。
 - **V2 研究链**：加入因果盘口状态、版本化 `FieldSpec`、token+scalar、可配置字段融合、entropy-normalized/ordinal loss、多尺度聚合和股票间上下文模块。底层代码、训练性能改造、25M/100M/230M dense 配置，以及实验性的 Regime/Backbone-MoE 模块与配置已经入库；这些只代表工程候选已就绪，尚未完成多 seed 训练和新的 untouched OOS 验收。
 
-详细的实施边界见 [模型底层 V2 代码改造指导](./模型底层v2代码改造指导.md)；严格研究评估见 [严格 OOS 研究回测](./严格OOS研究回测.md)。
+详细的实施边界见 [模型底层 V2 代码改造指导](architecture/模型底层v2代码改造指导.md)；严格研究评估见 [严格 OOS 研究回测](evaluation/严格OOS研究回测.md)。
 
 项目由两个 workspace 子项目组成：
 
@@ -82,13 +82,15 @@ events.parquet → cn_l2_v1 规范 events
 截面排序 + 回测
 ```
 
-MinIO 读写配置与命令详见 **[minio_setup.md](./minio_setup.md)**。  
+MinIO 读写配置与命令详见 **[minio_setup.md](data/minio_setup.md)**。
+
 一键读→处理→写：`make minio-pipeline`（无训练）。  
 完整读→tokens→写→训练：`make minio-full-pipeline` / `make minio-full-pipeline-full`。
 
 **新手第一遍阅读顺序**：`smoke.py` → `dataset.py` → `model.py` → `heads.py` → `train.py`。  
-真实 MinIO 数据如何生成 events / tokens，见 **[raw_to_events_tokens.md](./raw_to_events_tokens.md)**。  
-MinIO **读写**配置与命令，见 **[minio_setup.md](./minio_setup.md)**。
+真实 MinIO 数据如何生成 events / tokens，见 **[raw_to_events_tokens.md](data/raw_to_events_tokens.md)**。
+
+MinIO **读写**配置与命令，见 **[minio_setup.md](data/minio_setup.md)**。
 
 运行一遍（无需 MinIO）：
 
@@ -120,7 +122,7 @@ python -m quant_fm.scripts.smoke --workdir quant_fm/runs/my_smoke
 | `quant_fm/scripts/download_from_minio.py`     | 从 model-cache 拉回 tokens          |
 | `quant_fm/scripts/minio_config.py`            | 读写 endpoint / bucket 默认值         |
 | `quant_fm/scripts/upload_to_minio.py`         | 上传 tokens 到 model-cache（写 :9100） |
-| `docs/minio_setup.md`                         | **MinIO 读写完整文档**                 |
+| `docs/data/minio_setup.md`                    | **MinIO 读写完整文档**                 |
 | `quant_fm/pretrain/train.py`                  | 预训练（含 FSDP、checkpoint 续训）        |
 | `examples/run_zeus_clean.py`                  | 只负责 pylob 清洗                     |
 | `quant_fm/scripts/run_oos2026_research.sh`    | **RESEARCH ONLY**：构建 execution panel 并评估冻结 score |

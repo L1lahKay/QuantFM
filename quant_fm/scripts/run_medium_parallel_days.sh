@@ -86,6 +86,10 @@ for i in "${!pids[@]}"; do
   fi
 done
 log "所有并行组结束 (ok=$groups_ok)"
+if (( groups_ok != 1 )); then
+  log "FATAL: 至少一个并行组失败；不构建 manifest，保留现有产物供 --resume 续跑。"
+  exit 1
+fi
 
 # 4) 统一构建一次 manifest（BENCH 模式跳过）。
 if [[ "$BENCH" == "1" ]]; then
@@ -95,21 +99,39 @@ else
     log "流式 OOS 模式：已消费 tokens 按日释放，跳过不完整的全量 manifest。"
   else
     log "统一构建 manifest（train_end=$TRAIN_END val_end=$VAL_END）…"
-    uv run python - "$WORKDIR" "$VOCAB" "$TRAIN_END" "$VAL_END" <<'PY'
+    if ! uv run python - "$WORKDIR" "$VOCAB" "$TRAIN_END" "$VAL_END" "$DATES_FILE" <<'PY'
 import sys
 from pathlib import Path
 from quant_fm.manifest.build_manifest import build_manifest
-workdir, vocab, train_end, val_end = sys.argv[1:5]
+workdir, vocab, train_end, val_end, dates_file = sys.argv[1:6]
 m = build_manifest(
     Path(workdir) / "tokens",
     train_end=train_end, val_end=val_end,
     markets=("SZ", "SH"), vocab_path=vocab,
 )
+expected_dates = {
+    line.strip() for line in Path(dates_file).read_text().splitlines() if line.strip()
+}
+actual_dates = {shard.date for shard in m.shards}
+missing_dates = sorted(expected_dates - actual_dates)
+if not m.shards:
+    raise RuntimeError("refusing to publish an empty manifest")
+if missing_dates:
+    preview = ", ".join(missing_dates[:8])
+    raise RuntimeError(
+        f"refusing incomplete manifest: missing {len(missing_dates)} date(s): {preview}"
+    )
 out = Path(workdir) / "data" / "manifest.json"
 out.parent.mkdir(parents=True, exist_ok=True)
-m.save(out)
+tmp = out.with_suffix(".json.tmp")
+m.save(tmp)
+tmp.replace(out)
 print(f"manifest → {out}: {len(m.shards)} shards")
 PY
+    then
+      log "FATAL: manifest 构建或完整性校验失败。"
+      exit 1
+    fi
   fi
 fi
 log "======== 跨日并行完成 ========"

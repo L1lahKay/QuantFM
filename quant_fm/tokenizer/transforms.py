@@ -17,6 +17,32 @@ import numpy as np
 import polars as pl
 
 DERIVED_CONTINUOUS = ("price_rel", "log_volume", "log_delta_t")
+FEATURE_TRANSFORM_LEGACY_V1 = "ew_vwap_future_backfill_v1"
+FEATURE_TRANSFORM_CAUSAL_V2 = "ew_vwap_causal_nan_v2"
+DEFAULT_FEATURE_TRANSFORM_VERSION = FEATURE_TRANSFORM_CAUSAL_V2
+SUPPORTED_FEATURE_TRANSFORM_VERSIONS = frozenset(
+    {FEATURE_TRANSFORM_LEGACY_V1, FEATURE_TRANSFORM_CAUSAL_V2}
+)
+
+
+def validate_feature_transform_version(version: str) -> str:
+    """Return a supported derived-feature contract or raise explicitly."""
+    normalized = str(version)
+    if normalized not in SUPPORTED_FEATURE_TRANSFORM_VERSIONS:
+        msg = (
+            f"unsupported feature_transform_version={normalized!r}; expected one of "
+            f"{sorted(SUPPORTED_FEATURE_TRANSFORM_VERSIONS)}"
+        )
+        raise ValueError(msg)
+    return normalized
+
+
+def reference_price_initialization(version: str) -> str:
+    """Describe the frozen EW-VWAP initialization policy for audit output."""
+    normalized = validate_feature_transform_version(version)
+    if normalized == FEATURE_TRANSFORM_LEGACY_V1:
+        return "future_first_valid_backfill"
+    return "causal_nan_until_current_or_past_price"
 
 
 def int_time_to_ms(int_time: np.ndarray) -> np.ndarray:
@@ -36,6 +62,7 @@ def ew_vwap_mid(
     elapsed_ms: np.ndarray,
     *,
     half_life_ms: float = 5_000.0,
+    transform_version: str = DEFAULT_FEATURE_TRANSFORM_VERSION,
 ) -> np.ndarray:
     """
     时间感知的指数加权 VWAP 中间价估计（因果）。
@@ -53,12 +80,19 @@ def ew_vwap_mid(
         逐事件自午夜起的毫秒数（来自 :func:`int_time_to_ms`）。
     half_life_ms
         EMA 半衰期（毫秒）。
+    transform_version
+        起始缺失策略。新默认值保持 NaN 直到当前或历史事件出现有效价格；
+        legacy 值仅用于复现旧 token，会用未来首个有效值回填。
 
     返回
     -------
     numpy.ndarray
         与输入事件对齐的因果中间价估计。
     """
+    transform_version = validate_feature_transform_version(transform_version)
+    if half_life_ms <= 0 or not np.isfinite(half_life_ms):
+        msg = "half_life_ms must be finite and positive"
+        raise ValueError(msg)
     n = len(price)
     mid = np.empty(n, dtype=np.float64)
     num = 0.0  # price*qty 的 EMA
@@ -80,8 +114,8 @@ def ew_vwap_mid(
             last_mid = price[i]
         mid[i] = last_mid
 
-    # 用首个有效中间价回填开头的 NaN（开盘预热）。
-    if np.isnan(mid).any():
+    # 旧 artifact 的显式复现路径。严格因果版本保留开头 NaN，绝不从未来读值。
+    if transform_version == FEATURE_TRANSFORM_LEGACY_V1 and np.isnan(mid).any():
         valid = np.where(np.isfinite(mid))[0]
         if valid.size:
             mid[: valid[0]] = mid[valid[0]]
@@ -90,7 +124,11 @@ def ew_vwap_mid(
     return mid
 
 
-def add_derived_fields(events: pl.DataFrame) -> pl.DataFrame:
+def add_derived_fields(
+    events: pl.DataFrame,
+    *,
+    transform_version: str = DEFAULT_FEATURE_TRANSFORM_VERSION,
+) -> pl.DataFrame:
     """
     为规范事件数据帧追加因果连续字段。
 
@@ -102,11 +140,25 @@ def add_derived_fields(events: pl.DataFrame) -> pl.DataFrame:
     int_time = events["int_time"].to_numpy()
 
     elapsed = int_time_to_ms(int_time)
-    mid = ew_vwap_mid(price, qty, is_trade, elapsed)
+    transform_version = validate_feature_transform_version(transform_version)
+    mid = ew_vwap_mid(
+        price,
+        qty,
+        is_trade,
+        elapsed,
+        transform_version=transform_version,
+    )
 
     with np.errstate(divide="ignore", invalid="ignore"):
-        ratio = np.where((price > 0) & (mid > 0), price / mid, 1.0)
+        valid_reference = (
+            np.isfinite(price) & (price > 0) & np.isfinite(mid) & (mid > 0)
+        )
+        ratio = np.full(price.shape, np.nan, dtype=np.float64)
+        ratio[valid_reference] = price[valid_reference] / mid[valid_reference]
         price_rel = np.log(np.clip(ratio, 1e-6, 1e6))
+    if transform_version == FEATURE_TRANSFORM_LEGACY_V1:
+        # v1 encoded missing/non-price rows as the neutral relative-price value.
+        price_rel = np.nan_to_num(price_rel, nan=0.0)
     log_volume = np.log1p(np.clip(qty, 0, None) / 100.0)
 
     delta_ms = np.diff(elapsed, prepend=elapsed[0] if len(elapsed) else 0)

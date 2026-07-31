@@ -6,15 +6,9 @@ from dataclasses import dataclass, field
 
 import torch
 
-MULTISCALE_VECTOR_NAMES: tuple[str, ...] = (
-    "mean_all",
-    "last_256",
-    "last_1024",
-    "open_call",
-    "continuous_am",
-    "continuous_pm",
-    "close_call",
-    "close_30m",
+from quant_fm.embedding.pooling_spec import (
+    LEGACY_MULTI_SCALE_SCALARS,
+    MULTISCALE_VECTOR_NAMES,
 )
 
 
@@ -219,12 +213,28 @@ class MultiScaleStockDayPoolAccumulator:
             )
         return output
 
-    def concatenate(self) -> torch.Tensor:
-        """拼接八个向量和原始 event_count 标量，供现有 Ranker 直接消费。"""
+    def concatenate(
+        self,
+        *,
+        vector_components: tuple[str, ...] = MULTISCALE_VECTOR_NAMES,
+        scalar_components: tuple[str, ...] = LEGACY_MULTI_SCALE_SCALARS,
+    ) -> torch.Tensor:
+        """按显式版本布局拼接向量；仅 legacy profile 保留原始事件数。"""
         values = self.value_dict()
-        event_count = torch.tensor(
-            [float(self._counts["mean_all"])], dtype=torch.float32
-        )
-        return torch.cat(
-            [*(values[name] for name in MULTISCALE_VECTOR_NAMES), event_count]
-        )
+        unknown_vectors = set(vector_components) - set(values)
+        if unknown_vectors:
+            msg = f"unknown multi-scale vector components: {sorted(unknown_vectors)}"
+            raise ValueError(msg)
+        unknown_scalars = set(scalar_components) - set(LEGACY_MULTI_SCALE_SCALARS)
+        if unknown_scalars:
+            msg = f"unknown multi-scale scalar components: {sorted(unknown_scalars)}"
+            raise ValueError(msg)
+        pieces = [values[name] for name in vector_components]
+        if "raw_event_count" in scalar_components:
+            pieces.append(
+                torch.tensor([float(self._counts["mean_all"])], dtype=torch.float32)
+            )
+        if not pieces:
+            msg = "multi-scale pooling must emit at least one component"
+            raise ValueError(msg)
+        return torch.cat(pieces)

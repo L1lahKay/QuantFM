@@ -1,0 +1,183 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "addressType": "IPv4",
+            "apiVersion": "discovery.k8s.io/v1",
+            "endpoints": [
+                {
+                    "addresses": [
+                        "10.52.0.96"
+                    ],
+                    "conditions": {
+                        "ready": true,
+                        "serving": true,
+                        "terminating": false
+                    },
+                    "nodeName": "gpu-dev-01",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "name": "volcano-admission-569b8b4545-hd7fz",
+                        "namespace": "volcano-system",
+                        "uid": "0eff603c-c756-482e-bf51-50b79169f4ac"
+                    }
+                }
+            ],
+            "kind": "EndpointSlice",
+            "metadata": {
+                "annotations": {
+                    "endpoints.kubernetes.io/last-change-trigger-time": "2026-07-31T07:16:45Z"
+                },
+                "creationTimestamp": "2026-07-31T07:16:27Z",
+                "generateName": "volcano-admission-service-",
+                "generation": 2,
+                "labels": {
+                    "app": "volcano-admission",
+                    "endpointslice.kubernetes.io/managed-by": "endpointslice-controller.k8s.io",
+                    "kubernetes.io/service-name": "volcano-admission-service"
+                },
+                "name": "volcano-admission-service-dfr49",
+                "namespace": "volcano-system",
+                "ownerReferences": [
+                    {
+                        "apiVersion": "v1",
+                        "blockOwnerDeletion": true,
+                        "controller": true,
+                        "kind": "Service",
+                        "name": "volcano-admission-service",
+                        "uid": "eacd4c90-5e4e-42c1-bcbd-038c50593948"
+                    }
+                ],
+                "resourceVersion": "27876034",
+                "uid": "a3ad0598-61b3-482b-b773-2f958dbad4d2"
+            },
+            "ports": [
+                {
+                    "name": "",
+                    "port": 8443,
+                    "protocol": "TCP"
+                }
+            ]
+        },
+        {
+            "addressType": "IPv4",
+            "apiVersion": "discovery.k8s.io/v1",
+            "endpoints": [
+                {
+                    "addresses": [
+                        "10.52.0.94"
+                    ],
+                    "conditions": {
+                        "ready": true,
+                        "serving": true,
+                        "terminating": false
+                    },
+                    "nodeName": "gpu-dev-01",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "name": "volcano-controllers-7c87f8cb95-lcmqv",
+                        "namespace": "volcano-system",
+                        "uid": "7b09817d-e7db-492d-a499-175f477e63d7"
+                    }
+                }
+            ],
+            "kind": "EndpointSlice",
+            "metadata": {
+                "annotations": {
+                    "endpoints.kubernetes.io/last-change-trigger-time": "2026-07-31T07:16:41Z"
+                },
+                "creationTimestamp": "2026-07-31T07:16:27Z",
+                "generateName": "volcano-controllers-service-",
+                "generation": 2,
+                "labels": {
+                    "app": "volcano-controller",
+                    "endpointslice.kubernetes.io/managed-by": "endpointslice-controller.k8s.io",
+                    "kubernetes.io/service-name": "volcano-controllers-service"
+                },
+                "name": "volcano-controllers-service-ldhwd",
+                "namespace": "volcano-system",
+                "ownerReferences": [
+                    {
+                        "apiVersion": "v1",
+                        "blockOwnerDeletion": true,
+                        "controller": true,
+                        "kind": "Service",
+                        "name": "volcano-controllers-service",
+                        "uid": "2ce482bc-1787-43d3-a60c-b90114c8ba28"
+                    }
+                ],
+                "resourceVersion": "27875992",
+                "uid": "846e819a-e1d4-4429-a073-5594edc9fd0f"
+            },
+            "ports": [
+                {
+                    "name": "metrics",
+                    "port": 8081,
+                    "protocol": "TCP"
+                }
+            ]
+        },
+        {
+            "addressType": "IPv4",
+            "apiVersion": "discovery.k8s.io/v1",
+            "endpoints": [
+                {
+                    "addresses": [
+                        "10.52.0.95"
+                    ],
+                    "conditions": {
+                        "ready": true,
+                        "serving": true,
+                        "terminating": false
+                    },
+                    "nodeName": "gpu-dev-01",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "name": "volcano-scheduler-786498f9db-kfhms",
+                        "namespace": "volcano-system",
+                        "uid": "d33c8104-a1c5-49de-94e9-7363f780a6e0"
+                    }
+                }
+            ],
+            "kind": "EndpointSlice",
+            "metadata": {
+                "annotations": {
+                    "endpoints.kubernetes.io/last-change-trigger-time": "2026-07-31T07:16:41Z"
+                },
+                "creationTimestamp": "2026-07-31T07:16:27Z",
+                "generateName": "volcano-scheduler-service-",
+                "generation": 2,
+                "labels": {
+                    "app": "volcano-scheduler",
+                    "endpointslice.kubernetes.io/managed-by": "endpointslice-controller.k8s.io",
+                    "kubernetes.io/service-name": "volcano-scheduler-service"
+                },
+                "name": "volcano-scheduler-service-zs68b",
+                "namespace": "volcano-system",
+                "ownerReferences": [
+                    {
+                        "apiVersion": "v1",
+                        "blockOwnerDeletion": true,
+                        "controller": true,
+                        "kind": "Service",
+                        "name": "volcano-scheduler-service",
+                        "uid": "5fae3698-ba39-46ec-9ac5-fcf0e0bd051c"
+                    }
+                ],
+                "resourceVersion": "27875997",
+                "uid": "e57ac165-5d0f-4acd-974a-1257e41d9bb8"
+            },
+            "ports": [
+                {
+                    "name": "metrics",
+                    "port": 8080,
+                    "protocol": "TCP"
+                }
+            ]
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

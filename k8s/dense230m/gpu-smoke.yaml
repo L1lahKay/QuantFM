@@ -1,0 +1,61 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dense230m-gpu-smoke-20260728
+  namespace: khalil
+  labels:
+    app: quantfm
+    stage: gpu-smoke
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app: quantfm
+        stage: gpu-smoke
+    spec:
+      restartPolicy: Never
+      runtimeClassName: nvidia
+      nodeSelector:
+        accelerator: nvidia
+      securityContext:
+        runAsUser: 1006
+        runAsGroup: 1009
+        fsGroup: 1009
+      containers:
+        - name: smoke
+          image: ubuntu:22.04
+          imagePullPolicy: IfNotPresent
+          workingDir: /home/khalil/DataCleaning7.3/QuantFM
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              .venv/bin/python -c 'import torch; assert torch.cuda.is_available(); print("torch", torch.__version__, "cuda", torch.version.cuda, "gpu", torch.cuda.get_device_name(0))'
+              test -r quant_fm/runs/dense_230m_v1/run/best.pt
+              test -r quant_fm/runs/cont60/data/manifest.json
+              echo "Dense230M K8s GPU smoke passed"
+          resources:
+            requests:
+              cpu: "1"
+              memory: 4Gi
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "2"
+              memory: 8Gi
+              nvidia.com/gpu: "1"
+          volumeMounts:
+            - name: project
+              mountPath: /home/khalil/DataCleaning7.3/QuantFM
+            - name: uv-python
+              mountPath: /home/khalil/.local/share/uv/python
+              readOnly: true
+      volumes:
+        - name: project
+          hostPath:
+            path: /home/khalil/DataCleaning7.3/QuantFM
+            type: Directory
+        - name: uv-python
+          hostPath:
+            path: /home/khalil/.local/share/uv/python
+            type: Directory

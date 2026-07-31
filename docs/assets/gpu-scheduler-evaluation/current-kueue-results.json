@@ -1,0 +1,35 @@
+{
+  "captured_at_utc": "2026-07-31T06:23:38.282Z",
+  "cluster": {
+    "namespace": "gpu-dev",
+    "kubernetes": "v1.35.4+k3s1",
+    "kueue_api": "kueue.x-k8s.io/v1beta2",
+    "kueue_controller_version": "not readable by the restricted account",
+    "volcano_api_present": false
+  },
+  "safe_admission_probe": {
+    "queue_label_candidate": "gpu-dev",
+    "job_client_submit_at": "2026-07-31T06:23:27.834Z",
+    "job_created_at": "2026-07-31T06:23:28Z",
+    "workload_event_at": "2026-07-31T06:23:28.114499Z",
+    "job_suspended": true,
+    "workload_created": true,
+    "pods_created_at_snapshot": 0,
+    "observation_wall_clock_seconds": 10.448,
+    "client_submit_to_workload_event_seconds": 0.28,
+    "admission_observed": false,
+    "container_started": false,
+    "job_completed": false,
+    "runtime_seconds": null,
+    "end_to_end_wall_clock_seconds": null,
+    "result": "Kueue gating active; runnable queue/quota path not demonstrated"
+  },
+  "controller_catchup_diagnostic": {
+    "input_explicit_suspend": false,
+    "pod_created_then_deleted": true,
+    "pod_bound_by_default_scheduler": true,
+    "container_started": false,
+    "safe_manifest_now_sets_explicit_suspend": true
+  },
+  "evidence_limit": "The account cannot read LocalQueue, ClusterQueue, Workload, or ResourceQuota, so the non-admission reason and quota policy are unknown."
+}

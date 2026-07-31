@@ -1,0 +1,42 @@
+PROBE_CLIENT_START 2026-07-31T06:13:55.227Z
+NAME                              STATUS     COMPLETIONS   DURATION   AGE   CONTAINERS   IMAGES                                      SELECTOR
+job.batch/dylan-trainer-ac4218e   Complete   1/1           33s        31m   trainer      registry.zs/gpu-dev/dylan-trainer:ac4218e   batch.kubernetes.io/controller-uid=110bfe69-6575-4ca9-9ef2-fc52756683bb
+
+NAME                              READY   STATUS      RESTARTS   AGE   IP           NODE         NOMINATED NODE   READINESS GATES
+pod/dylan-trainer-ac4218e-f5sjk   0/1     Completed   0          31m   10.52.0.91   gpu-dev-01   <none>           <none>
+JOB_SUBMIT_CLIENT 2026-07-31T06:13:55.475Z
+JOB_CREATED_NAME khalil-kueue-probe-fzzd9
+POLL attempt=0 client_at=2026-07-31T06:13:55.757Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=1 client_at=2026-07-31T06:13:57.492Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=2 client_at=2026-07-31T06:13:59.211Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=3 client_at=2026-07-31T06:14:00.904Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=4 client_at=2026-07-31T06:14:02.640Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=5 client_at=2026-07-31T06:14:04.363Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=6 client_at=2026-07-31T06:14:06.059Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=7 client_at=2026-07-31T06:14:07.777Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=8 client_at=2026-07-31T06:14:09.497Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=9 client_at=2026-07-31T06:14:11.186Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=10 client_at=2026-07-31T06:14:12.911Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=11 client_at=2026-07-31T06:14:14.612Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=12 client_at=2026-07-31T06:14:16.300Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=13 client_at=2026-07-31T06:14:17.990Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=14 client_at=2026-07-31T06:14:19.695Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=15 client_at=2026-07-31T06:14:21.419Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=16 client_at=2026-07-31T06:14:23.139Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=17 client_at=2026-07-31T06:14:24.825Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=18 client_at=2026-07-31T06:14:26.510Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=19 client_at=2026-07-31T06:14:28.212Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=20 client_at=2026-07-31T06:14:29.907Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=21 client_at=2026-07-31T06:14:31.597Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=22 client_at=2026-07-31T06:14:33.338Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=23 client_at=2026-07-31T06:14:35.059Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+POLL attempt=24 client_at=2026-07-31T06:14:36.779Z job=[2026-07-31T06:13:55Z suspend=true active= succeeded=] pod=[]
+LAST SEEN   TYPE     REASON             OBJECT                         MESSAGE
+44s         Normal   SuccessfulCreate   job/khalil-kueue-probe-fzzd9   Created pod: khalil-kueue-probe-fzzd9-cp6l4
+43s         Normal   Stopped            job/khalil-kueue-probe-fzzd9   Missing Workload; unable to restore pod templates
+43s         Normal   CreatedWorkload    job/khalil-kueue-probe-fzzd9   Created Workload: gpu-dev/job-khalil-kueue-probe-fzzd9-82a26
+44s         Normal   SuccessfulDelete   job/khalil-kueue-probe-fzzd9   Deleted pod: khalil-kueue-probe-fzzd9-cp6l4
+44s         Normal   Suspended          job/khalil-kueue-probe-fzzd9   Job suspended
+error: timed out waiting for the condition
+PROBE_CLIENT_END 2026-07-31T06:14:59.473Z
+job.batch "khalil-kueue-probe-fzzd9" deleted from gpu-dev namespace

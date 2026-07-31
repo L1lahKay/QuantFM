@@ -1,0 +1,126 @@
+# One-time, administrator-run migration from the GPU node root disk to the
+# existing khalil/quantfm-data PVC. The source is read-only and the copy lands
+# in a staging directory. This Job does not cut over, rename, or delete data.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: khalil-quantfm-runs-migrate-20260731
+  namespace: khalil
+  labels:
+    app.kubernetes.io/name: quantfm
+    app.kubernetes.io/component: storage-migration
+    owner: khalil
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 43200
+  ttlSecondsAfterFinished: 604800
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: quantfm
+        app.kubernetes.io/component: storage-migration
+        owner: khalil
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        accelerator: nvidia
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      securityContext:
+        runAsUser: 1006
+        runAsGroup: 1009
+        fsGroup: 1009
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: migrate
+          image: ubuntu:22.04
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-lc"]
+          args:
+            - |
+              set -euo pipefail
+
+              source_dir=/source-runs
+              pvc_root=/mnt/quantfm
+              stage_dir="$pvc_root/runs.migrating-20260731"
+              report="$pvc_root/migration-20260731.report"
+              complete_marker="$pvc_root/migration-20260731.complete"
+
+              test -d "$source_dir"
+              test -d "$pvc_root"
+              test ! -e "$complete_marker"
+              mkdir -p "$stage_dir"
+              if find "$stage_dir" -mindepth 1 -print -quit | grep -q .; then
+                echo "ERROR: staging directory is not empty: $stage_dir" >&2
+                echo "Inspect it manually; this Job will not overwrite a partial copy." >&2
+                exit 2
+              fi
+
+              inventory() {
+                inventory_root="$1"
+                inventory_files="$(find "$inventory_root" -xdev -type f -printf '.' | wc -c)"
+                inventory_dirs="$(find "$inventory_root" -xdev -type d -printf '.' | wc -c)"
+                inventory_links="$(find "$inventory_root" -xdev -type l -printf '.' | wc -c)"
+                inventory_bytes="$(find "$inventory_root" -xdev -type f -printf '%s\n' | awk '{ total += $1 } END { printf "%.0f", total + 0 }')"
+                inventory_paths="$(find "$inventory_root" -xdev -printf '%y %P\n' | LC_ALL=C sort | sha256sum | awk '{print $1}')"
+                printf '%s|%s|%s|%s|%s\n' \
+                  "$inventory_files" "$inventory_dirs" "$inventory_links" \
+                  "$inventory_bytes" "$inventory_paths"
+              }
+
+              source_before="$(inventory "$source_dir")"
+              echo "source_before=$source_before"
+              echo "copy_started_utc=$(date -u +%FT%TZ)"
+
+              tar --sparse -C "$source_dir" -cpf - . \
+                | tar --sparse --no-same-owner -C "$stage_dir" -xpf -
+              sync
+
+              source_after="$(inventory "$source_dir")"
+              destination="$(inventory "$stage_dir")"
+              echo "source_after=$source_after"
+              echo "destination=$destination"
+
+              if [ "$source_before" != "$source_after" ]; then
+                echo "ERROR: source changed during migration" >&2
+                exit 3
+              fi
+              if [ "$source_after" != "$destination" ]; then
+                echo "ERROR: destination inventory does not match source" >&2
+                exit 4
+              fi
+
+              {
+                echo "copy_completed_utc=$(date -u +%FT%TZ)"
+                echo "source=$source_dir"
+                echo "staging=$stage_dir"
+                echo "inventory=$destination"
+                echo "format=files|dirs|links|regular_file_bytes|path_sha256"
+              } > "$report.tmp"
+              mv "$report.tmp" "$report"
+              touch "$complete_marker"
+              sync
+              echo "MIGRATION_COPY_PASS"
+          resources:
+            requests:
+              cpu: "2"
+              memory: 1Gi
+            limits:
+              cpu: "4"
+              memory: 4Gi
+          volumeMounts:
+            - name: source-runs
+              mountPath: /source-runs
+              readOnly: true
+            - name: quantfm-data
+              mountPath: /mnt/quantfm
+      volumes:
+        - name: source-runs
+          hostPath:
+            path: /home/khalil/DataCleaning7.3/QuantFM/quant_fm/runs
+            type: Directory
+        - name: quantfm-data
+          persistentVolumeClaim:
+            claimName: quantfm-data

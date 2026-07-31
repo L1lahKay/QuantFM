@@ -22,6 +22,7 @@ import hashlib
 import json
 import logging
 import shutil
+from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -37,7 +38,12 @@ from quant_fm.downstream.evaluate import (
     rank_icir,
 )
 from quant_fm.downstream.make_features import build_features
-from quant_fm.downstream.train_ranker import fit_ranker, predict, train_ranker
+from quant_fm.downstream.train_ranker import (
+    RankerObjectiveConfig,
+    fit_ranker,
+    predict,
+    train_ranker,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +56,7 @@ def _run_cpcv(
     epochs: int,
     seed: int,
     top_k: int | None,
+    objective: RankerObjectiveConfig,
 ) -> dict:
     """
     组合式 purged CV。
@@ -91,13 +98,14 @@ def _run_cpcv(
             epochs=fold_epochs,
             device=device,
             seed=seed + i,
+            objective=objective,
         )
         preds = predict(model, test_f, device=device)
         pan = panel.filter(pl.col("date").is_in(test_f["date"].unique().to_list()))
         ic = rank_ic(preds, pan)
         mean_ic = float(np.nanmean(ic["ic"].to_numpy()))
         n_per_day = max(test_f.height // max(test_f["date"].n_unique(), 1), 1)
-        k = top_k if top_k is not None else min(10, max(3, n_per_day // 5))
+        k = top_k if top_k is not None else min(objective.primary_k, n_per_day)
         bt = backtest_topk(preds, pan, top_k=k, long_short=False, cost_bps=15.0)
         fold_rows.append(
             {
@@ -178,6 +186,7 @@ def _eval_split(
     *,
     device: str,
     top_k: int | None,
+    default_top_k: int,
 ) -> dict:
     if feat.is_empty() or feat["date"].n_unique() == 0:
         return {"split": name, "error": "empty"}
@@ -187,7 +196,7 @@ def _eval_split(
     icir = rank_icir(ic)
     mono = group_monotonicity(preds, pan, n_groups=5)
     n_per_day = max(feat.height // max(feat["date"].n_unique(), 1), 1)
-    k = top_k if top_k is not None else min(10, max(3, n_per_day // 5))
+    k = top_k if top_k is not None else min(default_top_k, n_per_day)
     bt_ls = backtest_topk(preds, pan, top_k=k, long_short=True, cost_bps=15.0)
     bt_lo = backtest_topk(preds, pan, top_k=k, long_short=False, cost_bps=15.0)
     dsr = deflated_sharpe_ratio(
@@ -229,6 +238,8 @@ def run_judge(
     top_k: int | None = None,
     min_names_per_day: int = 20,
     seed: int = 42,
+    dev_only: bool = False,
+    objective: RankerObjectiveConfig | None = None,
 ) -> Path:
     """跑下游裁判并把完整报告写入 ``workdir/downstream/``，返回报告路径。"""
     workdir = Path(workdir)
@@ -240,6 +251,8 @@ def run_judge(
     runs_dir = out_dir / "runs"
     out_dir.mkdir(parents=True, exist_ok=True)
     runs_dir.mkdir(parents=True, exist_ok=True)
+    objective_cfg = objective or RankerObjectiveConfig()
+    objective_cfg.validate()
 
     ckpt_meta = _file_meta(checkpoint)
     panel = pl.read_parquet(panel_path).filter(pl.col("fwd_ret").is_not_null())
@@ -254,10 +267,14 @@ def run_judge(
         panel,
         min_names_per_day=min_names_per_day,
     )
-    test_feat = build_features(
-        _load_emb(emb_dir / "test.parquet"),
-        panel,
-        min_names_per_day=min_names_per_day,
+    test_feat = (
+        pl.DataFrame()
+        if dev_only
+        else build_features(
+            _load_emb(emb_dir / "test.parquet"),
+            panel,
+            min_names_per_day=min_names_per_day,
+        )
     )
 
     training = fit_ranker(
@@ -266,16 +283,22 @@ def run_judge(
         epochs=epochs,
         device=device,
         seed=seed,
+        objective=objective_cfg,
     )
     model = training.model
     history = [float(row["train_ic"] or 0.0) for row in training.history]
 
-    rng = np.random.default_rng(0)
-    test_pan = panel.filter(pl.col("date").is_in(test_feat["date"].unique().to_list()))
-    rand_preds = test_feat.select(["date", "symbol"]).with_columns(
-        pl.Series("score", rng.normal(size=test_feat.height))
-    )
-    rand_ic = rank_ic(rand_preds, test_pan)
+    random_baseline_mean_ic = None
+    if not dev_only:
+        rng = np.random.default_rng(0)
+        test_pan = panel.filter(
+            pl.col("date").is_in(test_feat["date"].unique().to_list())
+        )
+        rand_preds = test_feat.select(["date", "symbol"]).with_columns(
+            pl.Series("score", rng.normal(size=test_feat.height))
+        )
+        rand_ic = rank_ic(rand_preds, test_pan)
+        random_baseline_mean_ic = float(np.nanmean(rand_ic["ic"].to_numpy()))
 
     feat_all = pl.concat(
         [df for df in (train_feat, val_feat, test_feat) if not df.is_empty()],
@@ -288,11 +311,13 @@ def run_judge(
         epochs=epochs,
         seed=seed,
         top_k=top_k,
+        objective=objective_cfg,
     )
 
     ts = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%SZ")
     report = {
         "created_utc": ts,
+        "evaluation_scope": "development_only" if dev_only else "full_with_test",
         "checkpoint": ckpt_meta,
         "panel": _file_meta(panel_path),
         "embeddings_dir": str(emb_dir.resolve()),
@@ -301,22 +326,45 @@ def run_judge(
             "epochs": epochs,
             "device": device,
             "seed": seed,
+            "objective": asdict(objective_cfg),
             "train_history_ic": history,
             "final_train_ic": history[-1] if history else None,
             "best_epoch": training.best_epoch,
             "best_val_ic": training.best_val_ic,
+            "best_val_ndcg": training.best_val_ndcg,
+            "best_selection_score": training.best_selection_score,
             "stopped_early": training.stopped_early,
             "training_history": training.history,
         },
         "in_sample_train": _eval_split(
-            "train", model, train_feat, panel, device=device, top_k=top_k
+            "train",
+            model,
+            train_feat,
+            panel,
+            device=device,
+            top_k=top_k,
+            default_top_k=objective_cfg.primary_k,
         ),
-        "val": _eval_split("val", model, val_feat, panel, device=device, top_k=top_k),
+        "val": _eval_split(
+            "val",
+            model,
+            val_feat,
+            panel,
+            device=device,
+            top_k=top_k,
+            default_top_k=objective_cfg.primary_k,
+        ),
         "test": _eval_split(
-            "test", model, test_feat, panel, device=device, top_k=top_k
+            "test",
+            model,
+            test_feat,
+            panel,
+            device=device,
+            top_k=top_k,
+            default_top_k=objective_cfg.primary_k,
         ),
         "cpcv": cpcv_report,
-        "test_random_baseline_mean_ic": float(np.nanmean(rand_ic["ic"].to_numpy())),
+        "test_random_baseline_mean_ic": random_baseline_mean_ic,
     }
 
     run_path = runs_dir / f"{ts}_{ckpt_meta['stem']}.json"
@@ -373,6 +421,11 @@ def main() -> None:
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--top-k", type=int, default=None)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--dev-only",
+        action="store_true",
+        help="只使用 train/val 做候选筛选，不读取 test embedding",
+    )
     args = parser.parse_args()
 
     ckpt = args.checkpoint or (args.workdir / "run" / "best.pt")
@@ -385,6 +438,7 @@ def main() -> None:
         device=args.device,
         top_k=args.top_k,
         seed=args.seed,
+        dev_only=args.dev_only,
     )
     print(path)
 

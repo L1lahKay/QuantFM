@@ -1,0 +1,116 @@
+# GPU 集群最小使用配置兼冒烟测试。
+#
+# 当前适配环境：
+#   namespace:       khalil
+#   node label:      accelerator=nvidia
+#   runtime class:   nvidia
+#   GPU resource:    nvidia.com/gpu
+#   project path:    /home/khalil/DataCleaning7.3/QuantFM
+#
+# 提交：kubectl apply -f k8s/gpu-cluster/gpu-usage-config.yaml
+# 日志：kubectl -n khalil logs -f job/gpu-usage-smoke
+# 重跑：kubectl -n khalil delete job gpu-usage-smoke --ignore-not-found
+#       kubectl apply -f k8s/gpu-cluster/gpu-usage-config.yaml
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gpu-usage-smoke
+  namespace: khalil
+  labels:
+    app: gpu-usage-smoke
+    owner: khalil
+    purpose: cluster-validation
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 300
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app: gpu-usage-smoke
+        owner: khalil
+        purpose: cluster-validation
+    spec:
+      restartPolicy: Never
+      runtimeClassName: nvidia
+      nodeSelector:
+        accelerator: nvidia
+      securityContext:
+        runAsUser: 1006
+        runAsGroup: 1009
+        fsGroup: 1009
+      containers:
+        - name: gpu-smoke
+          # 该镜像已在当前节点实际使用；PyTorch 从宿主机项目的 .venv 加载。
+          image: ubuntu:22.04
+          imagePullPolicy: IfNotPresent
+          workingDir: /home/khalil/DataCleaning7.3/QuantFM
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+          command: ["/bin/bash", "-lc"]
+          args:
+            - |
+              set -euo pipefail
+
+              python_bin=.venv/bin/python
+              test -x "$python_bin"
+
+              echo "=== NVIDIA runtime ==="
+              nvidia-smi --query-gpu=index,name,memory.total,driver_version \
+                --format=csv,noheader
+
+              echo "=== PyTorch CUDA compute ==="
+              "$python_bin" - <<'PY'
+              import math
+              import torch
+
+              assert torch.cuda.is_available(), "torch.cuda.is_available() == False"
+              assert torch.cuda.device_count() == 1, (
+                  "the 1-GPU job must see exactly one GPU, got "
+                  f"{torch.cuda.device_count()}"
+              )
+
+              device = torch.device("cuda:0")
+              props = torch.cuda.get_device_properties(device)
+              x = torch.rand((1024, 1024), dtype=torch.float16, device=device)
+              y = x @ x
+              torch.cuda.synchronize(device)
+              mean = float(y.float().mean())
+              assert math.isfinite(mean), f"non-finite CUDA result: {mean}"
+
+              free_bytes, total_bytes = torch.cuda.mem_get_info(device)
+              print(f"torch={torch.__version__} cuda_build={torch.version.cuda}")
+              print(f"device={props.name} visible_gpus={torch.cuda.device_count()}")
+              print(
+                  f"memory_free_gib={free_bytes / 2**30:.2f} "
+                  f"memory_total_gib={total_bytes / 2**30:.2f}"
+              )
+              print(f"matmul_mean={mean:.6f}")
+              print("GPU_SMOKE_PASS")
+              PY
+          resources:
+            requests:
+              cpu: "1"
+              memory: 4Gi
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "2"
+              memory: 8Gi
+              nvidia.com/gpu: "1"
+          volumeMounts:
+            - name: project
+              mountPath: /home/khalil/DataCleaning7.3/QuantFM
+            - name: uv-python
+              mountPath: /home/khalil/.local/share/uv/python
+              readOnly: true
+      volumes:
+        - name: project
+          hostPath:
+            path: /home/khalil/DataCleaning7.3/QuantFM
+            type: Directory
+        - name: uv-python
+          hostPath:
+            path: /home/khalil/.local/share/uv/python
+            type: Directory

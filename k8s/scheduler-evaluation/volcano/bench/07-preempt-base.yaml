@@ -1,0 +1,50 @@
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+  name: khalil-volcano-preempt
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  weight: 1
+  reclaimable: true
+  capability:
+    cpu: "4"
+    memory: 8Gi
+    nvidia.com/gpu: "3"
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: PodGroup
+metadata:
+  namespace: gpu-dev
+  name: khalil-volcano-preempt-victim-pg
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+  annotations:
+    volcano.sh/preemptable: "true"
+spec:
+  minMember: 1
+  minResources:
+    cpu: 100m
+    memory: 128Mi
+    nvidia.com/gpu: "3"
+  priorityClassName: khalil-volcano-low
+  queue: khalil-volcano-preempt
+---
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: PodGroup
+metadata:
+  namespace: gpu-dev
+  name: khalil-volcano-preempt-high-pg
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/suite: volcano-v1-15-1
+spec:
+  minMember: 1
+  minResources:
+    cpu: 100m
+    memory: 128Mi
+    nvidia.com/gpu: "1"
+  priorityClassName: khalil-volcano-high
+  queue: khalil-volcano-preempt
