@@ -1,9 +1,9 @@
 # 阶段 4：Tokenizer 与字段级词表
 
-> 当前状态（2026-07）：v1 Tokenizer 保持稳定；v2 的 `FieldSpec`、独立特殊 token、
+> 当前状态（2026-08）：v1 Tokenizer 保持兼容；v2 的 `FieldSpec`、独立特殊 token、
 > 全流分层 priority reservoir、字段级词表、连续双通道、coverage/leakage 检查均已
-> 实现并有单元测试。v2 尚未接入现有 medium/300M 数据生产 CLI，真实训练集 vocab
-> 和 token parquet 仍需生成。
+> 实现并有单元测试，且已接入 Pilot/Medium/MinIO 默认数据入口。正式全市场 vocab、
+> token parquet、checkpoint 和 score 仍须通过真实运行生成与验收。
 
 ## v1 稳定路径
 
@@ -83,7 +83,8 @@ val_<field>      # 训练期 mean/std 标准化并 clip；缺失位置为 0
 
 ## 拟合 v2 vocab
 
-目前 v2 拟合/分词提供 Python API，尚无独立批量 CLI。最小调用如下：
+v2 拟合/分词既可使用 Python API，也已由 `run_pilot.py` / `run_medium.py`
+批量编排。最小底层调用如下：
 
 ```python
 from pathlib import Path

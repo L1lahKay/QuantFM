@@ -32,12 +32,42 @@ PY
 fi
 
 MANIFEST="$WORKDIR/data/manifest.json"
-VOCAB="$WORKDIR/data/vocab.json"
+if [[ -f "$WORKDIR/data/vocab_v2.json" ]]; then
+  VOCAB="$WORKDIR/data/vocab_v2.json"
+else
+  VOCAB="$WORKDIR/data/vocab.json"
+fi
 
 if [[ ! -f "$MANIFEST" || ! -f "$VOCAB" ]]; then
   echo "ERROR: medium 数据未就绪: $WORKDIR" >&2
   echo "  缺少 manifest 或 vocab；请先 run_medium_pipeline.sh 或 make medium" >&2
   exit 1
+fi
+
+# MEDIUM_WORKDIR is an explicit artifact-root override.  Materialize an exact
+# config snapshot so V2 try/smoke/full can share the reviewed model configs
+# without accidentally reading the hard-coded v2_shared data root.
+EFFECTIVE_CONFIG="$CONFIG"
+if [[ -n "${MEDIUM_WORKDIR:-}" ]]; then
+  EFFECTIVE_CONFIG="$WORKDIR/data/train_config.generated.yaml"
+  python - "$CONFIG" "$WORKDIR" "$VOCAB" "$EFFECTIVE_CONFIG" <<'PY'
+import pathlib
+import sys
+
+import yaml
+
+source, workdir, vocab, destination = map(pathlib.Path, sys.argv[1:])
+cfg = yaml.safe_load(source.read_text(encoding="utf-8"))
+cfg["data"]["manifest"] = str(workdir / "data" / "manifest.json")
+cfg["data"]["vocab"] = str(vocab)
+if "validation_plan" in cfg["data"]:
+    cfg["data"]["validation_plan"] = str(workdir / "validation_windows.json")
+cfg["runtime"]["out_dir"] = str(workdir / "run")
+destination.write_text(
+    yaml.safe_dump(cfg, allow_unicode=True, sort_keys=False),
+    encoding="utf-8",
+)
+PY
 fi
 
 python - <<'PY' || { echo "ERROR: CUDA 不可用" >&2; exit 1; }
@@ -49,7 +79,7 @@ PY
 export TB_LOGDIR="$WORKDIR/run/tb"
 bash "$ROOT/quant_fm/scripts/start_tensorboard_medium.sh"
 
-echo "==> config=$CONFIG  nproc=$NPROC  port=$MASTER_PORT"
+echo "==> config=$EFFECTIVE_CONFIG  nproc=$NPROC  port=$MASTER_PORT"
 echo "==> workdir=$WORKDIR"
 echo "==> TensorBoard: http://127.0.0.1:${TB_PORT:-6006}"
 echo "==> checkpoints: $WORKDIR/run/"
@@ -59,4 +89,4 @@ exec torchrun \
   --nproc_per_node="$NPROC" \
   --master_port="$MASTER_PORT" \
   -m quant_fm.pretrain.train \
-  --config "$CONFIG"
+  --config "$EFFECTIVE_CONFIG"

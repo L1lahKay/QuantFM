@@ -7,6 +7,7 @@ Also used by ``run_medium.py --upload-minio``.
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import shutil
 import subprocess
@@ -19,6 +20,23 @@ from quant_fm.scripts.minio_config import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _vocab_artifact(workdir: Path) -> Path:
+    """Resolve exactly one local vocab generation and reject mixed roots."""
+    data_dir = Path(workdir) / "data"
+    candidates = [
+        path
+        for path in (data_dir / "vocab_v2.json", data_dir / "vocab.json")
+        if path.is_file()
+    ]
+    if len(candidates) != 1:
+        msg = (
+            f"expected exactly one vocab artifact under {data_dir}, "
+            f"found {[path.name for path in candidates]}"
+        )
+        raise FileNotFoundError(msg)
+    return candidates[0]
 
 
 def _ensure_mc_alias(name: str = "fm_upload") -> str:
@@ -66,8 +84,9 @@ def upload_workdir(
 
     tokens = workdir / "tokens"
     events = workdir / "events"
-    vocab = workdir / "data" / "vocab.json"
+    vocab = _vocab_artifact(workdir)
     manifest = workdir / "data" / "manifest.json"
+    audit = workdir / "artifact_audit.json"
 
     required = [tokens, vocab, manifest]
     missing = [p for p in required if not p.exists()]
@@ -82,9 +101,18 @@ def upload_workdir(
     remote = f"{alias}/{dest}"
     cmds: list[list[str]] = [
         ["mc", "cp", "--recursive", str(tokens) + "/", f"{remote}/tokens/"],
-        ["mc", "cp", str(vocab), f"{remote}/data/vocab.json"],
+        ["mc", "cp", str(vocab), f"{remote}/data/{vocab.name}"],
         ["mc", "cp", str(manifest), f"{remote}/data/manifest.json"],
     ]
+    if vocab.name == "vocab_v2.json":
+        if not audit.is_file():
+            msg = f"V2 upload requires a passed artifact audit: {audit}"
+            raise FileNotFoundError(msg)
+        audit_payload = json.loads(audit.read_text(encoding="utf-8"))
+        if audit_payload.get("contract_ready") is not True:
+            msg = f"V2 artifact audit is not PASS: {audit}"
+            raise RuntimeError(msg)
+        cmds.append(["mc", "cp", str(audit), f"{remote}/artifact_audit.json"])
     if include_events and events.is_dir():
         cmds.insert(
             0, ["mc", "cp", "--recursive", str(events) + "/", f"{remote}/events/"]
@@ -131,8 +159,10 @@ def main() -> None:
     """Upload an experiment data snapshot or verify a remote tag."""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--workdir", type=Path, default=Path("quant_fm/runs/pilot"))
-    parser.add_argument("--tag", default="pilot")
+    parser.add_argument(
+        "--workdir", type=Path, default=Path("quant_fm/runs/v2_shared")
+    )
+    parser.add_argument("--tag", default="v2_shared")
     parser.add_argument("--include-events", action="store_true")
     parser.add_argument("--delete-local", action="store_true")
     parser.add_argument("--verify", action="store_true")

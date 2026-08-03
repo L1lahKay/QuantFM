@@ -162,10 +162,20 @@ class MatchingEngine(ABC):
         if is_continuous and self.first_continuous:
             self.first_continuous = False
 
-    def process_workflow(self, order_df):
-        """Replay ``order_df`` row-by-row like live feed, then finalize session."""
+    def process_workflow(self, order_df, *, capture_book_state: bool = False):
+        """
+        Replay ``order_df`` row-by-row like a live feed, then finalize the session.
+
+        When ``capture_book_state`` is true, return one causal pre/post transition
+        per input record.  The opt-in keeps the established V1 cleaning cost
+        unchanged while allowing QuantFM V2 to persist real aligned book state.
+        """
+        if capture_book_state:
+            from pylob.book_state import BookStateTransition, snapshot_book_state
+
         self.reset_market_state()
         self.process_num = 0
+        transitions = [] if capture_book_state else None
 
         total_rows = len(order_df)
         order_array = order_df.to_numpy()
@@ -174,7 +184,16 @@ class MatchingEngine(ABC):
             row_data = order_array[row]
             self.row_data = row_data
             self.row_data_time = row_data[self.column_indices["int_time"]]
+            if capture_book_state:
+                pre_event_state = snapshot_book_state(self)
             self.process_single_market_record(row_data)
+            if capture_book_state:
+                transitions.append(
+                    BookStateTransition(
+                        pre_event_state=pre_event_state,
+                        post_event_state=snapshot_book_state(self),
+                    )
+                )
             self.process_num += 1
 
             self.process_percent = self.process_num / total_rows * 100
@@ -190,6 +209,7 @@ class MatchingEngine(ABC):
 
         # 结束交易会话
         self.finalize_trading_session()
+        return transitions
 
     # ------------------------------------------------------------------
     # 订单管理

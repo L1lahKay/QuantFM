@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# MinIO 数据流水线（无训练）：读 :9000/zeus-cn-quote → 本地处理 → 写 :9100/model-cache
+# MinIO V2 数据流水线（无训练）：真实盘口回放 → V2 tokens → 审计 → MinIO
 # 上传后默认删除本地 tokens。若还要训练，请用：
 #   make minio-full-pipeline / run_minio_full_pipeline.sh
 #
@@ -30,20 +30,20 @@ LOG="${LOG:-$ROOT/quant_fm/runs/minio_pipeline.log}"
 
 case "$MODE" in
   try)
-    WORKDIR="$ROOT/quant_fm/runs/medium_try"
-    TAG="medium_try"
+    WORKDIR="$ROOT/quant_fm/runs/v2_try"
+    TAG="v2_try"
     DATES="$ROOT/quant_fm/data/medium_try_5_dates.txt"
     EXTRA=(--dates-file "$DATES" --max-symbols-per-market 30)
     ;;
   smoke)
-    WORKDIR="$ROOT/quant_fm/runs/medium_smoke"
-    TAG="medium_smoke"
+    WORKDIR="$ROOT/quant_fm/runs/v2_smoke"
+    TAG="v2_smoke"
     EXTRA=(--max-symbols-per-market 50)
     ;;
   full)
-    WORKDIR="$ROOT/quant_fm/runs/medium"
-    TAG="medium"
-    EXTRA=(--resume)
+    WORKDIR="$ROOT/quant_fm/runs/v2_shared"
+    TAG="v2_shared"
+    EXTRA=(--resume --v2-full-audit)
     ;;
   *)
     echo "MODE must be try|smoke|full" >&2
@@ -60,11 +60,13 @@ OUT_PREFIX="${MINIO_OUTPUT_PREFIX:-fm-pretrain/${USER:-user}}"
 echo "read:  zeus-cn-quote @ 192.168.2.11:9000"
 echo "write: model-cache @ 192.168.2.11:9100/$OUT_PREFIX/$TAG/"
 echo "workdir: $WORKDIR"
+echo "schema: cn_l2_v2 (real post-event book state, Q16 scalar storage)"
 
 python -m quant_fm.scripts.check_minio
 
 python -m quant_fm.scripts.run_medium \
   --workdir "$WORKDIR" \
+  --data-version v2 \
   --drop-clean \
   --drop-events \
   --upload-minio \
@@ -72,7 +74,7 @@ python -m quant_fm.scripts.run_medium \
   --delete-local-after-upload \
   "${EXTRA[@]}"
 
-python -m quant_fm.scripts.upload_to_minio --tag "$TAG" --verify 2>/dev/null || \
+python -m quant_fm.scripts.upload_to_minio --tag "$TAG" --verify-only 2>/dev/null || \
   python3 <<PY
 from quant_fm.scripts.upload_to_minio import _ensure_mc_alias, remote_uri, output_bucket, output_prefix
 import subprocess

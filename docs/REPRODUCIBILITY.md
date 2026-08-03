@@ -217,7 +217,7 @@ sparse 对照候选。配置文件存在不代表相应模型已经训练，也�
 - 数据阶段支持日期级 / 标的级断点续跑（`.done`、`.clean_done`、`skip_existing`）、`CLEAN_WORKERS` 多进程清洗与 `CANON_WORKERS` 并行规范化；可用 `check_pipeline_progress` 查询进度；
 - manifest 中包含绝对路径，跨机器迁移时应重建或改写；
 - 合成 smoke 的回测指标没有经济含义；
-- 现有 MinIO/Pilot/Medium 一键脚本仍生成 v1 events/tokens；v2 数据准备目前由库 API 完成，尚无新的全链路一键命令；
+- MinIO/Pilot/Medium 一键脚本现默认生成带真实逐事件盘口的 V2 events、`vocab_v2.json`、Q16 token/scalar、manifest 与审计报告；V1 只允许通过 `--data-version v1` 显式复现；
 - v2 实现已经通过单元/集成回归，但尚未生成正式 25M/100M checkpoint，未做新 untouched OOS，也未证明 score 或交易成本后收益改善；
 - 多尺度池化、`IntradayAggregator` 和 `cross_asset` 已有因果测试，但尚未接入默认生产 score 路径；
 - Temporal Regime-MoE 与顶部 Backbone-MoE 已有模块、配置和代码级测试，但尚无正式

@@ -4,6 +4,10 @@
 与 ``run_pilot.py`` 相同流水线，但面向沪深全市场、按日增量处理并可选
 删除中间 ``clean/``、``events/`` 以控制磁盘峰值。
 
+默认产出正式 ``cn_l2_v2``：真实逐事件 pre/post 盘口、冻结
+``vocab_v2.json``、窄 token + Q16 scalar、版本化 manifest 和 V2 artifact
+审计。仅旧实验兼容可显式使用 ``--data-version v1``。
+
 默认日期列表为 ``quant_fm/data/medium_60_dates.txt``，
 包含 2025 年均匀抽样的 60 天（约总日历 1/10）。
 默认标的列表：``quant_fm/data/medium_symbols_{sz,sh}.txt``。
@@ -17,6 +21,7 @@ MinIO 读 ``9000/zeus-cn-quote``，写 ``9100/model-cache``。
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import math
 import multiprocessing as mp
@@ -39,18 +44,36 @@ from quant_fm.lob_rebuild.export_events import (
     canonicalize_clean_dir,
 )
 from quant_fm.manifest.build_manifest import build_manifest
+from quant_fm.schema.cn_l2_v1 import SCHEMA_VERSION as V1_SCHEMA_VERSION
+from quant_fm.schema.cn_l2_v2 import SCHEMA_VERSION as V2_SCHEMA_VERSION
 from quant_fm.scripts.minio_config import load_read_config, read_bucket
 from quant_fm.scripts.suggest_model_size import estimate_events, suggest
 from quant_fm.tokenizer.artifact_contract import assert_token_contract_matches
+from quant_fm.tokenizer.field_spec import FULL_FIELD_SPECS_V2
 from quant_fm.tokenizer.fit_bins import fit_bins
+from quant_fm.tokenizer.fit_bins_v2 import fit_vocab_v2
 from quant_fm.tokenizer.tokenize_events import assert_no_leakage, tokenize_path
+from quant_fm.tokenizer.tokenize_events_v2 import (
+    assert_no_leakage_v2,
+    tokenize_path_v2,
+)
 from quant_fm.tokenizer.transforms import (
     DEFAULT_FEATURE_TRANSFORM_VERSION,
     SUPPORTED_FEATURE_TRANSFORM_VERSIONS,
 )
 from quant_fm.tokenizer.vocab import Vocab
+from quant_fm.tokenizer.vocab_v2 import VocabV2
 
 logger = logging.getLogger(__name__)
+
+
+def _load_vocab(path: Path) -> Vocab | VocabV2:
+    """Load a V1/V2 vocab by its serialized version, never by filename."""
+    artifact = Path(path)
+    payload = json.loads(artifact.read_text(encoding="utf-8"))
+    if payload.get("vocab_version") == "2.0":
+        return VocabV2.load(artifact)
+    return Vocab.load(artifact)
 
 
 def _default_tokenize_workers() -> int:
@@ -65,7 +88,11 @@ def _default_tokenize_workers() -> int:
 def _tokenize_one_job(job: tuple[str, str, str]) -> str:
     """ProcessPool worker：``(src, dst, vocab_path)`` → 返回 src。"""
     src_s, dst_s, vocab_s = job
-    tokenize_path(Path(src_s), Path(dst_s), Vocab.load(Path(vocab_s)))
+    vocab = _load_vocab(Path(vocab_s))
+    if isinstance(vocab, VocabV2):
+        tokenize_path_v2(Path(src_s), Path(dst_s), vocab)
+    else:
+        tokenize_path(Path(src_s), Path(dst_s), vocab)
     return src_s
 
 
@@ -82,7 +109,11 @@ def _tokenize_shards_parallel(
     payload = [(str(s), str(d), str(vocab_path)) for s, d in jobs]
     if n_workers <= 1 or len(payload) == 1:
         for src, dst, _vp in ((Path(a), Path(b), c) for a, b, c in payload):
-            tokenize_path(src, dst, Vocab.load(vocab_path))
+            vocab = _load_vocab(vocab_path)
+            if isinstance(vocab, VocabV2):
+                tokenize_path_v2(src, dst, vocab)
+            else:
+                tokenize_path(src, dst, vocab)
             if drop_events:
                 src.unlink(missing_ok=True)
         return len(payload)
@@ -140,6 +171,7 @@ def clean_one_day(
     skip_existing: bool = False,
     n_workers: int | None = None,
     event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION,
+    capture_book_state: bool = True,
 ) -> None:
     """单日单市场 PyLOB 清洗。"""
     from pylob.pipeline.workflow import default_clean_workers
@@ -158,6 +190,7 @@ def clean_one_day(
         write_debug_artifacts=False,
         n_workers=default_clean_workers() if n_workers is None else n_workers,
         event_ordering_version=event_ordering_version,
+        capture_book_state=capture_book_state,
     )
     build_clean_dataset(load_read_config(), cfg)
 
@@ -172,6 +205,13 @@ def _clean_done_marker(workdir: Path, date: str) -> Path:
 
 def _is_date_canonicalized(events_dir: Path, date: str) -> bool:
     return any(events_dir.rglob(f"{date}.parquet"))
+
+
+def _marker_matches(path: Path, schema_version: str) -> bool:
+    """Only reuse completion markers written for the requested data schema."""
+    if not path.is_file():
+        return False
+    return schema_version in path.read_text(encoding="utf-8")
 
 
 def run(
@@ -198,8 +238,21 @@ def run(
     delete_local_after_upload: bool = False,
     event_ordering_version: str | None = None,
     feature_transform_version: str | None = None,
+    data_version: str = "v2",
+    v2_max_samples_per_field: int = 5_000_000,
+    v2_seed: int = 0,
+    v2_full_audit: bool = False,
 ) -> None:
     """Run the medium-scale data preparation and optional upload pipeline."""
+    if data_version not in {"v1", "v2"}:
+        msg = f"data_version must be v1 or v2, got {data_version!r}"
+        raise ValueError(msg)
+    if v2_max_samples_per_field < 1:
+        msg = "v2_max_samples_per_field must be positive"
+        raise ValueError(msg)
+    schema_version = (
+        V2_SCHEMA_VERSION if data_version == "v2" else V1_SCHEMA_VERSION
+    )
     workdir = Path(workdir)
     clean_dir = workdir / "clean"
     events_dir = workdir / "events"
@@ -231,13 +284,25 @@ def run(
     if estimate_only:
         return
 
-    vocab_path = data_dir / "vocab.json"
-    vocab: Vocab | None = None
+    vocab_path = data_dir / (
+        "vocab_v2.json" if data_version == "v2" else "vocab.json"
+    )
+    vocab: Vocab | VocabV2 | None = None
     # 下游抽 embedding 场景：提前加载冻结 vocab，以便按日 tokenize 后立刻
     # drop events，避免 60+ 天 events 堆积爆盘（约 4GB/天）。
     if reuse_vocab is not None:
-        vocab = Vocab.load(reuse_vocab)
-        assert_no_leakage(vocab, val_dates, test_dates)
+        vocab = _load_vocab(reuse_vocab)
+        expected_type = VocabV2 if data_version == "v2" else Vocab
+        if not isinstance(vocab, expected_type):
+            msg = (
+                f"--data-version {data_version} disagrees with reused vocab "
+                f"schema={vocab.schema_version}"
+            )
+            raise ValueError(msg)
+        if isinstance(vocab, VocabV2):
+            assert_no_leakage_v2(vocab, val_dates, test_dates)
+        else:
+            assert_no_leakage(vocab, val_dates, test_dates)
         vocab.save(vocab_path)
         logger.info(
             "reuse frozen vocab: %s (fit_dates=%d, 按日 tokenize+drop)",
@@ -330,7 +395,7 @@ def run(
         marker = _date_done_marker(workdir, date)
         # 旧 marker 可能只表示 canonicalize 完成、events 仍在磁盘上；
         # reuse-vocab 路径下补做按日 tokenize + drop。
-        if resume and marker.exists():
+        if resume and _marker_matches(marker, schema_version):
             if vocab is not None and any(events_dir.rglob(f"{date}.parquet")):
                 n = _tokenize_day(date)
                 logger.info(
@@ -338,14 +403,17 @@ def run(
                 )
                 if drop_events:
                     _prune_empty_dirs(events_dir)
-                marker.write_text("tokenized\n")
+                marker.write_text(
+                    f"tokenized:{schema_version}\n",
+                    encoding="utf-8",
+                )
             else:
                 logger.info("resume: skip %s (marker exists)", date)
             continue
 
         day_clean = clean_dir / date
         clean_marker = _clean_done_marker(workdir, date)
-        if resume and clean_marker.exists():
+        if resume and _marker_matches(clean_marker, schema_version):
             logger.info("resume: reuse completed clean/%s", date)
         elif not skip_clean and fast_clean:
             # P0/P1 高性能路径：读一次 MinIO、SZ+SH 同池清洗、带本地 raw 缓存。
@@ -368,6 +436,7 @@ def run(
                 bucket=read_bucket(),
                 skip_existing=resume,
                 event_ordering_version=effective_event_ordering,
+                capture_book_state=data_version == "v2",
             )
             if int(clean_stats["errors"]):
                 failed = clean_stats.get("failed_symbols", [])
@@ -378,7 +447,10 @@ def run(
                     failed,
                 )
             clean_marker.parent.mkdir(parents=True, exist_ok=True)
-            clean_marker.write_text("cleaned\n")
+            clean_marker.write_text(
+                f"cleaned:{schema_version}\n",
+                encoding="utf-8",
+            )
             drop_day_cache(raw_cache, date)  # clean 完成后释放当日缓存
         elif not skip_clean:
             if symbols_sz:
@@ -390,6 +462,7 @@ def run(
                     day_clean,
                     skip_existing=resume,
                     event_ordering_version=effective_event_ordering,
+                    capture_book_state=data_version == "v2",
                 )
             if symbols_sh:
                 logger.info("clean %s SH (%d symbols)", date, len(symbols_sh))
@@ -400,9 +473,13 @@ def run(
                     day_clean,
                     skip_existing=resume,
                     event_ordering_version=effective_event_ordering,
+                    capture_book_state=data_version == "v2",
                 )
             clean_marker.parent.mkdir(parents=True, exist_ok=True)
-            clean_marker.write_text("cleaned\n")
+            clean_marker.write_text(
+                f"cleaned:{schema_version}\n",
+                encoding="utf-8",
+            )
 
         if vocab is not None:
             token_paths = canonicalize_and_tokenize_clean_dir(
@@ -429,6 +506,7 @@ def run(
                 symbols=symbols_sz + symbols_sh,
                 skip_existing=resume,
                 strict=True,
+                schema_version=schema_version,
             )
 
         if drop_clean and day_clean.exists():
@@ -441,11 +519,17 @@ def run(
         if vocab is not None:
             failure_path = data_dir / ".failed" / f"{date}.json"
             marker.write_text(
-                "tokenized_with_gaps\n" if failure_path.exists() else "tokenized\n"
+                f"tokenized_with_gaps:{schema_version}\n"
+                if failure_path.exists()
+                else f"tokenized:{schema_version}\n",
+                encoding="utf-8",
             )
             logger.info("day done (tokenized): %s (%d shards)", date, len(token_paths))
         else:
-            marker.write_text("canonicalized\n")
+            marker.write_text(
+                f"canonicalized:{schema_version}\n",
+                encoding="utf-8",
+            )
 
     if vocab is None:
         # 预训练数据路径：先 fit_bins，再一次性 tokenize。
@@ -455,6 +539,12 @@ def run(
             msg = "no train event shards found under events/"
             raise RuntimeError(msg)
 
+        if data_version == "v2" and fit_sample_days is not None:
+            msg = (
+                "formal V2 requires the complete training stream; "
+                "--fit-sample-days is V1-only"
+            )
+            raise ValueError(msg)
         if fit_sample_days is not None and fit_sample_days < len(train_dates):
             sample_dates = set(train_dates[:fit_sample_days])
             train_paths = [p for p in train_paths if p.stem in sample_dates]
@@ -465,15 +555,29 @@ def run(
                 len(train_paths),
             )
 
-        vocab = fit_bins(
-            train_paths,
-            n_bins=n_bins,
-            fit_dates=fit_dates,
-            event_ordering_version=effective_event_ordering,
-            feature_transform_version=effective_feature_transform,
-        )
+        if data_version == "v2":
+            vocab = fit_vocab_v2(
+                train_paths,
+                field_specs=FULL_FIELD_SPECS_V2,
+                max_samples_per_field=v2_max_samples_per_field,
+                fit_dates=fit_dates,
+                seed=v2_seed,
+                event_ordering_version=effective_event_ordering,
+                feature_transform_version=effective_feature_transform,
+            )
+        else:
+            vocab = fit_bins(
+                train_paths,
+                n_bins=n_bins,
+                fit_dates=fit_dates,
+                event_ordering_version=effective_event_ordering,
+                feature_transform_version=effective_feature_transform,
+            )
         vocab.save(vocab_path)
-        assert_no_leakage(vocab, val_dates, test_dates)
+        if isinstance(vocab, VocabV2):
+            assert_no_leakage_v2(vocab, val_dates, test_dates)
+        else:
+            assert_no_leakage(vocab, val_dates, test_dates)
 
         jobs: list[tuple[Path, Path]] = []
         for p in sorted(events_dir.rglob("*.parquet")):
@@ -562,6 +666,26 @@ def run(
         manifest.save(manifest_path)
         logger.info("data ready: vocab=%s manifest=%s", vocab_path, manifest_path)
 
+        if data_version == "v2":
+            from quant_fm.scripts.audit_v2_artifacts import audit_v2_artifacts
+
+            audit = audit_v2_artifacts(
+                workdir,
+                sample_shards=12,
+                full_path_check=v2_full_audit,
+            )
+            audit_path = workdir / "artifact_audit.json"
+            temporary = audit_path.with_name(f".{audit_path.name}.tmp")
+            temporary.write_text(
+                json.dumps(audit, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            temporary.replace(audit_path)
+            if not audit["contract_ready"]:
+                msg = f"V2 artifact audit failed: {audit_path}"
+                raise RuntimeError(msg)
+            logger.info("V2 artifact audit passed: %s", audit_path)
+
     if upload_minio:
         from quant_fm.scripts.upload_to_minio import remote_uri, upload_workdir
 
@@ -598,11 +722,31 @@ def main() -> None:
     parser.add_argument(
         "--workdir",
         type=Path,
-        default=Path("quant_fm/runs/medium"),
+        default=Path("quant_fm/runs/v2_shared"),
     )
     parser.add_argument("--train-end", default=None)
     parser.add_argument("--val-end", default=None)
     parser.add_argument("--n-bins", type=int, default=32)
+    parser.add_argument(
+        "--data-version",
+        choices=("v1", "v2"),
+        default=None,
+        help=(
+            "数据合约；默认新数据为 v2，--reuse-vocab 时从 artifact 自动识别"
+        ),
+    )
+    parser.add_argument(
+        "--v2-max-samples-per-field",
+        type=int,
+        default=5_000_000,
+        help="V2 每字段确定性分层 reservoir 上限",
+    )
+    parser.add_argument("--v2-seed", type=int, default=0)
+    parser.add_argument(
+        "--v2-full-audit",
+        action="store_true",
+        help="对 manifest 中全部 V2 token shards 做完整路径/内容合约审计",
+    )
     parser.add_argument("--skip-clean", action="store_true")
     parser.add_argument(
         "--drop-clean",
@@ -659,7 +803,10 @@ def main() -> None:
         "--reuse-vocab",
         type=Path,
         default=None,
-        help="复用已冻结 vocab.json（抽 embedding 场景必须与预训练一致），跳过 fit_bins",
+        help=(
+            "复用已冻结 vocab.json/vocab_v2.json（抽 embedding 场景必须与"
+            "预训练一致），并自动识别数据版本"
+        ),
     )
     parser.add_argument(
         "--estimate-only",
@@ -695,6 +842,12 @@ def main() -> None:
         symbols_sz = symbols_sz[: args.max_symbols_per_market]
         symbols_sh = symbols_sh[: args.max_symbols_per_market]
 
+    data_version = args.data_version
+    if data_version is None and args.reuse_vocab is not None:
+        reused = _load_vocab(args.reuse_vocab)
+        data_version = "v2" if isinstance(reused, VocabV2) else "v1"
+    data_version = data_version or "v2"
+
     run(
         dates=dates,
         symbols_sz=symbols_sz,
@@ -718,6 +871,10 @@ def main() -> None:
         delete_local_after_upload=args.delete_local_after_upload,
         event_ordering_version=args.event_ordering_version,
         feature_transform_version=args.feature_transform_version,
+        data_version=data_version,
+        v2_max_samples_per_field=args.v2_max_samples_per_field,
+        v2_seed=args.v2_seed,
+        v2_full_audit=args.v2_full_audit,
     )
 
 

@@ -95,6 +95,7 @@ def _clean_one_symbol(
     cut_time: int,
     cut_serial: int | None,
     write_debug_artifacts: bool,
+    capture_book_state: bool = False,
     timeout_s: float | None = None,
     event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION,
 ) -> str:
@@ -135,7 +136,10 @@ def _clean_one_symbol(
 
         orderbook.process_single_market_record = _guarded  # type: ignore[method-assign]
 
-    orderbook.process_workflow(order_data)
+    transitions = orderbook.process_workflow(
+        order_data,
+        capture_book_state=capture_book_state,
+    )
     events = build_event_stream(order_data, market=market)
     if events is None or len(events) == 0:
         return "empty"
@@ -150,6 +154,25 @@ def _clean_one_symbol(
         events_out,
         event_ordering_version=event_ordering_version,
     )
+    if capture_book_state:
+        from quant_fm.tokenizer.lob_transforms import transitions_to_feature_frame
+
+        if transitions is None or len(transitions) != len(events):
+            msg = "captured book transitions are not aligned with clean events"
+            raise RuntimeError(msg)
+        book_features = transitions_to_feature_frame(
+            transitions,
+            event_prices=events["price"].tolist(),
+        )
+        book_features_out = symbol_dir / "book_features.parquet"
+        temporary_features = book_features_out.with_suffix(".parquet.tmp")
+        book_features.write_parquet(
+            temporary_features,
+            compression="zstd",
+            compression_level=3,
+            statistics=True,
+        )
+        temporary_features.replace(book_features_out)
     if write_debug_artifacts:
         tokens = build_field_tokens(events)
         pl.from_pandas(order_data).write_parquet(symbol_dir / "market_rows.parquet")
@@ -169,6 +192,7 @@ def _worker_clean_symbol(payload: dict[str, Any]) -> tuple[str, str, str | None]
             cut_time=payload["cut_time"],
             cut_serial=payload["cut_serial"],
             write_debug_artifacts=payload["write_debug_artifacts"],
+            capture_book_state=bool(payload.get("capture_book_state", False)),
             timeout_s=payload.get("timeout_s"),
             event_ordering_version=payload.get(
                 "event_ordering_version", DEFAULT_EVENT_ORDERING_VERSION
@@ -229,15 +253,26 @@ def build_clean_dataset(minio_config: MinioConfig, config: PipelineConfig) -> No
         events_out = config.output_dir / config.market / symbol / "events.parquet"
         if config.skip_existing and events_out.exists():
             try:
-                compatible = event_stream_contract_matches(
+                event_compatible = event_stream_contract_matches(
                     events_out,
                     version=config.event_ordering_version,
                 )
             except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
-                compatible = False
+                event_compatible = False
                 logger.warning("invalid event contract %s: %s", events_out, exc)
-            if compatible:
+            book_features_ready = (
+                not config.capture_book_state
+                or (events_out.parent / "book_features.parquet").is_file()
+            )
+            if event_compatible and book_features_ready:
                 skipped += 1
+                continue
+            if event_compatible and not book_features_ready:
+                logger.info(
+                    "resume: regenerating missing V2 book features for %s",
+                    events_out,
+                )
+                pending.append(symbol)
                 continue
             msg = (
                 f"refusing to overwrite incompatible clean event artifact during "
@@ -283,6 +318,7 @@ def build_clean_dataset(minio_config: MinioConfig, config: PipelineConfig) -> No
                     cut_time=config.cut_time,
                     cut_serial=config.cut_serial,
                     write_debug_artifacts=config.write_debug_artifacts,
+                    capture_book_state=config.capture_book_state,
                     event_ordering_version=config.event_ordering_version,
                 )
                 if status == "written":
@@ -322,6 +358,7 @@ def build_clean_dataset(minio_config: MinioConfig, config: PipelineConfig) -> No
             "cut_time": config.cut_time,
             "cut_serial": config.cut_serial,
             "write_debug_artifacts": config.write_debug_artifacts,
+            "capture_book_state": config.capture_book_state,
             "event_ordering_version": config.event_ordering_version,
         }
         for symbol in pending

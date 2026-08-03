@@ -1,8 +1,8 @@
 .PHONY: help install install-fm smoke signal signal-smoke backtest-contract-fixture dense230-finalize pilot medium medium-try medium-pipeline medium-estimate medium-smoke judge-medium-try judge-300m research-score research-oos2026 watch-300m baselines-300m tensorboard-medium train train-pilot train-8gpu train-medium-8gpu check-minio upload-pilot upload-medium download-medium minio-pipeline minio-pipeline-full minio-full-pipeline minio-full-pipeline-full test lint
 
 PY ?= python
-WORKDIR ?= quant_fm/runs/pilot
-MEDIUM_WORKDIR ?= quant_fm/runs/medium
+WORKDIR ?= quant_fm/runs/v2_pilot
+MEDIUM_WORKDIR ?= quant_fm/runs/v2_shared
 SIGNAL_EMBEDDINGS ?= quant_fm/runs/oos2026/embeddings/all.parquet
 SIGNAL_ARTIFACT ?= quant_fm/runs/medium_300m/signal_artifact
 SIGNAL_OUT ?= quant_fm/runs/oos2026/delivery
@@ -15,10 +15,10 @@ help:
 	@echo "  make signal-smoke 验证无标签 score 生成链路"
 	@echo "  make backtest-contract-fixture 生成隔离的合成回测联调包"
 	@echo "  make dense230-finalize 等待真实信号并自动审计、门禁和打包"
-	@echo "  make pilot        清洗并 tokenize（读 MinIO :9000，凭据见 minio_setup.md）"
+	@echo "  make pilot        真实盘口回放并生成 V2 events/tokens/manifest"
 	@echo "  make upload-pilot 上传 tokens 到 model-cache（写 MinIO :9100）"
 	@echo "  make check-minio  检查 MinIO 读写 endpoint 连通性"
-	@echo "  make medium       全量 medium：60 日 × 全市场（仅本地数据，不上传/训练）"
+	@echo "  make medium       V2 medium：60 日 × 全市场（本地生成并完整审计）"
 	@echo "  make minio-pipeline       MinIO读→tokens→写（试跑，无训练）"
 	@echo "  make minio-pipeline-full  同上，60日×全市场（无训练）"
 	@echo "  make minio-full-pipeline       【推荐】读→tokens→写→8卡训练（试跑）"
@@ -67,6 +67,7 @@ pilot:
 		--symbols 000001,000002,300750 \
 		--market SZ \
 		--workdir $(WORKDIR) \
+		--data-version v2 \
 		--train-end 2026-02-04 --val-end 2026-02-05 --n-bins 32
 
 # 中等规模：2025 均匀 60 交易日 × 沪深全市场；删除中间产物以省磁盘
@@ -76,12 +77,14 @@ medium-estimate:
 medium:
 	$(PY) -m quant_fm.scripts.run_medium \
 		--workdir $(MEDIUM_WORKDIR) \
-		--drop-clean --drop-events --resume
+		--data-version v2 \
+		--drop-clean --drop-events --resume --v2-full-audit
 
 # 试跑：每市场 50 只股票 × 60 天（验证流水线，磁盘约数 GB）
 medium-smoke:
 	$(PY) -m quant_fm.scripts.run_medium \
 		--workdir $(MEDIUM_WORKDIR)_smoke \
+		--data-version v2 \
 		--max-symbols-per-market 50 \
 		--drop-clean --drop-events
 
@@ -112,22 +115,25 @@ train:
 	$(PY) -m quant_fm.pretrain.train --config quant_fm/pretrain/config.yaml
 
 train-pilot:
-	$(PY) -m quant_fm.pretrain.train --config quant_fm/pretrain/config_pilot.yaml
+	CONFIG=quant_fm/pretrain/config_v2_25m.yaml MEDIUM_WORKDIR=$(WORKDIR) NPROC=1 \
+		bash quant_fm/scripts/train_medium_8gpu.sh
 
 train-8gpu:
-	bash quant_fm/scripts/train_pilot_8gpu.sh
+	CONFIG=quant_fm/pretrain/config_v2_25m.yaml MEDIUM_WORKDIR=$(WORKDIR) NPROC=8 \
+		bash quant_fm/scripts/train_medium_8gpu.sh
 
 train-medium-8gpu:
-	bash quant_fm/scripts/train_medium_8gpu.sh
+	CONFIG=quant_fm/pretrain/config_v2_230m.yaml MEDIUM_WORKDIR=$(MEDIUM_WORKDIR) \
+		bash quant_fm/scripts/train_medium_8gpu.sh
 
 upload-pilot:
-	$(PY) -m quant_fm.scripts.upload_to_minio --workdir $(WORKDIR) --tag pilot
+	$(PY) -m quant_fm.scripts.upload_to_minio --workdir $(WORKDIR) --tag v2_pilot
 
 upload-medium:
-	$(PY) -m quant_fm.scripts.upload_to_minio --workdir $(MEDIUM_WORKDIR) --tag medium
+	$(PY) -m quant_fm.scripts.upload_to_minio --workdir $(MEDIUM_WORKDIR) --tag v2_shared
 
 download-medium:
-	$(PY) -m quant_fm.scripts.download_from_minio --workdir $(MEDIUM_WORKDIR) --tag medium
+	$(PY) -m quant_fm.scripts.download_from_minio --workdir $(MEDIUM_WORKDIR) --tag v2_shared --data-version v2
 
 # RESEARCH ONLY：下游裁判不属于 score 生产链路
 judge-medium-try:

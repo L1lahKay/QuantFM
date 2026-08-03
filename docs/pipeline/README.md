@@ -107,7 +107,7 @@ v2 不改变 v1 已有产物。只有显式生成 `schema_version=cn_l2_v2` 的�
 | 性能与实验登记 | `quant_fm.benchmark` / `quant_fm.experiments.registry` |
 | 实验性 MoE | `quant_fm.moe` / `quant_fm/pretrain/config_v2_backbone_moe.yaml` |
 
-当前 MinIO/Pilot/Medium 一键脚本仍产出 v1 数据。v2 的上述数据阶段已经有库 API 和测试，但尚未封装成一条新的 MinIO CLI；因此下面命令的前提是 v2 manifest、token shards 和 `vocab_v2.json` 已准备完毕。
+当前 MinIO/Pilot/Medium 一键脚本默认产出 v2 数据：回放时同步捕获真实 pre/post 盘口，随后生成 `vocab_v2.json`、Q16 token/scalar、manifest 和 `artifact_audit.json`。下面命令既可读取这一入口生成的产物，也会继续严格校验 schema、vocab 与 checkpoint 血缘。
 
 ```bash
 # 可选：提前冻结 800 个验证窗口；训练首次运行也会自动创建

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 完整流水线：MinIO 读原始 L2 → 洗成 tokens → 写回 MinIO → 8 卡训练
+# 完整 V2 流水线：MinIO L2 → 真实盘口 V2 tokens → 审计/上传 → 8 卡训练
 #
 #   【读】:9000 / zeus-cn-quote
 #      → run_medium（clean → events → vocab → tokens → manifest）
@@ -47,24 +47,24 @@ LOG="${LOG:-$ROOT/quant_fm/runs/minio_full_pipeline.log}"
 
 case "$MODE" in
   try)
-    WORKDIR="$ROOT/quant_fm/runs/medium_try"
-    TAG="medium_try"
-    CONFIG="${CONFIG:-quant_fm/pretrain/config_medium_try_8gpu.yaml}"
+    WORKDIR="$ROOT/quant_fm/runs/v2_try"
+    TAG="v2_try"
+    CONFIG="${CONFIG:-quant_fm/pretrain/config_v2_25m.yaml}"
     DATES="$ROOT/quant_fm/data/medium_try_5_dates.txt"
     EXTRA=(--dates-file "$DATES" --max-symbols-per-market 30)
     ;;
   smoke)
-    WORKDIR="$ROOT/quant_fm/runs/medium_smoke"
-    TAG="medium_smoke"
-    CONFIG="${CONFIG:-quant_fm/pretrain/config_medium_smoke_8gpu.yaml}"
+    WORKDIR="$ROOT/quant_fm/runs/v2_smoke"
+    TAG="v2_smoke"
+    CONFIG="${CONFIG:-quant_fm/pretrain/config_v2_25m.yaml}"
     EXTRA=(--max-symbols-per-market 50)
     ;;
   full)
     # 「全量」= 文档约定的 medium：60 个均匀交易日 × 沪深全市场（≈ 总数据 1/10）
-    WORKDIR="$ROOT/quant_fm/runs/medium"
-    TAG="medium"
-    CONFIG="${CONFIG:-quant_fm/pretrain/config_medium_8gpu.yaml}"
-    EXTRA=(--resume)
+    WORKDIR="$ROOT/quant_fm/runs/v2_shared"
+    TAG="v2_shared"
+    CONFIG="${CONFIG:-quant_fm/pretrain/config_v2_230m.yaml}"
+    EXTRA=(--resume --v2-full-audit)
     ;;
   *)
     echo "MODE must be try|smoke|full" >&2
@@ -86,13 +86,13 @@ echo "flags:  SKIP_DATA=$SKIP_DATA SKIP_TRAIN=$SKIP_TRAIN SKIP_UPLOAD=$SKIP_UPLO
 python -m quant_fm.scripts.check_minio
 
 local_ready() {
-  [[ -f "$WORKDIR/data/manifest.json" && -f "$WORKDIR/data/vocab.json" && -d "$WORKDIR/tokens" ]]
+  [[ -f "$WORKDIR/data/manifest.json" && -f "$WORKDIR/data/vocab_v2.json" && -f "$WORKDIR/artifact_audit.json" && -d "$WORKDIR/tokens" ]]
 }
 
 # ── 1) 数据：读 MinIO → tokens（或从 model-cache 恢复）──
 if [[ "$FORCE_DOWNLOAD" == "1" ]] || { [[ "$SKIP_DATA" == "1" ]] && ! local_ready; }; then
   echo "==> download tokens from model-cache (tag=$TAG)"
-  python -m quant_fm.scripts.download_from_minio --workdir "$WORKDIR" --tag "$TAG"
+  python -m quant_fm.scripts.download_from_minio --workdir "$WORKDIR" --tag "$TAG" --data-version v2
 elif [[ "$SKIP_DATA" == "1" ]]; then
   echo "==> SKIP_DATA=1 and local ready → $WORKDIR"
 else
@@ -104,6 +104,7 @@ else
   fi
   python -m quant_fm.scripts.run_medium \
     --workdir "$WORKDIR" \
+    --data-version v2 \
     --drop-clean \
     --drop-events \
     "${UPLOAD_FLAGS[@]}" \
@@ -111,7 +112,7 @@ else
 
   if [[ "$SKIP_UPLOAD" != "1" ]]; then
     echo "==> verify / ensure upload to model-cache"
-    python -m quant_fm.scripts.upload_to_minio --workdir "$WORKDIR" --tag "$TAG" --verify
+    python -m quant_fm.scripts.upload_to_minio --tag "$TAG" --verify-only
   fi
 fi
 
@@ -122,6 +123,10 @@ if ! local_ready; then
 fi
 
 echo "==> data ready: $WORKDIR/data/manifest.json"
+python -m quant_fm.scripts.audit_v2_artifacts \
+  --root "$WORKDIR" \
+  --sample-shards 12 \
+  --out "$WORKDIR/artifact_audit.json"
 
 # ── 2) 训练（读本地 tokens；MinIO 已有副本）──
 if [[ "$SKIP_TRAIN" == "1" ]]; then

@@ -37,7 +37,7 @@
 | 8 | [下游验收](pipeline/08_downstream_evaluation.md) | Ranker、RankIC、CPCV、DSR、严格执行面板与研究回测 |
 | 补充 | [OOS 加速与增量交付](pipeline/08_oos_acceleration.md) | 增量执行、缓存、并行与研究隔离 |
 
-以上阶段文档同时标注 v1 稳定路径与 v2 新路径。现有 MinIO/Pilot 一键编排默认仍走 v1；v2 的 schema、词表、训练和表征代码已经落地，但正式 v2 数据 artifact、checkpoint 与 OOS 结果仍待生成。
+以上阶段文档同时标注 V1 兼容路径与 V2 默认路径。MinIO/Pilot/Medium 一键编排现已接入真实盘口 V2 数据生成与合约审计；正式全市场 artifact、checkpoint 与 OOS score 仍待真实运行和验收。
 
 ## 数据与存储
 
@@ -82,11 +82,11 @@
 
 v2 checkpoint 加载必须携带原始 `vocab_v2.json`，并核对 schema、vocab SHA-256、有序 FieldSpec、输入/目标字段和 loss 声明。25M/100M 比较应复用同一份带 manifest fingerprint 的 `validation_windows.json`。
 
-当前全仓回归基线（2026-07-24）：
+当前全仓回归基线（2026-08-03）：
 
 ```bash
 uv run python -m pytest -q
-# 243 passed, 2 skipped, 1 xfailed
+# 545 passed, 2 skipped, 1 xfailed
 ```
 
 ## 包级说明

@@ -65,6 +65,7 @@ class PipelineConfig:
     field_mapping: dict[str, str] = field(default_factory=dict)
     skip_existing: bool = False
     write_debug_artifacts: bool = True
+    capture_book_state: bool = False
     n_workers: int = 1
     event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION
 

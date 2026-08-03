@@ -2,7 +2,7 @@
 
 > 当前分支：[`V2`](https://github.com/zeusamc/quant-fm/tree/V2)
 >
-> 最近核验：2026-07-31；全仓回归为 `503 passed, 2 skipped, 1 xfailed`。
+> 最近核验：2026-08-03；全仓回归为 `545 passed, 2 skipped, 1 xfailed`。
 
 面向 A 股 Level-2 订单流的端到端基础模型研发框架。项目将沪深逐笔委托与成交数据重建为统一市场事件，使用 Decoder-only Transformer 进行多字段 next-event 自监督预训练，并由冻结截面 Ranker 生成可交付的日频 `score` 信号。V2 分支在保持 `cn_l2_v1` 兼容性的同时，引入独立的 `cn_l2_v2` schema、词表、存储编码和 checkpoint artifact；两代产物必须显式匹配，不允许静默混用。
 
@@ -29,7 +29,7 @@ MinIO L2
 PyLOB 订单簿重建
   │  clean events
   ▼
-cn_l2_v1（稳定）/ cn_l2_v2（显式启用）规范事件流
+cn_l2_v2（数据脚本默认）/ cn_l2_v1（显式兼容）规范事件流
   │  stock-day parquet
   ▼
 字段级 Tokenizer ──► vocab.json / vocab_v2.json
@@ -78,7 +78,7 @@ uv run python -m quant_fm.scripts.smoke --workdir /tmp/quantfm-smoke
 uv run python -m pytest -q
 ```
 
-当前 V2 分支基线（2026-07-31）：`503 passed, 2 skipped, 1 xfailed`。
+当前 V2 分支基线（2026-08-03）：`545 passed, 2 skipped, 1 xfailed`。
 
 ## V2 推荐工作流
 
@@ -264,7 +264,7 @@ quant_fm/runs/<experiment>/run/
 
 `quant_fm/runs/` 已被 `.gitignore` 排除，不应上传 checkpoint、tokens 或 TensorBoard 日志。
 
-当前 V2 已具备数据合约审计、25M/100M/230M Dense 配置、Backbone-MoE 严格日期配置、adaptation dev/refit 配置、训练监控、预训练非劣门禁和严格 OOS 血缘检查。仓库中的配置、代码和回归测试不等同于真实训练完成或收益验收；checkpoint、路由稳定性、吞吐和 OOS 结论必须以外部运行产物及 PASS 验收文件为准。现有 MinIO 一键脚本仍默认生成 v1 events/tokens；v2 数据准备尚未封装为同等的一键入口。
+当前 V2 已具备数据合约审计、25M/100M/230M Dense 配置、Backbone-MoE 严格日期配置、adaptation dev/refit 配置、训练监控、预训练非劣门禁和严格 OOS 血缘检查。`make pilot`、`make medium` 与 `make minio-*-pipeline*` 现默认执行真实逐事件盘口回放，生成 `cn_l2_v2`、`vocab_v2.json`、窄 token/Q16 scalar、manifest 和 `artifact_audit.json`；旧实验只能通过底层入口显式传 `--data-version v1`。仓库中的配置、代码和回归测试仍不等同于真实全市场训练完成或收益验收；正式 V2 checkpoint、最终 V2 score、路由稳定性、吞吐和 OOS 结论必须以实际运行产物及 PASS 验收文件为准。
 
 MoE 仍有待实证的训练边界：训练模式发生 capacity overflow 时，专家裁剪会在整个 batch（Backbone 中为全部有效 token）上竞争容量，形成 batch 依赖；评估/推理模式不执行容量裁剪，已覆盖 batch-size independence。该 train/eval 差异、路由健康度和真实吞吐尚未验证，因此仍只能作为研究候选。
 

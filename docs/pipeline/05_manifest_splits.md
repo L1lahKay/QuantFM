@@ -8,7 +8,7 @@
 
 `quant_fm/manifest/build_manifest.py`
 
-Manifest 的 shard 结构被 V1/V2 共用，但它**不会从 parquet 列自动推断 schema 版本**。当前 `build_manifest()` 默认产生 `cn_l2_v1`；V2 批量编排在保存前必须显式设置 `manifest.schema_version = vocab.schema_version`，并把 `vocab_path` 指向同批 `vocab_v2.json`。这一步尚未接入现有 V1 MinIO 一键脚本。
+Manifest 的 shard 结构被 V1/V2 共用。`build_manifest()` 会从显式传入的 vocab artifact 加载版本并写入 `schema_version`、vocab hash、事件排序和特征变换契约；只有调用方不传 vocab 时才保留 `cn_l2_v1` 兼容默认值。当前 V2 一键脚本始终传入同批 `vocab_v2.json`，并在发布前运行 artifact 审计。
 
 目录扫描约定：
 

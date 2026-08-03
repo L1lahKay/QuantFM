@@ -103,8 +103,11 @@ def snapshot_book_state(
         raise ValueError(msg)
 
     active_orders = getattr(book, "orders", None)
-    bids = _live_levels(book.bids, active_orders, descending=True)
-    asks = _live_levels(book.asks, active_orders, descending=False)
+    # V2 only consumes top-10 aggregates.  The matching engines use SortedDict,
+    # so stop after ten live levels instead of sorting/scanning the entire book
+    # for every event in a full-market replay.
+    bids = _live_levels(book.bids, active_orders, descending=True, max_levels=10)
+    asks = _live_levels(book.asks, active_orders, descending=False, max_levels=10)
 
     bid1, bid_qty_1 = bids[0] if bids else (None, 0)
     ask1, ask_qty_1 = asks[0] if asks else (None, 0)
@@ -186,9 +189,21 @@ def _live_levels(
     active_orders: Mapping[int, OrderLike] | None,
     *,
     descending: bool,
+    max_levels: int | None = None,
 ) -> list[tuple[int, int]]:
+    if max_levels is not None and max_levels < 1:
+        msg = "max_levels must be positive when provided"
+        raise ValueError(msg)
+
+    # SortedDict exposes ``irange`` in price order.  Keep a correct fallback for
+    # protocol-compatible ordinary mappings used by tests and downstream users.
+    if hasattr(side, "irange"):
+        raw_prices = side.irange(reverse=descending)  # type: ignore[attr-defined]
+    else:
+        raw_prices = iter(sorted(side, reverse=descending))
     levels: list[tuple[int, int]] = []
-    for raw_price, orders in side.items():
+    for raw_price in raw_prices:
+        orders = side[raw_price]
         price = _integer_price(raw_price)
         quantity = 0
         for order in orders:
@@ -203,7 +218,9 @@ def _live_levels(
             quantity += order_quantity
         if quantity > 0:
             levels.append((price, quantity))
-    return sorted(levels, key=lambda level: level[0], reverse=descending)
+            if max_levels is not None and len(levels) >= max_levels:
+                break
+    return levels
 
 
 def _integer_price(price: int | float) -> int:

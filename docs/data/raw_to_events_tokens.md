@@ -297,13 +297,13 @@ manifest.save(Path("quant_fm/runs/demo/data/manifest.json"))
 
 ---
 
-### 4.6 V2 产物链（底层 API 已实现，批量编排待接入）
+### 4.6 V2 产物链（当前批量编排默认路径）
 
 V2 不是在 V1 token 上多加几列即可。每个事件必须按交易所序号回放，在 apply 事件前/后分别捕获状态，再生成行对齐特征：
 
 ```text
 PyLOB event stream
-  → iter_book_state_transitions(..., apply_event=...)
+  → process_workflow(..., capture_book_state=True)
   → transitions_to_feature_frame(...)
   → cn_l2_v2.events_to_canonical(..., book_features=...)
   → fit_vocab_v2(train_event_paths, field_specs=FULL_FIELD_SPECS_V2)
@@ -320,9 +320,7 @@ PyLOB event stream
 - V2 特殊 ID 是 `PAD=0, UNK=1, NA=2, BOS=3, EOS=4, SESSION_BREAK=5`；真实 0 值不得编码为 `NA`。
 - `fit_vocab_v2()` 只能读训练日；分层 reservoir 的 seed、`FieldSpec` 顺序、schema version 和训练日应固化进 `vocab_v2.json`。
 - V2 tokens 同时包含 `tok_*` 和 `val_*` 列。下游 `EventWindowDatasetV2` 仅从冻结 `FieldSpec` 派生字段顺序，不猜测 parquet 列。
-- `build_manifest()` 默认仍写 `cn_l2_v1`；V2 在保存 manifest 前必须显式执行
-  `manifest.schema_version = vocab.schema_version`，不能仅把 `vocab_path` 改成
-  `vocab_v2.json`。
+- `build_manifest()` 从传入的 `vocab_v2.json` 写入 V2 schema、vocab hash、事件排序与特征变换契约；数据脚本不会再靠事后改写 manifest 冒充 V2。
 - 产物应写入 `quant_fm/runs/v2_shared/`等独立根目录；禁止覆盖 V1 `events/`、`tokens/` 或 `vocab.json`。
 
 完整代码级步骤和验收命令见 [模型底层 V2 代码改造指导](../architecture/模型底层v2代码改造指导.md)。
@@ -337,7 +335,7 @@ python3 << 'PY'
 import polars as pl
 from pathlib import Path
 
-base = Path("quant_fm/runs/pilot")  # 或 demo
+base = Path("quant_fm/runs/v2_pilot")  # 或 demo
 
 # 1. 行数一致：clean events → canonical events → tokens
 e = pl.read_parquet(base / "events/SZ/000001/2026-02-02.parquet")
@@ -389,7 +387,8 @@ make medium
 
 ```bash
 CLEAN_WORKERS=16 python -m quant_fm.scripts.run_medium \
-  --workdir quant_fm/runs/medium \
+  --workdir quant_fm/runs/v2_shared \
+  --data-version v2 \
   --drop-clean \      # canonicalize 后删 clean/
   --drop-events \     # tokenize 后删 events/
   --resume            # 日期级跳过 + 标的级跳过已有 events/tokens
@@ -410,7 +409,7 @@ CLEAN_WORKERS=16 python -m quant_fm.scripts.run_medium \
 uv run python -m quant_fm.scripts.check_pipeline_progress --workdir quant_fm/runs/medium_300m
 ```
 
-### 300M 正式流水线
+### V2 230M/300M 档流水线
 
 ```bash
 source ~/.minio_fm_env.sh
@@ -418,7 +417,7 @@ CLEAN_WORKERS=32 CANON_WORKERS=16 SKIP_UPLOAD=1 bash quant_fm/scripts/run_minio_
 ```
 
 日期列表：`quant_fm/data/medium_300m_22_dates.txt`  
-训练配置：`quant_fm/pretrain/config_medium_300m_8gpu.yaml`（数据就绪后自动 `--resume auto` 开训）
+训练配置：`quant_fm/pretrain/config_v2_230m.yaml`；脚本将其数据根目录重写到本次 `v2_230m_22d` artifact，审计 PASS 后再启动训练。
 
 ---
 
@@ -437,9 +436,10 @@ make minio-pipeline-full     # 60日×全市场
 
 ```bash
 python -m quant_fm.scripts.run_medium \
-  --workdir quant_fm/runs/medium_try \
+  --workdir quant_fm/runs/v2_try \
+  --data-version v2 \
   --drop-clean --drop-events \
-  --upload-minio --upload-tag medium_try \
+  --upload-minio --upload-tag v2_try \
   --delete-local-after-upload
 ```
 
@@ -447,8 +447,9 @@ python -m quant_fm.scripts.run_medium \
 
 ```text
 s3://model-cache/fm-pretrain/<user>/{tag}/
-  data/vocab.json
+  data/vocab_v2.json
   data/manifest.json
+  artifact_audit.json
   tokens/{market}/{symbol}/{date}.parquet
 ```
 
@@ -456,7 +457,7 @@ s3://model-cache/fm-pretrain/<user>/{tag}/
 
 ```bash
 python -m quant_fm.scripts.upload_to_minio \
-  --workdir quant_fm/runs/medium_try --tag medium_try --verify
+  --workdir quant_fm/runs/v2_try --tag v2_try --verify
 ```
 
 详见 [minio_setup.md](minio_setup.md)。

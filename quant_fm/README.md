@@ -92,11 +92,15 @@ make train-pilot
 python -m quant_fm.scripts.run_pilot \
   --dates 2026-02-02,2026-02-03,2026-02-04,2026-02-05,2026-02-06 \
   --symbols 000001,000002,300750 --market SZ \
-  --train-end 2026-02-04 --val-end 2026-02-05 --n-bins 32
-python -m quant_fm.pretrain.train --config quant_fm/pretrain/config.yaml
+  --train-end 2026-02-04 --val-end 2026-02-05 \
+  --data-version v2 --workdir quant_fm/runs/v2_pilot
+CONFIG=quant_fm/pretrain/config_v2_25m.yaml \
+MEDIUM_WORKDIR=quant_fm/runs/v2_pilot NPROC=1 \
+  bash quant_fm/scripts/train_medium_8gpu.sh
 python -m quant_fm.embedding.extract_hidden \
-  --checkpoint quant_fm/runs/pilot/run/final.pt \
-  --manifest  quant_fm/runs/pilot/data/manifest.json \
+  --checkpoint quant_fm/runs/v2_pilot/run/final.pt \
+  --manifest  quant_fm/runs/v2_pilot/data/manifest.json \
+  --vocab quant_fm/runs/v2_pilot/data/vocab_v2.json \
   --split test --out quant_fm/runs/pilot/embeddings.parquet
 ```
 
@@ -202,7 +206,7 @@ checkpoint 分两类：定期 `step*.pt` 与 `final_resume.pt` 含 optimizer/sca
 ## 当前边界
 
 - 代码与回归测试已完成（当前 `243 passed, 2 skipped, 1 xfailed`），但尚未生成正式全市场 v2 artifact，也未完成 25M/100M/230M 重训、MoE 消融或新的 untouched OOS；因此不能由本次改造直接推导收益提升。
-- 现有 `make pilot`、`make minio-full-pipeline*` 默认仍走 v1 数据路径；v2 数据准备目前是库 API，不是新的 Make 一键入口。
+- `make pilot`、`make medium`、`make minio-pipeline*` 与 `make minio-full-pipeline*` 默认走 V2：清洗回放同步捕获真实 pre/post 盘口，生成 `vocab_v2.json`、Q16 token/scalar、manifest，并在上传或训练前写出 PASS 的 `artifact_audit.json`。V1 仅保留为 `run_pilot.py` / `run_medium.py --data-version v1` 的显式兼容路径。
 - `pooling.method: multi_scale` 是配置/产物契约；实际抽取需在 `extract_hidden` 明确传 `--pooling multi_scale --vocab <vocab_v2.json>`。
 - `cross_asset` 与 `IntradayAggregator` 已具备因果单测，但尚未纳入默认预训练或 score 交付链路。
 - `RegimeFeatureNormalizer.fit_end` 与 `availability_lag` 当前是审计元数据，不会替调用方执行训练期过滤或 as-of lag；Regime 输入必须在外部先做 PIT 对齐。

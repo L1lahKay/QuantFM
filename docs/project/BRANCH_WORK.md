@@ -124,7 +124,7 @@ capacity overflow 时仍有 batch 容量竞争；评估/推理已禁用容量裁
 并通过低 capacity 的 batch-size independence 测试。训练期 dispatch、路由健康度、吞吐与
 收益仍未验证。
 
-现有 `make pilot` 与 MinIO/Medium/300M 脚本仍默认走 v1。v2 的数据生成接口已经实现，但尚未封装为 MinIO 一键任务，也尚未生成正式 25M/100M/230M 或 MoE checkpoint，更没有新的 untouched OOS 结果。
+`make pilot`、MinIO/Medium 与 230M/300M 档数据入口现默认走 V2；V1 仅通过底层 CLI 的 `--data-version v1` 显式兼容复现。正式 V2 全市场数据、25M/100M/230M 或 MoE checkpoint 与 untouched OOS score 仍未真实生成和验收。
 
 ### 6. 测试与文档
 

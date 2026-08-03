@@ -222,6 +222,7 @@ def clean_day_fast(
     cut_time: int = 151000000,
     cut_serial: int | None = None,
     event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION,
+    capture_book_state: bool = False,
 ) -> dict[str, int | list[str]]:
     """
     单日清洗：读一次原始数据，SZ+SH 共用内存帧，在同一进程池里并行清洗。
@@ -259,15 +260,23 @@ def clean_day_fast(
         out = clean_dir / market_of[sym] / sym / "events.parquet"
         if skip_existing and out.exists():
             try:
-                compatible = event_stream_contract_matches(
+                event_compatible = event_stream_contract_matches(
                     out,
                     version=event_ordering_version,
                 )
             except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
-                compatible = False
+                event_compatible = False
                 logger.warning("invalid event contract %s: %s", out, exc)
-            if compatible:
+            book_features_ready = (
+                not capture_book_state
+                or (out.parent / "book_features.parquet").is_file()
+            )
+            if event_compatible and book_features_ready:
                 skipped += 1
+                continue
+            if event_compatible and not book_features_ready:
+                logger.info("resume: 重建缺失 V2 盘口特征: %s", out)
+                pending.append(sym)
                 continue
             msg = (
                 f"refusing to overwrite incompatible clean event artifact during "
@@ -304,6 +313,7 @@ def clean_day_fast(
             "cut_time": cut_time,
             "cut_serial": cut_serial,
             "write_debug_artifacts": False,
+            "capture_book_state": capture_book_state,
             "event_ordering_version": event_ordering_version,
         }
         for sym in pending
