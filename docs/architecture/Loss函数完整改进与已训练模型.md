@@ -1,6 +1,6 @@
 # QuantFM Loss 函数完整改进与已训练模型
 
-> 文档基线：2026-07-30。本文把事件级基础模型预训练 Loss、MOE Router Loss 和股日横截面 Ranker Loss 分开说明，并在末尾盘点本地真实 checkpoint。
+> 文档基线：2026-07-31。本文把事件级基础模型预训练 Loss、MOE Router Loss 和股日横截面 Ranker Loss 分开说明，并在末尾盘点本地真实 checkpoint。
 
 ## 1. 最终方案概览
 
@@ -380,13 +380,13 @@ S_{select}=1.0\,NDCG_{multi-K}+0.30\,IC
 | Medium 302M V1 | 约 302.3M；1024×18 | V1，六路等权 CE | 22 日全市场；40k 旧 micro-step 口径 | `best.pt`、`final.pt`；best val loss 5.3288 | 完成；不能表述为 40k optimizer updates |
 | Dense230M V1 | 231.52M；1024×18，FFN 2816 | V1 Token；无显式 V2 Loss；gated fusion | cont60；50k optimizer updates；12.875B non-pad tokens | `best.pt`、`final.pt`、`final_resume.pt`；best val loss 5.8131 | 完成；V1 compatibility baseline |
 | V2 25M Smoke | 实际 18.15M；384×10 | V2 normalized/ordinal Loss | 真实 V1 canonical 转 V2 base；5 updates | `best.pt`、`final.pt`、`final_resume.pt`；val loss 4.1333 | Smoke，不是正式 25M |
-| Backbone-MoE V1 | 297.59M；顶部4层、4专家Top-1 | V1 next-event CE + Router aux | cont60；计划 50k updates | 最新 38,375；best@38k val loss 5.8386；无 final | 阶段性，当前停止 |
+| Backbone-MoE V1 | 297.59M；顶部4层、4专家Top-1 | V1 next-event CE + Router aux | cont60；50k updates；12.875B non-pad tokens | `best.pt`、`final.pt`、`final_resume.pt`；best@50k val loss 5.815945 | 训练预算完成；路由/吞吐/OOS 未验收 |
 
-路径均位于 `quant_fm/runs/<name>/run/`。这里的 val loss 不能跨 V1 旧训练循环、Dense230 新训练循环和不同验证采样直接横比；最有效的当前对照是同为 cont60 的 Dense230M V1 与 Backbone-MoE V1，但后者尚未完成。
+路径均位于 `quant_fm/runs/<name>/run/`。这里的 val loss 不能跨 V1 旧训练循环、Dense230 新训练循环和不同验证采样直接横比；最有效的当前对照是同为 cont60、同一 validation plan 的 Dense230M V1 与 Backbone-MoE V1。两者训练预算均已完成，但 MoE 仍缺逐层路由 telemetry、吞吐和严格下游 OOS 验收。
 
 ### 11.2 下游 Ranker
 
-本地存在两份约 1.6MB 的 Ranker checkpoint：
+本地存在两份约 1.6MB 的 legacy Ranker checkpoint：
 
 ```text
 quant_fm/runs/oos2026/delivery_oos/ranker_checkpoint.pt

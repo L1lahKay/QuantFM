@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="850" viewBox="0 0 1400 850" role="img" aria-labelledby="title desc">
+  <title id="title">GPU training backend execution architecture</title>
+  <desc id="desc">A platform job router sends ordinary shared batch jobs to Kueue and the default Kubernetes scheduler, strict fixed-size multi-pod jobs to Volcano, and isolated baseline jobs directly to Kubernetes. The paths are mutually exclusive.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071426"/>
+      <stop offset="1" stop-color="#101b33"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#7dd3fc"/>
+    </marker>
+    <style>
+      .title { font: 700 34px system-ui, sans-serif; fill: #f8fafc; }
+      .subtitle { font: 500 18px system-ui, sans-serif; fill: #a5b4c8; }
+      .box-title { font: 700 24px system-ui, sans-serif; fill: #f8fafc; }
+      .body { font: 500 17px system-ui, sans-serif; fill: #d8e2ef; }
+      .small { font: 500 15px system-ui, sans-serif; fill: #a5b4c8; }
+      .badge { font: 700 15px system-ui, sans-serif; }
+      .arrow-label { font: 700 16px system-ui, sans-serif; fill: #bae6fd; }
+    </style>
+  </defs>
+  <rect width="1400" height="850" rx="24" fill="url(#bg)"/>
+  <text x="700" y="62" text-anchor="middle" class="title">GPU 集群训练后端执行架构（建议定案）</text>
+  <text x="700" y="94" text-anchor="middle" class="subtitle">同一 workload 只允许一个 admission / queue owner；三条执行路径互斥</text>
+
+  <g filter="url(#shadow)">
+    <rect x="450" y="130" width="500" height="120" rx="18" fill="#172554" stroke="#60a5fa" stroke-width="2"/>
+    <text x="700" y="172" text-anchor="middle" class="box-title">Platform API / Job Router</text>
+    <text x="700" y="205" text-anchor="middle" class="body">根据 executionProfile、弹性、world size 和隔离策略选 lane</text>
+    <text x="700" y="232" text-anchor="middle" class="small">禁止用户同时注入 Kueue queue label 与 Volcano PodGroup</text>
+  </g>
+
+  <path d="M560 250 C480 310, 335 315, 285 365" fill="none" stroke="#7dd3fc" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M700 250 L700 365" fill="none" stroke="#7dd3fc" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M840 250 C920 310, 1065 315, 1115 365" fill="none" stroke="#7dd3fc" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="350" y="312" text-anchor="middle" class="arrow-label">shared / normal</text>
+  <text x="700" y="302" text-anchor="middle" class="arrow-label">strict gang</text>
+  <text x="1040" y="312" text-anchor="middle" class="arrow-label">isolated baseline</text>
+
+  <g filter="url(#shadow)">
+    <rect x="75" y="365" width="420" height="315" rx="18" fill="#12372a" stroke="#4ade80" stroke-width="2"/>
+    <rect x="100" y="390" width="132" height="30" rx="15" fill="#14532d"/>
+    <text x="166" y="411" text-anchor="middle" class="badge" fill="#86efac">DEFAULT LANE</text>
+    <text x="285" y="464" text-anchor="middle" class="box-title">Kueue + default-scheduler</text>
+    <text x="105" y="505" class="body">• LocalQueue / ClusterQueue / ResourceFlavor</text>
+    <text x="105" y="538" class="body">• 多租户 quota、优先级、Workload 抢占</text>
+    <text x="105" y="571" class="body">• LGB、单 Pod NN、单 Pod Transformer</text>
+    <text x="105" y="604" class="body">• 普通或可弹性 Multi-Pod Job</text>
+    <text x="105" y="647" class="small">节点放置仍由 Kubernetes default-scheduler 完成</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="490" y="365" width="420" height="315" rx="18" fill="#3a2810" stroke="#fbbf24" stroke-width="2"/>
+    <rect x="515" y="390" width="202" height="30" rx="15" fill="#713f12"/>
+    <text x="616" y="411" text-anchor="middle" class="badge" fill="#fde68a">FEATURE-GATED PILOT</text>
+    <text x="700" y="464" text-anchor="middle" class="box-title">Volcano Scheduler</text>
+    <text x="520" y="505" class="body">• Queue + PodGroup + minMember/minResources</text>
+    <text x="520" y="538" class="body">• 固定 world size、缺一不可的同步训练</text>
+    <text x="520" y="571" class="body">• Multi-Pod Transformer / NN DDP、MPI</text>
+    <text x="520" y="604" class="body">• 抢占 / reclaim 需显式配置和单独验收</text>
+    <text x="520" y="647" class="small">通过 scaling / 多节点 / 隔离验收后才升级为生产 lane</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="905" y="365" width="420" height="315" rx="18" fill="#252b3a" stroke="#94a3b8" stroke-width="2"/>
+    <rect x="930" y="390" width="145" height="30" rx="15" fill="#334155"/>
+    <text x="1002" y="411" text-anchor="middle" class="badge" fill="#cbd5e1">LIMITED USE</text>
+    <text x="1115" y="464" text-anchor="middle" class="box-title">Native Kubernetes</text>
+    <text x="935" y="505" class="body">• 系统 Job、调试、隔离沙箱、性能基线</text>
+    <text x="935" y="538" class="body">• ResourceQuota 只提供 namespace 硬上限</text>
+    <text x="935" y="571" class="body">• 无租户批队列、借用和作业级公平语义</text>
+    <text x="935" y="604" class="body">• 不作为共享 GPU 平台的默认入口</text>
+    <text x="935" y="632" class="small">兜底仅指平台受控重提 / 重路由，非自动 failover</text>
+    <text x="935" y="657" class="small">Pod Priority 抢占不理解分布式训练作业边界</text>
+  </g>
+
+  <g>
+    <rect x="75" y="728" width="1250" height="76" rx="16" fill="#111827" stroke="#475569"/>
+    <text x="700" y="758" text-anchor="middle" class="body">共享基础设施：NVIDIA Runtime / Device Plugin · 非根盘 PVC/CSI · DCGM → Prometheus → Grafana</text>
+    <text x="700" y="787" text-anchor="middle" class="small">跨 lane 容量预算、PriorityClass 语义、用户/队列标签和 SLO 必须由平台统一治理</text>
+  </g>
+</svg>

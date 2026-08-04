@@ -20,7 +20,8 @@
 | [`operations/`](operations/) | CPU/GPU Kubernetes、PVC、调度评估和训练 runbook |
 | [`project/`](project/) | 分支说明、阶段进展和执行计划 |
 | [`research/`](research/) | 调研材料与历史方案 |
-| `assets/` | 文档图片与可复核的评估证据 |
+| `assets/` | 文档图片和评估证据；由对应正文引用，不作为独立阅读入口 |
+| `handout-khalil-gpu/` | GPU 集群接入材料，包含访问配置和证书，仅限授权人员使用 |
 
 ## Pipeline 逐阶段文档
 
@@ -61,6 +62,7 @@
 
 | 文档 | 说明 |
 |------|------|
+| [V1 / V2 完整差异总览](architecture/V1-V2完整差异总览.md) | V1/V2 全链路对照，重点展开 Token、Loss、两类 MoE 与当前实证边界 |
 | [V2 性能与 Regime-MoE 代码改造方案](architecture/QuantFM-V2-性能与Regime-MoE代码改造方案.md) | 后续性能、Dense V2/Regime-MoE 路线；其中部分阶段仍是规划，不等同于当前实现 |
 | [模型底层 V2 代码改造指导](architecture/模型底层v2代码改造指导.md) | 本次已实现的盘口、Tokenizer、字段融合、Loss、池化与跨股票上下文设计依据 |
 | [MoE 架构完整结构](architecture/MOE架构完整结构.md) | Backbone-MoE 组件、路由和张量流 |
@@ -100,13 +102,14 @@ uv run python -m pytest -q
 
 | 文档 | 说明 |
 |------|------|
+| [GPU 集群训练后端选型报告（最终版）](GPU集群训练后端执行选型评估报告.md) | 当前决策入口；包含 Native K8s、Kueue、Volcano 实测结果以及 LGB、NN、Transformer 的后端选择 |
+| [GPU 调度功能实测记录（2026-07-31）](operations/GPU调度功能实测记录-2026-07-31.md) | ResourceQuota、Kueue 队列与抢占、Volcano Queue/Gang 的详细执行记录 |
+| [GPU 调度与存储早期调研](operations/GPU-K8S-Kueue-Volcano-调度与存储评估报告.md) | 历史材料，保留早期权限和组件状态；当前结论以最终版报告为准 |
 | [CPU K8s 使用手册](operations/CPU-K8S-完整使用手册-khalil.md) | CPU 集群接入、Job、日志和排障 |
 | [GPU K8s 使用与测试手册](operations/GPU-K8S-集群使用与测试手册-khalil.md) | GPU Job 规范、验证和故障定位 |
 | [GPU PVC 申请与迁移](operations/GPU-PVC-申请与迁移-khalil.md) | 存储申请、确认与迁移清单 |
-| [Kueue / Volcano 调度评估](operations/GPU-K8S-Kueue-Volcano-调度与存储评估报告.md) | 调度、配额、Gang、抢占和存储评估 |
 | [300 日 MoE 磁盘安全训练手册](operations/CODEX_MOE_300D_STORAGE_SAFE_RUNBOOK.md) | 容量闸门、checkpoint 轮转和恢复流程 |
 | [GPU 集群群公告文案](operations/GPU-K8S-群公告文案.md) | 面向使用者的简明规则 |
-| [GPU 调度与存储确认消息](operations/Reinhard-GPU-调度与存储确认消息.md) | 待管理员确认事项模板 |
 
 ## 项目记录与研究材料
 

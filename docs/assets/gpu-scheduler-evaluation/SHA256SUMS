@@ -1,5 +1,5 @@
 50382bc82b9c7d6705cab26210b8fd282e210deb42ac976efd5ab0eed58ba57e  ./bare-k8s-results.json
-f777aef58bba5d97ca5d798e601188f69e5a3f61f79d4933ba034193c08d9eaf  ./current-kueue-results.json
+3de002b39e7ee632b93f04dc259784e0fb519861737dabb5e0220def5f653e0f  ./current-kueue-results.json
 2b959d6c686e9307dd85e4fde2af9987794451b086d7cecc319ff502fb85fd55  ./raw/bare-current/cleanup-jobs-absent.txt
 b10f5f738b4c187f5eace7daa9077ee1f2920d02cdc6c1d6ca48eee07add0f6a  ./raw/bare-current/during-events.json
 76ba47c8bd1df80f3ff344a25cb11d156ca24e426523cdc39eeba3b640b459ae  ./raw/bare-current/during-jobs.json
@@ -158,8 +158,8 @@ b5b8fe989a27a616001300fc1049119a2a2a6fe252bb5e680a62f44f2d1731f5  ./raw/volcano/
 bac3a1eb5d6724c86e4db6e0a26ec8b3fd42a8ecac44b47b84ffb23eef153808  ./raw/volcano/smoke-final-pods.json
 1f103f7c1a4a13b10b23c4b04aa513501d20bc489fa08fc36685089669e425e8  ./raw/volcano/smoke-final-queues.json
 050d3951e5d5ea61506e59d50dee0c6a9d6d2ee5524a34beff52e2614c2b47fd  ./raw/volcano/smoke-final-resourcequota.json
-a903d92123a29380372a7b844ec6e1a370579c837e7352d9111fe57b6ed76459  ./screenshots/01-cluster-inventory.png
-a903d92123a29380372a7b844ec6e1a370579c837e7352d9111fe57b6ed76459  ./screenshots/01-current-cluster-access.png
+fa8401f24cf9e902c758b2f598666bcdf69b54f1827a5744feeff2e3ac24e126  ./screenshots/01-cluster-inventory.png
+fa8401f24cf9e902c758b2f598666bcdf69b54f1827a5744feeff2e3ac24e126  ./screenshots/01-current-cluster-access.png
 78c67961bb159e4bfbf3029fa6df0ef163f460e5ece559bae0ec455cde0faed2  ./screenshots/02-bare-contention.png
 52678cbf8c18ff83930e1819ff6355070d0b0ff01134e58c678ff77f068d53ad  ./screenshots/03-bare-quota.png
 749d76fd61f5d748a7816bf2f05102dd38701f9e3f9e00498b87ea965aadf409  ./screenshots/04-bare-preemption.png
@@ -172,4 +172,13 @@ eaac616e770705fde809aca6d42c574971b4f31a4e045975b0e1d2b72e8e1a06  ./screenshots/
 004205650dabd6bec8b241baf09b62cc0e465d8990f985d23b933b2801b4c6b0  ./screenshots/11-volcano-gang.png
 a00601114fe44d2ae2aaee0ac17272dbbbb92be4556bbb0c8eea69e9cb5589a1  ./screenshots/12-volcano-preemption.png
 3ec08fc63e1b32d702f1d76b9d18e3f0499ce51a39f16d5c73894d70d3a59503  ./screenshots/13-volcano-restoration-cleanup.png
+7b13dc955734968412dbd989096a8d53faaaf75d124823208f22621657248f76  ./screenshots/14-bare-resourcequota-release.png
+25417f68ec5e32944dca38ec416992f8ab1cd49929c1e5003b3754cbb6058fb3  ./screenshots/16-kueue-gpu-admission-cuda.png
+585265e939f3c6a2fa6ec51e1dc8805a8e63bcbf2d975d0d6e7eacdd53f7ece7  ./screenshots/17-kueue-queue-quota.png
+e4fd4189ced5469c21557e48f4fc9e13a44fb047eeacf3428b5e3f488f93aeb5  ./screenshots/18-kueue-all-or-nothing.png
+ad4acc3b6980b0a882257b2b886fdfb9565fd56dc59c0791678bcd657368601b  ./screenshots/19-kueue-preemption.png
+3ccdb60ac9d078cd314dc70a5f18767141764bceba75266fbce487f121f67b95  ./screenshots/20-current-cleanup-health.png
 a0d8dbf02fc94b70d26692b77a3b58e38fda9c8880ea6b6c94a1412c50991e25  ./volcano-results.json
+b2a88596a6ff3295d41be68148f7ec749765a2205ea10c46f2297b3b203eaca7  ./backend-selection-architecture.svg
+a605c3c5d397042a08827afcae4da7fbb0472e5bb899906205fff436f30397b2  ./large-granularity-20260804/nccl-path-evidence.png
+a34babb9d988630c3d639b67ec3275481d76a90f066ab03f7ac647d7ee4996de  ./large-granularity-20260804/completed-results-evidence.png

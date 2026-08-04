@@ -696,12 +696,14 @@ expert GEMM utilization
 schema_version: cn_l2_v2
 vocab_version: 2.0
 fm_artifact_version: 2.0
-ranker_artifact_version: 1.0     # 当前 quant_fm.signal
+embedding_contract_version: stock_day_embedding_v2
+ranker_artifact_version: 2.0
 regime_moe_artifact: regime_moe_v1
 ```
 
-仓库当前没有独立的 `embedding_schema_version=2.0` 常量，也没有 Ranker v2 artifact；这些
-若后续引入必须作为新版本迁移，不能在现阶段文档中当成已落地。
+仓库当前已有独立的 `stock_day_embedding_v2` 表征合约和 Ranker artifact v2 严格 loader；
+历史本地 Ranker checkpoint 仍缺少新 objective/training contract，只能按 legacy 产物处理，
+不能因为代码版本升级就描述成已完成的新 Ranker 训练结果。
 
 checkpoint 至少保存：
 

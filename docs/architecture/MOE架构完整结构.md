@@ -1,6 +1,6 @@
 # QuantFM MOE 架构完整结构
 
-> 文档基线：2026-07-30。MOE 在本文中专指 Mixture of Experts。当前仓库同时包含轻量 Temporal Regime-MoE 和 Transformer 内部 Backbone-MoE，两者的路由粒度、训练成本和成熟度不同。
+> 文档基线：2026-07-31。MOE 在本文中专指 Mixture of Experts。当前仓库同时包含轻量 Temporal Regime-MoE 和 Transformer 内部 Backbone-MoE，两者的路由粒度、训练成本和成熟度不同。
 
 ## 1. 总体结论
 
@@ -23,7 +23,7 @@ date, symbol, score
 - **Temporal Regime-MoE** 位于股日/日内聚合层之后，按同一时点可用的 regime 特征选择专家；成本低、可复用 Dense checkpoint，应该先验证。
 - **Backbone-MoE** 把 Transformer 顶部若干层的 Dense FFN 换为稀疏专家；必须重新训练 FM，成本高，属于后续扩展。
 - 当前 Temporal Regime-MoE 只有模块、normalizer、telemetry 和部分 artifact，尚无标准训练/评分链路，也没有正式 checkpoint。
-- 当前 Backbone-MoE V1 已训练到 update 38,375，最佳 checkpoint 在 update 38,000，但训练未完成、没有 final checkpoint，不能列为正式完成模型。
+- 当前 Backbone-MoE V1 已完成 50,000 updates，并存在 `best.pt`、`final.pt` 和 `final_resume.pt`；但逐层路由 telemetry、吞吐和严格下游 OOS 仍未补齐，不能列为已验收胜出的模型。
 - 300/60/100 日严格 V2 MoE 只有配置和数据计划，尚未启动；存储安全控制面仍标记为 `IMPLEMENTATION_REQUIRED`。
 
 ## 2. 两类 MOE 的职责边界
@@ -37,7 +37,7 @@ date, symbol, score
 | 默认 Top-K | Top-2 | Top-1 |
 | 是否复用 Dense FM | 是 | 否，需重训 |
 | 主要风险 | regime 泄漏、特征 join、样本少 | collapse、overflow、吞吐、FSDP 成本 |
-| 当前状态 | 代码完成，未正式训练 | V1 阶段性 checkpoint，未完成 |
+| 当前状态 | 代码完成，未正式训练 | V1 训练预算已完成，路由/吞吐/OOS 未验收 |
 
 不要把 token-level 专家使用率直接解释成“牛市专家/熊市专家”。只有 Temporal Router 明确读取可审计的 regime 特征；Backbone Router 学到的是隐状态分工，语义需要额外分析。
 
@@ -295,16 +295,17 @@ base_model_sha256
 
 ### 7.2 现场状态
 
-截至 2026-07-30 检查：
+截至 2026-07-31 直接检查本地 final checkpoint：
 
-- 日志最新：update 38,375，约 9.881B non-pad tokens；
-- 当前最佳：update 38,000，`val_loss=5.8386`；
-- 存在 `best.pt` 和 `step38000.pt`；
-- 没有 `final.pt/final_resume.pt`；
-- 未发现仍存活的训练进程；
-- 因此状态是 **阶段性已训练、当前停止、未完成**。
+- 训练已达到 update 50,000，共 12,875,096,787 non-pad tokens；
+- 当前最佳为 update 50,000，`val_loss=5.81594505`；
+- `best.pt`、`final.pt` 和 `final_resume.pt` 均存在；
+- 因此状态是 **训练预算已完成，但路由/吞吐/OOS 尚未验收**。
 
-同数据 Dense230M V1 已在 update 50,000 达到 `val_loss=5.8131`。MOE 在 38k 时仍高 0.0255，但训练步数不同、Router telemetry 缺失，不能据此做最终优劣结论。
+同数据、同 token 预算、同 validation plan 的 Dense230M V1 在 update 50,000 达到
+`val_loss=5.81305394`。MoE 高 `0.00289112`，约 0.05%；当前 next-event 指标没有显示
+优势，但差值很小，而且 Router telemetry、吞吐和严格下游 OOS 缺失，不能据此做最终
+投资效果结论。
 
 ## 8. 严格 V2 300 日方案
 
