@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "observed_at_utc": "2026-08-06T08:57:25Z",
+  "kubeconfig": "/etc/rancher/k3s/k3s.yaml",
+  "context": "default",
+  "namespace": "gpu-dev",
+  "experiment_jobs_absent": true,
+  "experiment_pods_absent": true,
+  "resourcequota_used": {
+    "limits.cpu": "0",
+    "limits.memory": "0",
+    "requests.cpu": "0",
+    "requests.memory": "0",
+    "requests.nvidia.com/gpu": "0"
+  },
+  "host_gpu_compute_process_count": 0
+}

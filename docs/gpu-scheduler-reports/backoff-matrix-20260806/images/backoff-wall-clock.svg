@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="430" viewBox="0 0 1100 430" role="img" aria-labelledby="title desc">
+  <title id="title">Kubernetes Job API wall clock by backoffLimit</title>
+  <desc id="desc">API wall clock is 7 seconds for backoffLimit zero, 70 seconds for one, and 94 seconds for two.</desc>
+  <rect width="1100" height="430" fill="#f8fafc"/>
+  <text x="55" y="50" font-family="sans-serif" font-size="28" font-weight="700" fill="#0f172a">Job creation → terminal condition</text>
+  <text x="55" y="78" font-family="sans-serif" font-size="15" fill="#475569">Kubernetes API timestamps · seconds</text>
+
+  <line x1="260" y1="105" x2="980" y2="105" stroke="#cbd5e1"/>
+  <line x1="260" y1="105" x2="260" y2="355" stroke="#94a3b8"/>
+  <line x1="404" y1="105" x2="404" y2="355" stroke="#e2e8f0"/>
+  <line x1="548" y1="105" x2="548" y2="355" stroke="#e2e8f0"/>
+  <line x1="692" y1="105" x2="692" y2="355" stroke="#e2e8f0"/>
+  <line x1="836" y1="105" x2="836" y2="355" stroke="#e2e8f0"/>
+  <line x1="980" y1="105" x2="980" y2="355" stroke="#e2e8f0"/>
+  <text x="260" y="386" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#64748b">0</text>
+  <text x="404" y="386" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#64748b">20</text>
+  <text x="548" y="386" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#64748b">40</text>
+  <text x="692" y="386" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#64748b">60</text>
+  <text x="836" y="386" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#64748b">80</text>
+  <text x="980" y="386" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#64748b">100 s</text>
+
+  <text x="225" y="162" text-anchor="end" font-family="monospace" font-size="16" font-weight="700" fill="#334155">backoffLimit 0</text>
+  <rect x="260" y="132" width="50.4" height="48" rx="6" fill="#e11d48"/>
+  <text x="325" y="162" font-family="sans-serif" font-size="16" font-weight="700" fill="#9f1239">7 s · Failed</text>
+
+  <text x="225" y="247" text-anchor="end" font-family="monospace" font-size="16" font-weight="700" fill="#334155">backoffLimit 1</text>
+  <rect x="260" y="217" width="504" height="48" rx="6" fill="#0ea5e9"/>
+  <text x="778" y="247" font-family="sans-serif" font-size="16" font-weight="700" fill="#075985">70 s · Complete</text>
+
+  <text x="225" y="332" text-anchor="end" font-family="monospace" font-size="16" font-weight="700" fill="#334155">backoffLimit 2</text>
+  <rect x="260" y="302" width="676.8" height="48" rx="6" fill="#059669"/>
+  <text x="950" y="332" font-family="sans-serif" font-size="16" font-weight="700" fill="#065f46">94 s</text>
+
+  <text x="55" y="414" font-family="sans-serif" font-size="12" fill="#64748b">Successful attempts include a 45 s injection-observation window before timed CUDA training.</text>
+</svg>

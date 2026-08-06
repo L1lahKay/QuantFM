@@ -1,0 +1,4 @@
+injected_at=2026-08-06T08:54:05.358Z
+returncode=0
+stdout=
+stderr=

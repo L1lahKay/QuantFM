@@ -1,0 +1,2 @@
+POD_RETRY_EVENT_JSON={"driver_version":"595.71.05","event":"attempt_started","experiment":"pod-process-failure-job-retry","gpu_name":"NVIDIA GeForce RTX 5090","gpu_uuid":"GPU-0849f450-d650-f9ec-058a-70cd2f3c2977","injection_window_seconds":45,"pod_name":"khalil-pod-retry-bo260806ab2-565v9","pod_uid":"0a11f164-9564-45a3-b31d-d8ee4b341529","run_token":"bo260806ab2","schema_version":1,"timestamp":"2026-08-06T08:55:19.141Z"}
+Killed

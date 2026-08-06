@@ -1,0 +1,9 @@
+2026-08-06T08:53:45.302Z	experiment-start	run_token=bo260806ab0	backoff_limit=0
+2026-08-06T08:53:45.302Z	preflight-start
+2026-08-06T08:53:47.948Z	preflight-complete
+2026-08-06T08:53:48.232Z	job-created	name=khalil-pod-retry-bo260806ab0	uid=635b82ca-33bb-4028-8691-111ee4b3dbc0
+2026-08-06T08:53:51.991Z	attempt-running	ordinal=1	pod=khalil-pod-retry-bo260806ab0-b5kw8	uid=910def13-badb-4eef-8abf-328196b54dc2
+2026-08-06T08:53:52.766Z	failure-injected	ordinal=1	pod=khalil-pod-retry-bo260806ab0-b5kw8	uid=910def13-badb-4eef-8abf-328196b54dc2
+2026-08-06T08:53:55.918Z	job-terminal	condition=Failed
+2026-08-06T08:53:56.908Z	validation-passed
+2026-08-06T08:53:58.009Z	cleanup-complete	job_absent=true	pods_absent=true	gpu_requests=0

@@ -1,0 +1,218 @@
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "annotations": {
+      "quantfm.openai/backoff-limit": "2",
+      "quantfm.openai/checkpoints-allowed": "false",
+      "quantfm.openai/storage-mode": "synthetic-ephemeral",
+      "quantfm.openai/workload-sha256": "fa85774561816256ba3abcc052ef990823e1cb3706a041a7a099d9c526e2178f"
+    },
+    "creationTimestamp": "2026-08-06T08:55:16Z",
+    "generation": 1,
+    "labels": {
+      "app.kubernetes.io/name": "quantfm-pod-retry",
+      "app.kubernetes.io/part-of": "quantfm-reliability-evaluation",
+      "quantfm.openai/backoff-limit": "2",
+      "quantfm.openai/experiment": "pod-process-failure-job-retry",
+      "quantfm.openai/run-token": "bo260806ab2"
+    },
+    "name": "khalil-pod-retry-bo260806ab2",
+    "namespace": "gpu-dev",
+    "resourceVersion": "29876842",
+    "uid": "4d756212-185c-44f8-a83d-8a89ac5431b2"
+  },
+  "spec": {
+    "activeDeadlineSeconds": 300,
+    "backoffLimit": 2,
+    "completionMode": "NonIndexed",
+    "completions": 1,
+    "manualSelector": false,
+    "parallelism": 1,
+    "podReplacementPolicy": "TerminatingOrFailed",
+    "selector": {
+      "matchLabels": {
+        "batch.kubernetes.io/controller-uid": "4d756212-185c-44f8-a83d-8a89ac5431b2"
+      }
+    },
+    "suspend": false,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app.kubernetes.io/name": "quantfm-pod-retry",
+          "app.kubernetes.io/part-of": "quantfm-reliability-evaluation",
+          "batch.kubernetes.io/controller-uid": "4d756212-185c-44f8-a83d-8a89ac5431b2",
+          "batch.kubernetes.io/job-name": "khalil-pod-retry-bo260806ab2",
+          "controller-uid": "4d756212-185c-44f8-a83d-8a89ac5431b2",
+          "job-name": "khalil-pod-retry-bo260806ab2",
+          "quantfm.openai/backoff-limit": "2",
+          "quantfm.openai/experiment": "pod-process-failure-job-retry",
+          "quantfm.openai/run-token": "bo260806ab2"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "containers": [
+          {
+            "args": [
+              "umask 077\nmkdir -p \"$HOME\" \"$XDG_CACHE_HOME\" \"$TORCH_HOME\" \"$TMPDIR\"\nprintf '%s' 'IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwoiIiJPbmUtR1BVIHdvcmtsb2FkIHVzZWQgdG8gdmVyaWZ5IEt1YmVybmV0ZXMgSm9iIHJldHJ5IGFmdGVyIHByb2Nlc3MgbG9zcy4iIiIKCmZyb20gX19mdXR1cmVfXyBpbXBvcnQgYW5ub3RhdGlvbnMKCmltcG9ydCBqc29uCmltcG9ydCBvcwppbXBvcnQgc3VicHJvY2VzcwppbXBvcnQgdGltZQpmcm9tIGRhdGV0aW1lIGltcG9ydCBkYXRldGltZSwgdGltZXpvbmUKZnJvbSB0eXBpbmcgaW1wb3J0IEFueSwgTWFwcGluZwoKCkVWRU5UX1BSRUZJWCA9ICJQT0RfUkVUUllfRVZFTlRfSlNPTj0iClJFU1VMVF9QUkVGSVggPSAiUE9EX1JFVFJZX1JFU1VMVF9KU09OPSIKCgpkZWYgdXRjX25vdygpIC0+IHN0cjoKICAgIHJldHVybiBkYXRldGltZS5ub3codGltZXpvbmUudXRjKS5pc29mb3JtYXQodGltZXNwZWM9Im1pbGxpc2Vjb25kcyIpLnJlcGxhY2UoCiAgICAgICAgIiswMDowMCIsICJaIgogICAgKQoKCmRlZiBlbWl0KHByZWZpeDogc3RyLCBwYXlsb2FkOiBNYXBwaW5nW3N0ciwgQW55XSkgLT4gTm9uZToKICAgIHByaW50KAogICAgICAgIHByZWZpeCArIGpzb24uZHVtcHMocGF5bG9hZCwgc29ydF9rZXlzPVRydWUsIHNlcGFyYXRvcnM9KCIsIiwgIjoiKSksCiAgICAgICAgZmx1c2g9VHJ1ZSwKICAgICkKCgpkZWYgdmlzaWJsZV9ncHUoKSAtPiBkaWN0W3N0ciwgc3RyXToKICAgIGNvbXBsZXRlZCA9IHN1YnByb2Nlc3MucnVuKAogICAgICAgIFsKICAgICAgICAgICAgIm52aWRpYS1zbWkiLAogICAgICAgICAgICAiLS1xdWVyeS1ncHU9dXVpZCxuYW1lLGRyaXZlcl92ZXJzaW9uIiwKICAgICAgICAgICAgIi0tZm9ybWF0PWNzdixub2hlYWRlcixub3VuaXRzIiwKICAgICAgICBdLAogICAgICAgIGNoZWNrPVRydWUsCiAgICAgICAgdGV4dD1UcnVlLAogICAgICAgIGNhcHR1cmVfb3V0cHV0PVRydWUsCiAgICAgICAgdGltZW91dD0xMCwKICAgICkKICAgIHJvd3MgPSBbbGluZS5zdHJpcCgpIGZvciBsaW5lIGluIGNvbXBsZXRlZC5zdGRvdXQuc3BsaXRsaW5lcygpIGlmIGxpbmUuc3RyaXAoKV0KICAgIGlmIGxlbihyb3dzKSAhPSAxOgogICAgICAgIHJhaXNlIFJ1bnRpbWVFcnJvcihmImV4cGVjdGVkIGV4YWN0bHkgb25lIHZpc2libGUgTlZJRElBIEdQVSwgZm91bmQge2xlbihyb3dzKX0iKQogICAgZmllbGRzID0gW3ZhbHVlLnN0cmlwKCkgZm9yIHZhbHVlIGluIHJvd3NbMF0uc3BsaXQoIiwiLCBtYXhzcGxpdD0yKV0KICAgIGlmIGxlbihmaWVsZHMpICE9IDMgb3Igbm90IGFsbChmaWVsZHMpOgogICAgICAgIHJhaXNlIFJ1bnRpbWVFcnJvcigibnZpZGlhLXNtaSByZXR1cm5lZCBhbiBpbnZhbGlkIEdQVSBpZGVudGl0eSIpCiAgICByZXR1cm4geyJncHVfdXVpZCI6IGZpZWxkc1swXSwgImdwdV9uYW1lIjogZmllbGRzWzFdLCAiZHJpdmVyX3ZlcnNpb24iOiBmaWVsZHNbMl19CgoKZGVmIHRyYWluKCkgLT4gZGljdFtzdHIsIEFueV06CiAgICBpbXBvcnQgdG9yY2gKCiAgICBpZiBub3QgdG9yY2guY3VkYS5pc19hdmFpbGFibGUoKSBvciB0b3JjaC5jdWRhLmRldmljZV9jb3VudCgpICE9IDE6CiAgICAgICAgcmFpc2UgUnVudGltZUVycm9yKCJyZXRyeSB3b3JrbG9hZCByZXF1aXJlcyBleGFjdGx5IG9uZSBDVURBIGRldmljZSIpCiAgICB0b3JjaC5tYW51YWxfc2VlZCgyMDI2MDgwNikKICAgIHRvcmNoLmN1ZGEubWFudWFsX3NlZWRfYWxsKDIwMjYwODA2KQogICAgZGV2aWNlID0gdG9yY2guZGV2aWNlKCJjdWRhOjAiKQogICAgbW9kZWwgPSB0b3JjaC5ubi5TZXF1ZW50aWFsKAogICAgICAgIHRvcmNoLm5uLkxpbmVhcigxMDAsIDEwMjQpLAogICAgICAgIHRvcmNoLm5uLkdFTFUoKSwKICAgICAgICB0b3JjaC5ubi5MaW5lYXIoMTAyNCwgMTAyNCksCiAgICAgICAgdG9yY2gubm4uR0VMVSgpLAogICAgICAgIHRvcmNoLm5uLkxpbmVhcigxMDI0LCA1MTIpLAogICAgICAgIHRvcmNoLm5uLkdFTFUoKSwKICAgICAgICB0b3JjaC5ubi5MaW5lYXIoNTEyLCAxKSwKICAgICkudG8oZGV2aWNlKQogICAgb3B0aW1pemVyID0gdG9yY2gub3B0aW0uQWRhbVcobW9kZWwucGFyYW1ldGVycygpLCBscj0xZS0zKQogICAgZmVhdHVyZXMgPSB0b3JjaC5yYW5kbig0MDk2LCAxMDAsIGRldmljZT1kZXZpY2UpCiAgICB0YXJnZXQgPSB0b3JjaC5yYW5kbig0MDk2LCAxLCBkZXZpY2U9ZGV2aWNlKQoKICAgIGRlZiBzdGVwKCkgLT4gTm9uZToKICAgICAgICBvcHRpbWl6ZXIuemVyb19ncmFkKHNldF90b19ub25lPVRydWUpCiAgICAgICAgd2l0aCB0b3JjaC5hdXRvY2FzdChkZXZpY2VfdHlwZT0iY3VkYSIsIGR0eXBlPXRvcmNoLmJmbG9hdDE2KToKICAgICAgICAgICAgbG9zcyA9IHRvcmNoLm5uLmZ1bmN0aW9uYWwubXNlX2xvc3MobW9kZWwoZmVhdHVyZXMpLCB0YXJnZXQpCiAgICAgICAgbG9zcy5iYWNrd2FyZCgpCiAgICAgICAgb3B0aW1pemVyLnN0ZXAoKQoKICAgIGZvciBfIGluIHJhbmdlKDEwKToKICAgICAgICBzdGVwKCkKICAgIHRvcmNoLmN1ZGEuc3luY2hyb25pemUoKQogICAgc3RhcnRlZCA9IHRpbWUucGVyZl9jb3VudGVyKCkKICAgIGZvciBfIGluIHJhbmdlKDgwKToKICAgICAgICBzdGVwKCkKICAgIHRvcmNoLmN1ZGEuc3luY2hyb25pemUoKQogICAgZWxhcHNlZCA9IHRpbWUucGVyZl9jb3VudGVyKCkgLSBzdGFydGVkCiAgICByZXR1cm4gewogICAgICAgICJ0b3JjaF92ZXJzaW9uIjogdG9yY2guX192ZXJzaW9uX18sCiAgICAgICAgImN1ZGFfYnVpbGQiOiB0b3JjaC52ZXJzaW9uLmN1ZGEsCiAgICAgICAgInRyYWluaW5nX3N0ZXBzIjogODAsCiAgICAgICAgIndhcm11cF9zdGVwcyI6IDEwLAogICAgICAgICJ0cmFpbmluZ190aW1lX3NlY29uZHMiOiBlbGFwc2VkLAogICAgICAgICJ0aHJvdWdocHV0X3NhbXBsZXNfcGVyX3NlY29uZCI6IDQwOTYgKiA4MCAvIGVsYXBzZWQsCiAgICAgICAgIm1heF9tZW1vcnlfYWxsb2NhdGVkX21pYiI6IHRvcmNoLmN1ZGEubWF4X21lbW9yeV9hbGxvY2F0ZWQoKSAvICgxMDI0ICogMTAyNCksCiAgICB9CgoKZGVmIG1haW4oKSAtPiBpbnQ6CiAgICBwb2RfbmFtZSA9IG9zLmVudmlyb24uZ2V0KCJQT0RfTkFNRSIsICJ1bmtub3duIikKICAgIHBvZF91aWQgPSBvcy5lbnZpcm9uLmdldCgiUE9EX1VJRCIsICJ1bmtub3duIikKICAgIHJ1bl90b2tlbiA9IG9zLmVudmlyb24uZ2V0KCJSVU5fVE9LRU4iLCAidW5rbm93biIpCiAgICBpbmplY3Rpb25fd2luZG93ID0gaW50KG9zLmVudmlyb24uZ2V0KCJJTkpFQ1RJT05fV0lORE9XX1NFQ09ORFMiLCAiNDUiKSkKICAgIGlmIGluamVjdGlvbl93aW5kb3cgPCAyMCBvciBpbmplY3Rpb25fd2luZG93ID4gOTA6CiAgICAgICAgcmFpc2UgUnVudGltZUVycm9yKCJJTkpFQ1RJT05fV0lORE9XX1NFQ09ORFMgbXVzdCBiZSBiZXR3ZWVuIDIwIGFuZCA5MCIpCiAgICBncHUgPSB2aXNpYmxlX2dwdSgpCiAgICBiYXNlID0gewogICAgICAgICJzY2hlbWFfdmVyc2lvbiI6IDEsCiAgICAgICAgImV4cGVyaW1lbnQiOiAicG9kLXByb2Nlc3MtZmFpbHVyZS1qb2ItcmV0cnkiLAogICAgICAgICJydW5fdG9rZW4iOiBydW5fdG9rZW4sCiAgICAgICAgInBvZF9uYW1lIjogcG9kX25hbWUsCiAgICAgICAgInBvZF91aWQiOiBwb2RfdWlkLAogICAgICAgICoqZ3B1LAogICAgfQogICAgZW1pdCgKICAgICAgICBFVkVOVF9QUkVGSVgsCiAgICAgICAgewogICAgICAgICAgICAqKmJhc2UsCiAgICAgICAgICAgICJldmVudCI6ICJhdHRlbXB0X3N0YXJ0ZWQiLAogICAgICAgICAgICAidGltZXN0YW1wIjogdXRjX25vdygpLAogICAgICAgICAgICAiaW5qZWN0aW9uX3dpbmRvd19zZWNvbmRzIjogaW5qZWN0aW9uX3dpbmRvdywKICAgICAgICB9LAogICAgKQogICAgdGltZS5zbGVlcChpbmplY3Rpb25fd2luZG93KQogICAgZW1pdCgKICAgICAgICBFVkVOVF9QUkVGSVgsCiAgICAgICAgeyoqYmFzZSwgImV2ZW50IjogInRyYWluaW5nX3N0YXJ0ZWQiLCAidGltZXN0YW1wIjogdXRjX25vdygpfSwKICAgICkKICAgIHRyYWluaW5nID0gdHJhaW4oKQogICAgZW1pdCgKICAgICAgICBSRVNVTFRfUFJFRklYLAogICAgICAgIHsKICAgICAgICAgICAgKipiYXNlLAogICAgICAgICAgICAqKnRyYWluaW5nLAogICAgICAgICAgICAic3RhdHVzIjogInN1Y2Nlc3MiLAogICAgICAgICAgICAidGltZXN0YW1wIjogdXRjX25vdygpLAogICAgICAgIH0sCiAgICApCiAgICByZXR1cm4gMAoKCmlmIF9fbmFtZV9fID09ICJfX21haW5fXyI6CiAgICByYWlzZSBTeXN0ZW1FeGl0KG1haW4oKSkK' | base64 -d > /experiment/pod_retry_workload.py\ntest \"$(sha256sum /experiment/pod_retry_workload.py | cut -d' ' -f1)\" = \"$WORKLOAD_SHA256\"\npython -u /experiment/pod_retry_workload.py"
+            ],
+            "command": [
+              "/bin/sh",
+              "-ceu"
+            ],
+            "env": [
+              {
+                "name": "RUN_TOKEN",
+                "value": "bo260806ab2"
+              },
+              {
+                "name": "INJECTION_WINDOW_SECONDS",
+                "value": "45"
+              },
+              {
+                "name": "WORKLOAD_SHA256",
+                "value": "fa85774561816256ba3abcc052ef990823e1cb3706a041a7a099d9c526e2178f"
+              },
+              {
+                "name": "HOME",
+                "value": "/experiment/home"
+              },
+              {
+                "name": "XDG_CACHE_HOME",
+                "value": "/experiment/cache"
+              },
+              {
+                "name": "TORCH_HOME",
+                "value": "/experiment/torch"
+              },
+              {
+                "name": "TMPDIR",
+                "value": "/experiment/tmp"
+              },
+              {
+                "name": "CUDA_CACHE_DISABLE",
+                "value": "1"
+              },
+              {
+                "name": "PYTHONDONTWRITEBYTECODE",
+                "value": "1"
+              },
+              {
+                "name": "POD_NAME",
+                "valueFrom": {
+                  "fieldRef": {
+                    "apiVersion": "v1",
+                    "fieldPath": "metadata.name"
+                  }
+                }
+              },
+              {
+                "name": "POD_UID",
+                "valueFrom": {
+                  "fieldRef": {
+                    "apiVersion": "v1",
+                    "fieldPath": "metadata.uid"
+                  }
+                }
+              }
+            ],
+            "image": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+            "imagePullPolicy": "IfNotPresent",
+            "name": "trainer",
+            "resources": {
+              "limits": {
+                "cpu": "2",
+                "memory": "4Gi",
+                "nvidia.com/gpu": "1"
+              },
+              "requests": {
+                "cpu": "2",
+                "memory": "4Gi",
+                "nvidia.com/gpu": "1"
+              }
+            },
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "readOnlyRootFilesystem": true
+            },
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "volumeMounts": [
+              {
+                "mountPath": "/experiment",
+                "name": "scratch"
+              },
+              {
+                "mountPath": "/dev/shm",
+                "name": "scratch"
+              }
+            ]
+          }
+        ],
+        "dnsPolicy": "ClusterFirst",
+        "nodeSelector": {
+          "accelerator": "nvidia"
+        },
+        "restartPolicy": "Never",
+        "runtimeClassName": "nvidia",
+        "schedulerName": "default-scheduler",
+        "securityContext": {
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "terminationGracePeriodSeconds": 30,
+        "tolerations": [
+          {
+            "effect": "NoSchedule",
+            "key": "nvidia.com/gpu",
+            "operator": "Exists"
+          }
+        ],
+        "volumes": [
+          {
+            "emptyDir": {
+              "medium": "Memory",
+              "sizeLimit": "512Mi"
+            },
+            "name": "scratch"
+          }
+        ]
+      }
+    },
+    "ttlSecondsAfterFinished": 3600
+  },
+  "status": {
+    "completionTime": "2026-08-06T08:56:50Z",
+    "conditions": [
+      {
+        "lastProbeTime": "2026-08-06T08:56:50Z",
+        "lastTransitionTime": "2026-08-06T08:56:50Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "SuccessCriteriaMet"
+      },
+      {
+        "lastProbeTime": "2026-08-06T08:56:50Z",
+        "lastTransitionTime": "2026-08-06T08:56:50Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "Complete"
+      }
+    ],
+    "failed": 2,
+    "ready": 0,
+    "startTime": "2026-08-06T08:55:16Z",
+    "succeeded": 1,
+    "terminating": 0,
+    "uncountedTerminatedPods": {}
+  }
+}

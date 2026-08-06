@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "experiment": "kubernetes-job-backoff-limit-matrix",
+  "status": "passed",
+  "matrix_token": "bo260806a",
+  "started_at": "2026-08-06T08:53:45.302Z",
+  "completed_at": "2026-08-06T08:56:53.545Z",
+  "case_count": 3,
+  "cases": [
+    {
+      "schema_version": 1,
+      "experiment": "kubernetes-job-backoff-limit-matrix",
+      "status": "passed",
+      "run_token": "bo260806ab0",
+      "job_name": "khalil-pod-retry-bo260806ab0",
+      "job_uid": "635b82ca-33bb-4028-8691-111ee4b3dbc0",
+      "backoff_limit": 0,
+      "injected_failures": 1,
+      "expected_terminal": "Failed",
+      "terminal_reason": "BackoffLimitExceeded",
+      "api_wall_clock_seconds": 7.0,
+      "attempts": [
+        {
+          "ordinal": 1,
+          "name": "khalil-pod-retry-bo260806ab0-b5kw8",
+          "uid": "910def13-badb-4eef-8abf-328196b54dc2",
+          "role": "injected-failure",
+          "exit_code": 137
+        }
+      ],
+      "training": null,
+      "owned_pod_count": 1,
+      "captured_event_count": 6,
+      "validated_at": "2026-08-06T08:53:56.908Z"
+    },
+    {
+      "schema_version": 1,
+      "experiment": "kubernetes-job-backoff-limit-matrix",
+      "status": "passed",
+      "run_token": "bo260806ab1",
+      "job_name": "khalil-pod-retry-bo260806ab1",
+      "job_uid": "e9ae686c-3ce1-4d62-914f-b0283970751f",
+      "backoff_limit": 1,
+      "injected_failures": 1,
+      "expected_terminal": "Complete",
+      "terminal_reason": "CompletionsReached",
+      "api_wall_clock_seconds": 70.0,
+      "attempts": [
+        {
+          "ordinal": 1,
+          "name": "khalil-pod-retry-bo260806ab1-hjlc4",
+          "uid": "d075b6c3-b7e9-49a1-ac74-162d61b00765",
+          "role": "injected-failure",
+          "exit_code": 137
+        },
+        {
+          "ordinal": 2,
+          "name": "khalil-pod-retry-bo260806ab1-9bmh6",
+          "uid": "70b535c0-d34e-457c-93af-959befeff4ec",
+          "role": "success",
+          "exit_code": 0
+        }
+      ],
+      "training": {
+        "cuda_build": "13.0",
+        "driver_version": "595.71.05",
+        "experiment": "pod-process-failure-job-retry",
+        "gpu_name": "NVIDIA GeForce RTX 5090",
+        "gpu_uuid": "GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651",
+        "max_memory_allocated_mib": 156.0283203125,
+        "pod_name": "khalil-pod-retry-bo260806ab1-9bmh6",
+        "pod_uid": "70b535c0-d34e-457c-93af-959befeff4ec",
+        "run_token": "bo260806ab1",
+        "schema_version": 1,
+        "status": "success",
+        "throughput_samples_per_second": 1171439.230181056,
+        "timestamp": "2026-08-06T08:55:07.659Z",
+        "torch_version": "2.13.0+cu130",
+        "training_steps": 80,
+        "training_time_seconds": 0.27972428407520056,
+        "warmup_steps": 10
+      },
+      "owned_pod_count": 2,
+      "captured_event_count": 11,
+      "validated_at": "2026-08-06T08:55:12.570Z"
+    },
+    {
+      "schema_version": 1,
+      "experiment": "kubernetes-job-backoff-limit-matrix",
+      "status": "passed",
+      "run_token": "bo260806ab2",
+      "job_name": "khalil-pod-retry-bo260806ab2",
+      "job_uid": "4d756212-185c-44f8-a83d-8a89ac5431b2",
+      "backoff_limit": 2,
+      "injected_failures": 2,
+      "expected_terminal": "Complete",
+      "terminal_reason": "CompletionsReached",
+      "api_wall_clock_seconds": 94.0,
+      "attempts": [
+        {
+          "ordinal": 1,
+          "name": "khalil-pod-retry-bo260806ab2-565v9",
+          "uid": "0a11f164-9564-45a3-b31d-d8ee4b341529",
+          "role": "injected-failure",
+          "exit_code": 137
+        },
+        {
+          "ordinal": 2,
+          "name": "khalil-pod-retry-bo260806ab2-cn8h8",
+          "uid": "cd0020bd-55b6-4b19-8a37-161e58676152",
+          "role": "injected-failure",
+          "exit_code": 137
+        },
+        {
+          "ordinal": 3,
+          "name": "khalil-pod-retry-bo260806ab2-mk5kn",
+          "uid": "08ebda85-f4c1-4c4d-9a28-fa6fa5cb99cf",
+          "role": "success",
+          "exit_code": 0
+        }
+      ],
+      "training": {
+        "cuda_build": "13.0",
+        "driver_version": "595.71.05",
+        "experiment": "pod-process-failure-job-retry",
+        "gpu_name": "NVIDIA GeForce RTX 5090",
+        "gpu_uuid": "GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8",
+        "max_memory_allocated_mib": 156.0283203125,
+        "pod_name": "khalil-pod-retry-bo260806ab2-mk5kn",
+        "pod_uid": "08ebda85-f4c1-4c4d-9a28-fa6fa5cb99cf",
+        "run_token": "bo260806ab2",
+        "schema_version": 1,
+        "status": "success",
+        "throughput_samples_per_second": 1169002.763236012,
+        "timestamp": "2026-08-06T08:56:47.519Z",
+        "torch_version": "2.13.0+cu130",
+        "training_steps": 80,
+        "training_time_seconds": 0.2803072929382324,
+        "warmup_steps": 10
+      },
+      "owned_pod_count": 3,
+      "captured_event_count": 16,
+      "validated_at": "2026-08-06T08:56:52.280Z"
+    }
+  ]
+}

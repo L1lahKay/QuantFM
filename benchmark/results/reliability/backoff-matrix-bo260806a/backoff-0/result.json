@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "experiment": "kubernetes-job-backoff-limit-matrix",
+  "status": "passed",
+  "run_token": "bo260806ab0",
+  "job_name": "khalil-pod-retry-bo260806ab0",
+  "job_uid": "635b82ca-33bb-4028-8691-111ee4b3dbc0",
+  "backoff_limit": 0,
+  "injected_failures": 1,
+  "expected_terminal": "Failed",
+  "terminal_reason": "BackoffLimitExceeded",
+  "api_wall_clock_seconds": 7.0,
+  "attempts": [
+    {
+      "ordinal": 1,
+      "name": "khalil-pod-retry-bo260806ab0-b5kw8",
+      "uid": "910def13-badb-4eef-8abf-328196b54dc2",
+      "role": "injected-failure",
+      "exit_code": 137
+    }
+  ],
+  "training": null,
+  "owned_pod_count": 1,
+  "captured_event_count": 6,
+  "validated_at": "2026-08-06T08:53:56.908Z"
+}
