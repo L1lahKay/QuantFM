@@ -4,13 +4,17 @@
 
 重试机制按预期工作。
 
-首个 Pod 的训练进程被强制终止，容器退出码为 137。Job controller 随后新建Pod；新 Pod 的 UID 与首个 Pod 不同，并以退出码 0 完成 80 步 CUDA 训练。Job最终进入 Complete 状态。
+首个 Pod 的训练进程被强制终止，容器退出码为 137。Job controller 随后新建
+Pod；新 Pod 的 UID 与首个 Pod 不同，并以退出码 0 完成 80 步 CUDA 训练。Job
+最终进入 Complete 状态。
 
-这次检查覆盖的是 `restartPolicy: Never`、`backoffLimit: 1` 下的进程故障和Pod 重建，不包括 checkpoint 恢复、节点故障和抢占后恢复。
+这次检查覆盖的是 `restartPolicy: Never`、`backoffLimit: 1` 下的进程故障和
+Pod 重建，不包括 checkpoint 恢复、节点故障和抢占后恢复。
 
 ## 2. 实验设计
 
-实验目的为检查训练进程异常退出后，Job 能否按设定次数重新创建 Pod，并在新 Pod中正常完成 GPU 训练。
+实验目的为检查训练进程异常退出后，Job 能否按设定次数重新创建 Pod，并在新 Pod
+中正常完成 GPU 训练。
 
 | 项目 | 配置 |
 |---|---|
@@ -56,12 +60,12 @@ Complete 共用时 70.561 秒。重试 Pod 的 CUDA 计时部分为 0.306726 秒
 | 捕获的关联 Event | 11 |
 | 清理后 GPU request | 0 |
 
-![Pod 故障与重试链](pod-retry-chain.svg)
+![Pod 故障与重试链](images/pod-retry-chain.svg)
 
 图 1：首个 Pod 退出后，Job controller 创建新 Pod；新 Pod 完成 CUDA 训练，
 Job 进入 Complete。
 
-![Job Wall Clock 时间线](pod-retry-wall-clock.svg)
+![Job Wall Clock 时间线](images/pod-retry-wall-clock.svg)
 
 图 2：客户端记录的 Job 时间线。故障注入至重试 Pod 进入实验窗口为 13.586 秒，
 完整 Wall Clock 为 70.561 秒。
@@ -87,3 +91,17 @@ Job 进入 Complete。
 | `retry260809` | 按 cmdline 没有匹配到 Python，注入命令返回 1 | 改为匹配 `/proc/*/comm`，并检查注入命令返回码 |
 
 这些调试运行使用不同的 Job 名称，结束后均按名称和 UID 清理，不计入正式结果。
+
+## 5. 原始记录
+
+- [结果摘要](../../../benchmark/results/reliability/pod-retry-retry260810/result.json)
+- [时间线](../../../benchmark/results/reliability/pod-retry-retry260810/timeline.tsv)
+- [最终 Job](../../../benchmark/results/reliability/pod-retry-retry260810/job-final.json)
+- [最终 Pod 列表](../../../benchmark/results/reliability/pod-retry-retry260810/pods-final.json)
+- [关联 Events](../../../benchmark/results/reliability/pod-retry-retry260810/events.json)
+- [首个 Pod 日志](../../../benchmark/results/reliability/pod-retry-retry260810/container-khalil-pod-retry-retry260810-gmxzc.txt)
+- [重试 Pod 日志](../../../benchmark/results/reliability/pod-retry-retry260810/container-khalil-pod-retry-retry260810-82fzl.txt)
+- [故障注入记录](../../../benchmark/results/reliability/pod-retry-retry260810/failure-injection.txt)
+- [清理后复核](../../../benchmark/results/reliability/pod-retry-retry260810/post-cleanup-verification.json)
+- [Pod 故障与重试链原图](images/pod-retry-chain.svg)
+- [Wall Clock 时间线原图](images/pod-retry-wall-clock.svg)

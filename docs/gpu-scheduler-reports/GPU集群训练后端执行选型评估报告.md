@@ -17,7 +17,7 @@
 
 Kueue 和 Volcano 分别管理不同的 Job，不串联使用。同一个 Job 同时接入两套队列会造成配额重复计算，抢占责任也无法界定。
 
-![建议后端执行架构](assets/gpu-scheduler-evaluation/backend-selection-architecture.svg)
+![建议后端执行架构](../assets/gpu-scheduler-evaluation/backend-selection-architecture.svg)
 
 大粒度复测中，已完成场景的排队中位数均小于 `0.7s`，训练时间为数分钟。主要耗时来自训练和通信。训练代码和 NCCL 通信不属于调度后端选型范围，该结果不改变选型。
 
@@ -110,7 +110,7 @@ Volcano 配置：
 
 目标拓扑会直接限制 Pod 布局。若最终采用 8 个单卡节点，`Single Pod × 8 GPU` 和 `4 Pods × 2 GPU` 均无法调度；前者要求一个 8 卡节点，后者要求四个 2 卡节点。8×1 拓扑下，Multi-Pod 配置应调整为 `8 Pods × 1 GPU`。
 
-![硬件与配额历史基线](assets/gpu-scheduler-evaluation/screenshots/07-historical-cluster-inventory.png)
+![硬件与配额历史基线](../assets/gpu-scheduler-evaluation/screenshots/07-historical-cluster-inventory.png)
 
 ### 2.3 计时和判定口径
 
@@ -193,7 +193,7 @@ Single-Pod 多卡和 Multi-Pod 任务保留 NCCL 日志，用于判定 Pod 内�
 
 holder 运行期间，waiter 未创建 Pod，Event 记录 5 次 `FailedCreate: exceeded quota`。holder 结束后，Job controller 重试，waiter 完成 CUDA 运算。
 
-![Native Kubernetes ResourceQuota 实测](assets/gpu-scheduler-evaluation/screenshots/14-bare-resourcequota-release.png)
+![Native Kubernetes ResourceQuota 实测](../assets/gpu-scheduler-evaluation/screenshots/14-bare-resourcequota-release.png)
 
 判定：ResourceQuota 限额生效。该方式不提供排队位置、FIFO、Workload 级公平或 Gang 语义；`FailedCreate/retry` 属于 Job controller 重试，不是批任务排队。
 
@@ -201,37 +201,37 @@ holder 运行期间，waiter 未创建 Pod，Event 记录 5 次 `FailedCreate: e
 
 1-GPU Job 状态链为 `QuotaReserved → Admitted → Scheduled → CUDA success → Complete`。Kueue 准入和 Kubernetes Pod 绑定均正常。
 
-![Kueue GPU Admission 与 CUDA](assets/gpu-scheduler-evaluation/screenshots/16-kueue-gpu-admission-cuda.png)
+![Kueue GPU Admission 与 CUDA](../assets/gpu-scheduler-evaluation/screenshots/16-kueue-gpu-admission-cuda.png)
 
 ClusterQueue nominal GPU=1。holder 占用 1 GPU 后，waiter 保持 Pending，Job 为 suspend，Pod 数为 0。节点同期有 7 GPU 空闲，等待由 ClusterQueue 配额触发。
 
-![Kueue ClusterQueue GPU Quota](assets/gpu-scheduler-evaluation/screenshots/17-kueue-queue-quota.png)
+![Kueue ClusterQueue GPU Quota](../assets/gpu-scheduler-evaluation/screenshots/17-kueue-queue-quota.png)
 
 两成员 Job 共请求 2 GPU。quota=1 时 Workload 未准入，Pod 数为 0；quota 调至 2 后两个 Pod 同批准入，Scheduled spread=`0.010s`，应用启动 spread=`0.103s`。
 
-![Kueue 两成员整组准入](assets/gpu-scheduler-evaluation/screenshots/18-kueue-all-or-nothing.png)
+![Kueue 两成员整组准入](../assets/gpu-scheduler-evaluation/screenshots/18-kueue-all-or-nothing.png)
 
 优先级 100 的 3-GPU Workload 被驱逐，优先级 1000 的 1-GPU Workload 随后准入。节点同期有 5 GPU 空闲，节点资源不足不是触发条件，本次为 Kueue 配额抢占。
 
-![Kueue Workload 抢占](assets/gpu-scheduler-evaluation/screenshots/19-kueue-preemption.png)
+![Kueue Workload 抢占](../assets/gpu-scheduler-evaluation/screenshots/19-kueue-preemption.png)
 
 ### 4.4 Volcano
 
 Volcano v1.15.1 的 scheduler、controller 和 admission 组件均为 Ready。1-GPU Job 由 `volcano` 绑定；容器内识别到 RTX 5090，Torch CUDA 和 tensor 运算正常。
 
-![Volcano GPU/CUDA 与 Wall Clock](assets/gpu-scheduler-evaluation/screenshots/09-volcano-gpu-cuda-wallclock.png)
+![Volcano GPU/CUDA 与 Wall Clock](../assets/gpu-scheduler-evaluation/screenshots/09-volcano-gpu-cuda-wallclock.png)
 
 Queue capability=1。holder 占用 1 GPU 后，waiter 保持 Pending 且未绑定，节点同期有 7 GPU 空闲。holder 释放资源后，waiter 由 Volcano 绑定并完成。判定：Queue capability 生效。
 
-![Volcano Queue Capability](assets/gpu-scheduler-evaluation/screenshots/10-volcano-queue-capability.png)
+![Volcano Queue Capability](../assets/gpu-scheduler-evaluation/screenshots/10-volcano-queue-capability.png)
 
 Queue capability=1 时，两个 Pod 均为 Pending，绑定数为 0；capability 调至 2 后，2/2 Pod 完成绑定，应用启动 spread=`0.099s`。判定：PodGroup `minMember/minResources` 生效。
 
-![Volcano PodGroup/Gang](assets/gpu-scheduler-evaluation/screenshots/11-volcano-gang.png)
+![Volcano PodGroup/Gang](../assets/gpu-scheduler-evaluation/screenshots/11-volcano-gang.png)
 
 优先级 100 的 3-GPU 任务被驱逐，优先级 1000 的 1-GPU 任务随后启动并完成。该结果依赖临时启用 `preempt`；当前默认 actions 不包含抢占。
 
-![Volcano 受控抢占](assets/gpu-scheduler-evaluation/screenshots/12-volcano-preemption.png)
+![Volcano 受控抢占](../assets/gpu-scheduler-evaluation/screenshots/12-volcano-preemption.png)
 
 ### 4.5 模型运行结果
 
@@ -245,13 +245,13 @@ Queue capability=1 时，两个 Pod 均为 Pending，绑定数为 0；capability
 | Transformer Single Pod 4 GPU | 2 | `0.295s` | `258.674s` | `281.350s` |
 | Transformer Multi Pod 4 GPU | 2 | `0.646s` | `341.705s` | `366.992s` |
 
-![大粒度正式实验完成数据](assets/gpu-scheduler-evaluation/large-granularity-20260804/completed-results-evidence.png)
+![大粒度正式实验完成数据](../assets/gpu-scheduler-evaluation/large-granularity-20260804/completed-results-evidence.png)
 
 其中 3 个场景只有 2 次完成记录，数据按阶段结果使用。排队时间与训练时间相差几个数量级，本批次主要耗时不在调度准入。
 
 Single-Pod 4 GPU 的 NCCL 路径为 `SHM/direct/direct`。Multi-Pod 日志中，Pod 内为 `SHM/direct/direct`，跨 Pod 为 `NET/Socket/0`；同时记录 `libnccl-net.so` 缺失和 `libibverbs.so[.1]` 打开失败。该批 Multi-Pod 任务使用 TCP Socket，未使用 IB/RDMA。
 
-![NCCL Single-Pod 与 Multi-Pod 数据路径](assets/gpu-scheduler-evaluation/large-granularity-20260804/nccl-path-evidence.png)
+![NCCL Single-Pod 与 Multi-Pod 数据路径](../assets/gpu-scheduler-evaluation/large-granularity-20260804/nccl-path-evidence.png)
 
 #### 完成情况
 
@@ -297,7 +297,7 @@ Kueue 位于 Job 准入层，Pod 绑定仍由 kube-scheduler 执行。`QuotaRese
 
 Volcano 直接参与 Pod 绑定，PodGroup `minMember/minResources` 用于固定规模同步训练。其运维范围包括 Queue、actions 和 plugins，这些配置直接影响入队和抢占。Volcano 处理资源准入和启动时序，不改变训练计算性能。
 
-![测试后清理与控制面健康](assets/gpu-scheduler-evaluation/screenshots/20-current-cleanup-health.png)
+![测试后清理与控制面健康](../assets/gpu-scheduler-evaluation/screenshots/20-current-cleanup-health.png)
 
 ## 5. 后续工作
 

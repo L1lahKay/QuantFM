@@ -102,7 +102,10 @@ uv run python -m pytest -q
 
 | 文档 | 说明 |
 |------|------|
-| [GPU 集群训练后端选型报告（最终版）](GPU集群训练后端执行选型评估报告.md) | 当前决策入口；包含 Native K8s、Kueue、Volcano 实测结果以及 LGB、NN、Transformer 的后端选择 |
+| [GPU 调度评估与实验报告索引](gpu-scheduler-reports/README.md) | 汇总后端选型调研、NN/Transformer 三调度器对比实验和 Pod 故障重试实验 |
+| [GPU 集群训练后端选型报告（最终版）](gpu-scheduler-reports/GPU集群训练后端执行选型评估报告.md) | 当前决策入口；包含 Native K8s、Kueue、Volcano 实测结果以及 LGB、NN、Transformer 的后端选择 |
+| [NN 与 Transformer 三调度器对比实验](gpu-scheduler-reports/current-safe-20260806/CURRENT_SAFE_N3_EXPERIMENT_REPORT.md) | 5 个场景 × 3 个调度器 × N=3 的独立实验报告 |
+| [Pod 进程故障与 Job 重试实验](gpu-scheduler-reports/pod-retry-20260806/POD_RETRY_EXPERIMENT_REPORT.md) | Pod 进程故障、Job 自动重试和 CUDA 训练结果 |
 | [GPU 调度功能实测记录（2026-07-31）](operations/GPU调度功能实测记录-2026-07-31.md) | ResourceQuota、Kueue 队列与抢占、Volcano Queue/Gang 的详细执行记录 |
 | [GPU 调度与存储早期调研](operations/GPU-K8S-Kueue-Volcano-调度与存储评估报告.md) | 历史材料，保留早期权限和组件状态；当前结论以最终版报告为准 |
 | [CPU K8s 使用手册](operations/CPU-K8S-完整使用手册-khalil.md) | CPU 集群接入、Job、日志和排障 |
