@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "experiment": "pod-deletion-job-reconciliation",
+  "status": "failed",
+  "run_token": "del260806b",
+  "job_name": "khalil-pod-delete-del260806b",
+  "job_uid": "c5ce19a3-9f99-408f-bb4d-2b031a60fdc8",
+  "error_type": "ExperimentError",
+  "error": "timeout waiting for replacement Pod attempt marker; last=None",
+  "failed_at": "2026-08-06T09:56:35.907Z"
+}

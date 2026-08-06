@@ -24,3 +24,9 @@ training process was killed, a second Pod with a different UID was created,
 and that Pod exited 0 after 80 timed CUDA steps. See the
 [experiment report](../../../docs/gpu-scheduler-reports/pod-retry-20260806/POD_RETRY_EXPERIMENT_REPORT.md)
 and [machine-readable result](../../results/reliability/pod-retry-retry260810/result.json).
+
+`run_backoff_matrix.py` extends that check across `backoffLimit` 0, 1, and 2.
+`run_pod_deletion.py` is a separate reconciliation test: it deletes an owned
+Pod at step 75 of a sustained 300-step CUDA workload and verifies that the Job
+controller creates a replacement Pod with a different UID. Both scripts plan
+without mutation unless `run --execute` is supplied.

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "experiment": "pod-deletion-job-reconciliation",
+  "status": "passed",
+  "run_token": "del260806c",
+  "job_name": "khalil-pod-delete-del260806c",
+  "job_uid": "eb33fae6-37dd-4d0e-985b-c047585f88bd",
+  "backoff_limit": 1,
+  "pod_replacement_policy": "TerminatingOrFailed",
+  "maximum_owned_pods_observed": 1,
+  "maximum_gpu_requests_observed": 1,
+  "deleted_pod": {
+    "name": "khalil-pod-delete-del260806c-57wvs",
+    "uid": "e60d7dc3-f111-4def-8c44-11e3b12fa686",
+    "deletion_marker_at": "2026-08-06T09:59:22.871Z",
+    "delete_requested_at": "2026-08-06T09:59:24.555Z",
+    "delete_confirmed_at": "2026-08-06T09:59:32.692Z",
+    "final_absent": true
+  },
+  "replacement_pod": {
+    "name": "khalil-pod-delete-del260806c-llf9d",
+    "uid": "699264f7-3749-4507-856f-71a988a3eaa4",
+    "attempt_started_at": "2026-08-06T09:59:36.545Z",
+    "exit_code": 0
+  },
+  "delete_request_to_replacement_seconds": 11.99,
+  "delete_confirmation_to_replacement_seconds": 3.853,
+  "api_wall_clock_seconds": 43.0,
+  "training": {
+    "configured_step_delay_seconds": 0.03,
+    "cuda_build": "13.0",
+    "cuda_step_time_seconds": 1.0853119492530823,
+    "deletion_marker_step": 75,
+    "driver_version": "595.71.05",
+    "experiment": "pod-deletion-job-reconciliation",
+    "gpu_name": "NVIDIA GeForce RTX 5090",
+    "gpu_uuid": "GPU-123e9fbb-6ac6-2bde-ca53-8e4f73305abd",
+    "max_memory_allocated_mib": 156.0283203125,
+    "pod_name": "khalil-pod-delete-del260806c-llf9d",
+    "pod_uid": "699264f7-3749-4507-856f-71a988a3eaa4",
+    "run_token": "del260806c",
+    "schema_version": 1,
+    "status": "success",
+    "timestamp": "2026-08-06T09:59:51.297Z",
+    "torch_version": "2.13.0+cu130",
+    "training_steps": 300,
+    "training_time_seconds": 10.109258747659624,
+    "warmup_steps": 10
+  },
+  "captured_event_count": 12,
+  "validated_at": "2026-08-06T09:59:56.421Z"
+}

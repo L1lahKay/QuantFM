@@ -1,0 +1,42 @@
+[
+  {
+    "verb": "create",
+    "resource": "jobs.batch",
+    "allowed": "yes"
+  },
+  {
+    "verb": "get",
+    "resource": "jobs.batch",
+    "allowed": "yes"
+  },
+  {
+    "verb": "delete",
+    "resource": "jobs.batch",
+    "allowed": "yes"
+  },
+  {
+    "verb": "list",
+    "resource": "pods",
+    "allowed": "yes"
+  },
+  {
+    "verb": "get",
+    "resource": "pods",
+    "allowed": "yes"
+  },
+  {
+    "verb": "create",
+    "resource": "pods/exec",
+    "allowed": "yes"
+  },
+  {
+    "verb": "list",
+    "resource": "events",
+    "allowed": "yes"
+  },
+  {
+    "verb": "delete",
+    "resource": "pods",
+    "allowed": "yes"
+  }
+]

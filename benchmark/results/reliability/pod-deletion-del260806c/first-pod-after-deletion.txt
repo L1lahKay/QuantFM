@@ -1,0 +1,1 @@
+Error from server (NotFound): pods "khalil-pod-delete-del260806c-57wvs" not found

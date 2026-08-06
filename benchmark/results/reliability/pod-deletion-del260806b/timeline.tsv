@@ -1,0 +1,8 @@
+2026-08-06T09:53:39.398Z	experiment-start	run_token=del260806b
+2026-08-06T09:53:40.149Z	preflight-start
+2026-08-06T09:53:42.810Z	preflight-complete
+2026-08-06T09:53:43.086Z	job-created	name=khalil-pod-delete-del260806b	uid=c5ce19a3-9f99-408f-bb4d-2b031a60fdc8
+2026-08-06T09:53:54.466Z	deletion-point-reached	pod=khalil-pod-delete-del260806b-btlxt	uid=9fe55c0e-fb2b-4bc6-89a9-d391552e1573	workload_timestamp=2026-08-06T09:53:52.980Z
+2026-08-06T09:54:04.416Z	pod-deleted	pod=khalil-pod-delete-del260806b-btlxt	uid=9fe55c0e-fb2b-4bc6-89a9-d391552e1573	requested_at=2026-08-06T09:53:54.698Z	confirmed_at=2026-08-06T09:54:04.170Z
+2026-08-06T09:56:35.907Z	experiment-failed	ExperimentError: timeout waiting for replacement Pod attempt marker; last=None
+2026-08-06T09:56:36.985Z	cleanup-complete	job_absent=true	pods_absent=true	gpu_requests=0

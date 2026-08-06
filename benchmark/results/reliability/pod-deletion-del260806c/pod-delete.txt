@@ -1,0 +1,1 @@
+pod "khalil-pod-delete-del260806c-57wvs" deleted from gpu-dev namespace

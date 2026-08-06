@@ -21,6 +21,9 @@ def load_module(name: str, path: Path):  # type: ignore[no-untyped-def]
 
 
 RENDER = load_module("render_pod_retry", EXPERIMENT / "render_pod_retry.py")
+DELETE_RENDER = load_module(
+    "render_pod_deletion", EXPERIMENT / "render_pod_deletion.py"
+)
 
 
 class PodRetryExperimentTests(unittest.TestCase):
@@ -115,6 +118,48 @@ class PodRetryExperimentTests(unittest.TestCase):
         self.assertIn('"backoff_limit": 1', plan)
         self.assertIn('"backoff_limit": 2', plan)
         self.assertIn('"sequential": true', plan)
+
+    def test_pod_deletion_manifest_is_bounded(self) -> None:
+        manifest = DELETE_RENDER.render("delete1234")
+        self.assertEqual(manifest["metadata"]["name"], "khalil-pod-delete-delete1234")
+        self.assertEqual(manifest["metadata"]["namespace"], "gpu-dev")
+        self.assertEqual(manifest["spec"]["backoffLimit"], 1)
+        self.assertEqual(
+            manifest["spec"]["podReplacementPolicy"], "TerminatingOrFailed"
+        )
+        self.assertEqual(manifest["spec"]["activeDeadlineSeconds"], 240)
+        pod = manifest["spec"]["template"]["spec"]
+        self.assertEqual(pod["restartPolicy"], "Never")
+        self.assertEqual(pod["runtimeClassName"], "nvidia")
+        self.assertNotIn("persistentVolumeClaim", str(manifest))
+        env = {
+            item["name"]: item.get("value")
+            for item in pod["containers"][0]["env"]
+        }
+        self.assertEqual(env["TOTAL_STEPS"], "300")
+        self.assertEqual(env["DELETE_AFTER_STEP"], "75")
+
+    def test_pod_deletion_runner_defaults_to_plan_and_validates_owner(self) -> None:
+        completed = subprocess.run(
+            ["python3", str(EXPERIMENT / "run_pod_deletion.py")],
+            cwd=REPO_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn('"mutation": "none"', completed.stdout)
+        self.assertIn('"delete_after_step": 75', completed.stdout)
+        self.assertIn(
+            '"podReplacementPolicy": "TerminatingOrFailed"', completed.stdout
+        )
+        source = (EXPERIMENT / "run_pod_deletion.py").read_text(encoding="utf-8")
+        self.assertIn("Pod deletion refused: UID changed", source)
+        self.assertIn("Pod deletion refused: Job owner UID mismatch", source)
+        self.assertIn('"delete",\n                "pod",', source)
+        self.assertIn('"--wait=false"', source)
+        self.assertNotIn('"--force"', source)
+        self.assertIn("replacement exceeded bound", source)
 
 
 if __name__ == "__main__":

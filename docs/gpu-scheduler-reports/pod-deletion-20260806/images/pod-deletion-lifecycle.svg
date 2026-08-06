@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="420" viewBox="0 0 1100 420" role="img" aria-labelledby="title desc">
+  <title id="title">Running Pod deletion and Kubernetes Job replacement</title>
+  <desc id="desc">The first Pod reaches step 75 and is deleted. The Job controller creates a replacement Pod with a different UID, which finishes 300 CUDA steps.</desc>
+  <rect width="1100" height="420" fill="#f8fafc"/>
+  <text x="55" y="50" font-family="sans-serif" font-size="28" font-weight="700" fill="#0f172a">Running Pod deletion → Job replacement → Complete</text>
+  <text x="55" y="79" font-family="sans-serif" font-size="15" fill="#475569">backoffLimit: 1 · podReplacementPolicy: TerminatingOrFailed · one GPU observed</text>
+
+  <rect x="55" y="125" width="300" height="165" rx="12" fill="#fff7ed" stroke="#ea580c" stroke-width="2"/>
+  <text x="80" y="160" font-family="sans-serif" font-size="19" font-weight="700" fill="#9a3412">Original Pod</text>
+  <text x="80" y="190" font-family="monospace" font-size="13" fill="#334155">...-57wvs</text>
+  <text x="80" y="216" font-family="monospace" font-size="12" fill="#64748b">UID e60d7dc3-...-b12fa686</text>
+  <text x="80" y="248" font-family="sans-serif" font-size="16" fill="#334155">CUDA step 75 / 300</text>
+  <text x="80" y="273" font-family="sans-serif" font-size="17" font-weight="700" fill="#c2410c">graceful Pod deletion</text>
+
+  <line x1="375" y1="207" x2="570" y2="207" stroke="#475569" stroke-width="4"/>
+  <polygon points="570,207 550,196 550,218" fill="#475569"/>
+  <text x="472" y="175" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="700" fill="#334155">11.990 s</text>
+  <text x="472" y="237" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#64748b">new Pod UID</text>
+
+  <rect x="590" y="125" width="300" height="165" rx="12" fill="#ecfdf5" stroke="#059669" stroke-width="2"/>
+  <text x="615" y="160" font-family="sans-serif" font-size="19" font-weight="700" fill="#065f46">Replacement Pod</text>
+  <text x="615" y="190" font-family="monospace" font-size="13" fill="#334155">...-llf9d</text>
+  <text x="615" y="216" font-family="monospace" font-size="12" fill="#64748b">UID 699264f7-...-88a3eaa4</text>
+  <text x="615" y="248" font-family="sans-serif" font-size="16" fill="#334155">300 CUDA steps · 10.109 s</text>
+  <text x="615" y="273" font-family="sans-serif" font-size="17" font-weight="700" fill="#047857">exit 0</text>
+
+  <line x1="905" y1="207" x2="985" y2="207" stroke="#475569" stroke-width="4"/>
+  <polygon points="985,207 965,196 965,218" fill="#475569"/>
+  <text x="1010" y="201" font-family="sans-serif" font-size="16" font-weight="700" fill="#065f46">Job</text>
+  <text x="1010" y="225" font-family="sans-serif" font-size="16" font-weight="700" fill="#065f46">Complete</text>
+
+  <rect x="55" y="324" width="990" height="1" fill="#cbd5e1"/>
+  <text x="55" y="354" font-family="sans-serif" font-size="14" fill="#475569">Final Job counters: failed=1 · succeeded=1 · terminating=0</text>
+  <text x="55" y="380" font-family="sans-serif" font-size="14" fill="#475569">Observed maximum: 1 owned Pod · 1 GPU request</text>
+  <text x="55" y="405" font-family="sans-serif" font-size="12" fill="#64748b">Source: UID-linked Job, Pod, Event, workload log, capacity and client timeline evidence.</text>
+</svg>

@@ -1,0 +1,10 @@
+2026-08-06T09:59:09.220Z	experiment-start	run_token=del260806c
+2026-08-06T09:59:09.973Z	preflight-start
+2026-08-06T09:59:12.643Z	preflight-complete
+2026-08-06T09:59:12.915Z	job-created	name=khalil-pod-delete-del260806c	uid=eb33fae6-37dd-4d0e-985b-c047585f88bd
+2026-08-06T09:59:24.324Z	deletion-point-reached	pod=khalil-pod-delete-del260806c-57wvs	uid=e60d7dc3-f111-4def-8c44-11e3b12fa686	workload_timestamp=2026-08-06T09:59:22.871Z
+2026-08-06T09:59:32.926Z	pod-deleted	pod=khalil-pod-delete-del260806c-57wvs	uid=e60d7dc3-f111-4def-8c44-11e3b12fa686	requested_at=2026-08-06T09:59:24.555Z	confirmed_at=2026-08-06T09:59:32.692Z
+2026-08-06T09:59:38.910Z	replacement-running	pod=khalil-pod-delete-del260806c-llf9d	uid=699264f7-3749-4507-856f-71a988a3eaa4	workload_timestamp=2026-08-06T09:59:36.545Z
+2026-08-06T09:59:55.362Z	job-complete
+2026-08-06T09:59:56.422Z	validation-passed
+2026-08-06T09:59:57.494Z	cleanup-complete	job_absent=true	pods_absent=true	gpu_requests=0

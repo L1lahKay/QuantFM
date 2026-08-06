@@ -1,0 +1,121 @@
+[
+  {
+    "observed_at": "2026-08-06T09:59:25.528Z",
+    "stage": "waiting-for-deleted-pod-absence",
+    "owned_pod_count": 1,
+    "gpu_requests_used": 1,
+    "pods": [
+      {
+        "name": "khalil-pod-delete-del260806c-57wvs",
+        "uid": "e60d7dc3-f111-4def-8c44-11e3b12fa686",
+        "phase": "Running",
+        "deletion_timestamp": "2026-08-06T09:59:54Z"
+      }
+    ]
+  },
+  {
+    "observed_at": "2026-08-06T09:59:27.236Z",
+    "stage": "waiting-for-deleted-pod-absence",
+    "owned_pod_count": 1,
+    "gpu_requests_used": 1,
+    "pods": [
+      {
+        "name": "khalil-pod-delete-del260806c-57wvs",
+        "uid": "e60d7dc3-f111-4def-8c44-11e3b12fa686",
+        "phase": "Running",
+        "deletion_timestamp": "2026-08-06T09:59:54Z"
+      }
+    ]
+  },
+  {
+    "observed_at": "2026-08-06T09:59:28.951Z",
+    "stage": "waiting-for-deleted-pod-absence",
+    "owned_pod_count": 1,
+    "gpu_requests_used": 1,
+    "pods": [
+      {
+        "name": "khalil-pod-delete-del260806c-57wvs",
+        "uid": "e60d7dc3-f111-4def-8c44-11e3b12fa686",
+        "phase": "Running",
+        "deletion_timestamp": "2026-08-06T09:59:54Z"
+      }
+    ]
+  },
+  {
+    "observed_at": "2026-08-06T09:59:30.680Z",
+    "stage": "waiting-for-deleted-pod-absence",
+    "owned_pod_count": 1,
+    "gpu_requests_used": 1,
+    "pods": [
+      {
+        "name": "khalil-pod-delete-del260806c-57wvs",
+        "uid": "e60d7dc3-f111-4def-8c44-11e3b12fa686",
+        "phase": "Running",
+        "deletion_timestamp": "2026-08-06T09:59:54Z"
+      }
+    ]
+  },
+  {
+    "observed_at": "2026-08-06T09:59:32.453Z",
+    "stage": "waiting-for-deleted-pod-absence",
+    "owned_pod_count": 1,
+    "gpu_requests_used": 0,
+    "pods": [
+      {
+        "name": "khalil-pod-delete-del260806c-57wvs",
+        "uid": "e60d7dc3-f111-4def-8c44-11e3b12fa686",
+        "phase": "Succeeded",
+        "deletion_timestamp": "2026-08-06T09:59:54Z"
+      }
+    ]
+  },
+  {
+    "observed_at": "2026-08-06T09:59:33.432Z",
+    "stage": "waiting-for-replacement",
+    "owned_pod_count": 0,
+    "gpu_requests_used": 0,
+    "pods": []
+  },
+  {
+    "observed_at": "2026-08-06T09:59:34.958Z",
+    "stage": "waiting-for-replacement",
+    "owned_pod_count": 1,
+    "gpu_requests_used": 1,
+    "pods": [
+      {
+        "name": "khalil-pod-delete-del260806c-llf9d",
+        "uid": "699264f7-3749-4507-856f-71a988a3eaa4",
+        "phase": "Pending",
+        "deletion_timestamp": null
+      }
+    ]
+  },
+  {
+    "observed_at": "2026-08-06T09:59:36.687Z",
+    "stage": "waiting-for-replacement",
+    "owned_pod_count": 1,
+    "gpu_requests_used": 1,
+    "pods": [
+      {
+        "name": "khalil-pod-delete-del260806c-llf9d",
+        "uid": "699264f7-3749-4507-856f-71a988a3eaa4",
+        "phase": "Pending",
+        "deletion_timestamp": null
+      }
+    ]
+  },
+  {
+    "observed_at": "2026-08-06T09:59:38.432Z",
+    "stage": "waiting-for-replacement",
+    "owned_pod_count": 1,
+    "gpu_requests_used": 1,
+    "pods": [
+      {
+        "name": "khalil-pod-delete-del260806c-llf9d",
+        "uid": "699264f7-3749-4507-856f-71a988a3eaa4",
+        "phase": "Running",
+        "deletion_timestamp": null
+      }
+    ]
+  }
+]
