@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="690" viewBox="0 0 1280 690">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<style>text{font-family:Inter,Segoe UI,Arial,sans-serif;fill:#172033}.title{font-size:25px;font-weight:700}.subtitle{font-size:14px;fill:#526072}.axis{font-size:13px;fill:#526072}.scenario{font-size:14px;font-weight:600}.value{font-size:11px;font-weight:600}</style>
+<text x="36.00" y="43.00" class="title">各场景训练时间</text>
+<text x="36.00" y="72.00" class="subtitle">2026-08-06 current-safe 批次，共 45 次完成运行</text>
+<circle cx="720" cy="42" r="6" fill="#2563eb"/>
+<text x="732.00" y="47.00" class="axis">K8s</text>
+<circle cx="870" cy="42" r="6" fill="#16a34a"/>
+<text x="882.00" y="47.00" class="axis">Kueue</text>
+<circle cx="1020" cy="42" r="6" fill="#dc2626"/>
+<text x="1032.00" y="47.00" class="axis">Volcano</text>
+<line x1="320.00" y1="125" x2="320.00" y2="618" stroke="#dce2ea" stroke-width="1"/>
+<text x="320.00" y="651.00" class="axis" text-anchor="middle">0.1</text>
+<line x1="469.41" y1="125" x2="469.41" y2="618" stroke="#dce2ea" stroke-width="1"/>
+<text x="469.41" y="651.00" class="axis" text-anchor="middle">0.3</text>
+<line x1="633.16" y1="125" x2="633.16" y2="618" stroke="#dce2ea" stroke-width="1"/>
+<text x="633.16" y="651.00" class="axis" text-anchor="middle">1</text>
+<line x1="782.57" y1="125" x2="782.57" y2="618" stroke="#dce2ea" stroke-width="1"/>
+<text x="782.57" y="651.00" class="axis" text-anchor="middle">3</text>
+<line x1="946.32" y1="125" x2="946.32" y2="618" stroke="#dce2ea" stroke-width="1"/>
+<text x="946.32" y="651.00" class="axis" text-anchor="middle">10</text>
+<line x1="1095.73" y1="125" x2="1095.73" y2="618" stroke="#dce2ea" stroke-width="1"/>
+<text x="1095.73" y="651.00" class="axis" text-anchor="middle">30</text>
+<line x1="1190.00" y1="125" x2="1190.00" y2="618" stroke="#dce2ea" stroke-width="1"/>
+<text x="1190.00" y="651.00" class="axis" text-anchor="middle">60</text>
+<text x="300.00" y="179.30" class="scenario" text-anchor="end">NN · 1 GPU · 单 Pod</text>
+<line x1="466.21" y1="152.30" x2="476.64" y2="152.30" stroke="#2563eb" stroke-width="4" stroke-linecap="round" opacity="0.70"/>
+<line x1="466.21" y1="147.30" x2="466.21" y2="157.30" stroke="#2563eb" stroke-width="2"/>
+<line x1="476.64" y1="147.30" x2="476.64" y2="157.30" stroke="#2563eb" stroke-width="2"/>
+<circle cx="475.75" cy="152.30" r="6" fill="#2563eb" stroke="#ffffff" stroke-width="2"/>
+<text x="485.75" y="156.30" class="value" text-anchor="start" fill="#2563eb">0.314 s</text>
+<line x1="462.60" y1="174.30" x2="470.71" y2="174.30" stroke="#16a34a" stroke-width="4" stroke-linecap="round" opacity="0.70"/>
+<line x1="462.60" y1="169.30" x2="462.60" y2="179.30" stroke="#16a34a" stroke-width="2"/>
+<line x1="470.71" y1="169.30" x2="470.71" y2="179.30" stroke="#16a34a" stroke-width="2"/>
+<circle cx="465.61" cy="174.30" r="6" fill="#16a34a" stroke="#ffffff" stroke-width="2"/>
+<text x="475.61" y="178.30" class="value" text-anchor="start" fill="#16a34a">0.292 s</text>
+<line x1="466.54" y1="196.30" x2="475.34" y2="196.30" stroke="#dc2626" stroke-width="4" stroke-linecap="round" opacity="0.70"/>
+<line x1="466.54" y1="191.30" x2="466.54" y2="201.30" stroke="#dc2626" stroke-width="2"/>
+<line x1="475.34" y1="191.30" x2="475.34" y2="201.30" stroke="#dc2626" stroke-width="2"/>
+<circle cx="467.41" cy="196.30" r="6" fill="#dc2626" stroke="#ffffff" stroke-width="2"/>
+<text x="477.41" y="200.30" class="value" text-anchor="start" fill="#dc2626">0.296 s</text>
+<line x1="36" y1="223.60" x2="1190" y2="223.60" stroke="#eef1f5"/>
+<text x="300.00" y="277.90" class="scenario" text-anchor="end">NN · 4 GPU · 多 Pod</text>
+<line x1="646.30" y1="250.90" x2="652.40" y2="250.90" stroke="#2563eb" stroke-width="4" stroke-linecap="round" opacity="0.70"/>
+<line x1="646.30" y1="245.90" x2="646.30" y2="255.90" stroke="#2563eb" stroke-width="2"/>
+<line x1="652.40" y1="245.90" x2="652.40" y2="255.90" stroke="#2563eb" stroke-width="2"/>
+<circle cx="648.82" cy="250.90" r="6" fill="#2563eb" stroke="#ffffff" stroke-width="2"/>
+<text x="658.82" y="254.90" class="value" text-anchor="start" fill="#2563eb">1.122 s</text>
+<line x1="631.86" y1="272.90" x2="651.80" y2="272.90" stroke="#16a34a" stroke-width="4" stroke-linecap="round" opacity="0.70"/>
+<line x1="631.86" y1="267.90" x2="631.86" y2="277.90" stroke="#16a34a" stroke-width="2"/>
+<line x1="651.80" y1="267.90" x2="651.80" y2="277.90" stroke="#16a34a" stroke-width="2"/>
+<circle cx="651.32" cy="272.90" r="6" fill="#16a34a" stroke="#ffffff" stroke-width="2"/>
+<text x="661.32" y="276.90" class="value" text-anchor="start" fill="#16a34a">1.143 s</text>
+<line x1="628.18" y1="294.90" x2="651.95" y2="294.90" stroke="#dc2626" stroke-width="4" stroke-linecap="round" opacity="0.70"/>
+<line x1="628.18" y1="289.90" x2="628.18" y2="299.90" stroke="#dc2626" stroke-width="2"/>
+<line x1="651.95" y1="289.90" x2="651.95" y2="299.90" stroke="#dc2626" stroke-width="2"/>
+<circle cx="650.52" cy="294.90" r="6" fill="#dc2626" stroke="#ffffff" stroke-width="2"/>
+<text x="660.52" y="298.90" class="value" text-anchor="start" fill="#dc2626">1.136 s</text>
+<line x1="36" y1="322.20" x2="1190" y2="322.20" stroke="#eef1f5"/>
+<text x="300.00" y="376.50" class="scenario" text-anchor="end">Transformer · 1 GPU · 单 Pod</text>
+<line x1="914.98" y1="349.50" x2="924.26" y2="349.50" stroke="#2563eb" stroke-width="4" stroke-linecap="round" opacity="0.70"/>
+<line x1="914.98" y1="344.50" x2="914.98" y2="354.50" stroke="#2563eb" stroke-width="2"/>
+<line x1="924.26" y1="344.50" x2="924.26" y2="354.50" stroke="#2563eb" stroke-width="2"/>
+<circle cx="919.35" cy="349.50" r="6" fill="#2563eb" stroke="#ffffff" stroke-width="2"/>
+<text x="929.35" y="353.50" class="value" text-anchor="start" fill="#2563eb">8.201 s</text>
+<line x1="915.16" y1="371.50" x2="917.10" y2="371.50" stroke="#16a34a" stroke-width="4" stroke-linecap="round" opacity="0.70"/>
+<line x1="915.16" y1="366.50" x2="915.16" y2="376.50" stroke="#16a34a" stroke-width="2"/>
+<line x1="917.10" y1="366.50" x2="917.10" y2="376.50" stroke="#16a34a" stroke-width="2"/>
+<circle cx="916.46" cy="371.50" r="6" fill="#16a34a" stroke="#ffffff" stroke-width="2"/>
+<text x="926.46" y="375.50" class="value" text-anchor="start" fill="#16a34a">8.029 s</text>
+<line x1="914.90" y1="393.50" x2="917.31" y2="393.50" stroke="#dc2626" stroke-width="4" stroke-linecap="round" opacity="0.70"/>
+<line x1="914.90" y1="388.50" x2="914.90" y2="398.50" stroke="#dc2626" stroke-width="2"/>
+<line x1="917.31" y1="388.50" x2="917.31" y2="398.50" stroke="#dc2626" stroke-width="2"/>
+<circle cx="915.10" cy="393.50" r="6" fill="#dc2626" stroke="#ffffff" stroke-width="2"/>
+<text x="925.10" y="397.50" class="value" text-anchor="start" fill="#dc2626">7.949 s</text>
+<line x1="36" y1="420.80" x2="1190" y2="420.80" stroke="#eef1f5"/>
+<text x="300.00" y="475.10" class="scenario" text-anchor="end">Transformer · 4 GPU · 单 Pod</text>
+<line x1="929.23" y1="448.10" x2="931.30" y2="448.10" stroke="#2563eb" stroke-width="4" stroke-linecap="round" opacity="0.70"/>
+<line x1="929.23" y1="443.10" x2="929.23" y2="453.10" stroke="#2563eb" stroke-width="2"/>
+<line x1="931.30" y1="443.10" x2="931.30" y2="453.10" stroke="#2563eb" stroke-width="2"/>
+<circle cx="931.18" cy="448.10" r="6" fill="#2563eb" stroke="#ffffff" stroke-width="2"/>
+<text x="941.18" y="452.10" class="value" text-anchor="start" fill="#2563eb">8.947 s</text>
+<line x1="928.96" y1="470.10" x2="934.91" y2="470.10" stroke="#16a34a" stroke-width="4" stroke-linecap="round" opacity="0.70"/>
+<line x1="928.96" y1="465.10" x2="928.96" y2="475.10" stroke="#16a34a" stroke-width="2"/>
+<line x1="934.91" y1="465.10" x2="934.91" y2="475.10" stroke="#16a34a" stroke-width="2"/>
+<circle cx="933.92" cy="470.10" r="6" fill="#16a34a" stroke="#ffffff" stroke-width="2"/>
+<text x="943.92" y="474.10" class="value" text-anchor="start" fill="#16a34a">9.129 s</text>
+<line x1="933.13" y1="492.10" x2="935.70" y2="492.10" stroke="#dc2626" stroke-width="4" stroke-linecap="round" opacity="0.70"/>
+<line x1="933.13" y1="487.10" x2="933.13" y2="497.10" stroke="#dc2626" stroke-width="2"/>
+<line x1="935.70" y1="487.10" x2="935.70" y2="497.10" stroke="#dc2626" stroke-width="2"/>
+<circle cx="933.80" cy="492.10" r="6" fill="#dc2626" stroke="#ffffff" stroke-width="2"/>
+<text x="943.80" y="496.10" class="value" text-anchor="start" fill="#dc2626">9.121 s</text>
+<line x1="36" y1="519.40" x2="1190" y2="519.40" stroke="#eef1f5"/>
+<text x="300.00" y="573.70" class="scenario" text-anchor="end">Transformer · 4 GPU · 多 Pod</text>
+<line x1="1074.74" y1="546.70" x2="1116.49" y2="546.70" stroke="#2563eb" stroke-width="4" stroke-linecap="round" opacity="0.70"/>
+<line x1="1074.74" y1="541.70" x2="1074.74" y2="551.70" stroke="#2563eb" stroke-width="2"/>
+<line x1="1116.49" y1="541.70" x2="1116.49" y2="551.70" stroke="#2563eb" stroke-width="2"/>
+<circle cx="1076.59" cy="546.70" r="6" fill="#2563eb" stroke="#ffffff" stroke-width="2"/>
+<text x="1086.59" y="550.70" class="value" text-anchor="start" fill="#2563eb">26.062 s</text>
+<line x1="1077.29" y1="568.70" x2="1118.41" y2="568.70" stroke="#16a34a" stroke-width="4" stroke-linecap="round" opacity="0.70"/>
+<line x1="1077.29" y1="563.70" x2="1077.29" y2="573.70" stroke="#16a34a" stroke-width="2"/>
+<line x1="1118.41" y1="563.70" x2="1118.41" y2="573.70" stroke="#16a34a" stroke-width="2"/>
+<circle cx="1117.36" cy="568.70" r="6" fill="#16a34a" stroke="#ffffff" stroke-width="2"/>
+<text x="1127.36" y="572.70" class="value" text-anchor="start" fill="#16a34a">35.171 s</text>
+<line x1="1073.65" y1="590.70" x2="1115.96" y2="590.70" stroke="#dc2626" stroke-width="4" stroke-linecap="round" opacity="0.70"/>
+<line x1="1073.65" y1="585.70" x2="1073.65" y2="595.70" stroke="#dc2626" stroke-width="2"/>
+<line x1="1115.96" y1="585.70" x2="1115.96" y2="595.70" stroke="#dc2626" stroke-width="2"/>
+<circle cx="1115.52" cy="590.70" r="6" fill="#dc2626" stroke="#ffffff" stroke-width="2"/>
+<text x="1125.52" y="594.70" class="value" text-anchor="start" fill="#dc2626">34.698 s</text>
+<text x="320.00" y="677.00" class="axis">对数刻度；横线：最小值–最大值；圆点：中位数；N=3</text>
+</svg>

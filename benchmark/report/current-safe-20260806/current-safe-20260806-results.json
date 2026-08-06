@@ -1,0 +1,553 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-08-06T07:02:21Z",
+  "batch": "current-safe-20260806-n3",
+  "matrix_sha256": "eb9f41067008490d3894dfa619f759f5e086d08df5bc24f5d6f0a8f3506d70df",
+  "runtime_sha256": "7b3d662d2f84f2373e4a2e6d71932b83856840cc58c68b01c2e7a00534071e6b",
+  "image": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+  "run_count": 45,
+  "cell_count": 15,
+  "required_repetitions": 3,
+  "cells": [
+    {
+      "scenario_id": "nn-single-gpu1",
+      "scenario": "NN · 1 GPU · 单 Pod",
+      "scheduler": "K8s",
+      "n": 3,
+      "run_ids": [
+        "khalil-bm-k8s-9400c4-nn-single-o36604f7b-c009-r03",
+        "khalil-bm-k8s-9400c4-nn-single-o36604f7b-c011-r01",
+        "khalil-bm-k8s-9400c4-nn-single-o36604f7b-c015-r02"
+      ],
+      "queue_time": {
+        "min": 0.291878,
+        "median": 0.312151,
+        "max": 0.321591
+      },
+      "training_time": {
+        "min": 0.293012,
+        "median": 0.314301,
+        "max": 0.31637
+      },
+      "wall_clock_time": {
+        "min": 11.197,
+        "median": 11.379,
+        "max": 11.39
+      },
+      "gpu_utilization": {
+        "min": 5.0,
+        "median": 7.0,
+        "max": 12.0
+      },
+      "throughput": {
+        "min": 1035748.658476,
+        "median": 1042567.411874,
+        "max": 1118315.514286
+      }
+    },
+    {
+      "scenario_id": "nn-single-gpu1",
+      "scenario": "NN · 1 GPU · 单 Pod",
+      "scheduler": "Kueue",
+      "n": 3,
+      "run_ids": [
+        "khalil-bm-kueue-9400c4-nn-sing-o5f4a5736-c006-r02",
+        "khalil-bm-kueue-9400c4-nn-sing-o5f4a5736-c023-r03",
+        "khalil-bm-kueue-9400c4-nn-sing-o5f4a5736-c026-r01"
+      ],
+      "queue_time": {
+        "min": 0.420538,
+        "median": 0.442177,
+        "max": 0.496246
+      },
+      "training_time": {
+        "min": 0.28533,
+        "median": 0.291717,
+        "max": 0.302863
+      },
+      "wall_clock_time": {
+        "min": 10.407,
+        "median": 10.827,
+        "max": 11.328
+      },
+      "gpu_utilization": {
+        "min": 5.0,
+        "median": 6.0,
+        "max": 13.0
+      },
+      "throughput": {
+        "min": 1081943.033418,
+        "median": 1123280.944072,
+        "max": 1148423.417155
+      }
+    },
+    {
+      "scenario_id": "nn-single-gpu1",
+      "scenario": "NN · 1 GPU · 单 Pod",
+      "scheduler": "Volcano",
+      "n": 3,
+      "run_ids": [
+        "khalil-bm-volcano-9400c4-nn-si-o5f4a5736-c016-r03",
+        "khalil-bm-volcano-9400c4-nn-si-o5f4a5736-c021-r01",
+        "khalil-bm-volcano-9400c4-nn-si-o5f4a5736-c030-r02"
+      ],
+      "queue_time": {
+        "min": 0.0,
+        "median": 0.791,
+        "max": 1.168
+      },
+      "training_time": {
+        "min": 0.293725,
+        "median": 0.29561,
+        "max": 0.31335
+      },
+      "wall_clock_time": {
+        "min": 10.963,
+        "median": 11.791,
+        "max": 12.168
+      },
+      "gpu_utilization": {
+        "min": 9.0,
+        "median": 12.0,
+        "max": 13.0
+      },
+      "throughput": {
+        "min": 1045732.81611,
+        "median": 1108488.770851,
+        "max": 1115600.340006
+      }
+    },
+    {
+      "scenario_id": "nn-multipod-gpu4",
+      "scenario": "NN · 4 GPU · 多 Pod",
+      "scheduler": "K8s",
+      "n": 3,
+      "run_ids": [
+        "khalil-bm-k8s-1049ae-nn-multip-o36604f7b-c002-r01",
+        "khalil-bm-k8s-1049ae-nn-multip-o36604f7b-c003-r03",
+        "khalil-bm-k8s-1049ae-nn-multip-o36604f7b-c013-r02"
+      ],
+      "queue_time": {
+        "min": 0.687678,
+        "median": 0.692917,
+        "max": 0.701662
+      },
+      "training_time": {
+        "min": 1.101483,
+        "median": 1.122089,
+        "max": 1.151968
+      },
+      "wall_clock_time": {
+        "min": 20.621,
+        "median": 21.621,
+        "max": 22.181
+      },
+      "gpu_utilization": {
+        "min": 65.5,
+        "median": 74.25,
+        "max": 78.375
+      },
+      "throughput": {
+        "min": 284452.287834,
+        "median": 292026.77467,
+        "max": 297489.757083
+      }
+    },
+    {
+      "scenario_id": "nn-multipod-gpu4",
+      "scenario": "NN · 4 GPU · 多 Pod",
+      "scheduler": "Kueue",
+      "n": 3,
+      "run_ids": [
+        "khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02",
+        "khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c013-r01",
+        "khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c024-r03"
+      ],
+      "queue_time": {
+        "min": 0.804113,
+        "median": 0.823537,
+        "max": 0.832742
+      },
+      "training_time": {
+        "min": 0.990469,
+        "median": 1.142873,
+        "max": 1.146897
+      },
+      "wall_clock_time": {
+        "min": 20.333,
+        "median": 21.271,
+        "max": 21.5
+      },
+      "gpu_utilization": {
+        "min": 68.375,
+        "median": 68.75,
+        "max": 70.625
+      },
+      "throughput": {
+        "min": 285710.0541,
+        "median": 286716.053736,
+        "max": 330833.19076
+      }
+    },
+    {
+      "scenario_id": "nn-multipod-gpu4",
+      "scenario": "NN · 4 GPU · 多 Pod",
+      "scheduler": "Volcano",
+      "n": 3,
+      "run_ids": [
+        "khalil-bm-volcano-1049ae-nn-mu-o5f4a5736-c008-r03",
+        "khalil-bm-volcano-1049ae-nn-mu-o5f4a5736-c009-r01",
+        "khalil-bm-volcano-1049ae-nn-mu-o5f4a5736-c028-r02"
+      ],
+      "queue_time": {
+        "min": 0.616,
+        "median": 0.76,
+        "max": 0.78
+      },
+      "training_time": {
+        "min": 0.96409,
+        "median": 1.136167,
+        "max": 1.148142
+      },
+      "wall_clock_time": {
+        "min": 20.76,
+        "median": 20.78,
+        "max": 21.616
+      },
+      "gpu_utilization": {
+        "min": 76.75,
+        "median": 77.111111,
+        "max": 77.75
+      },
+      "throughput": {
+        "min": 285400.131757,
+        "median": 288408.231101,
+        "max": 339885.393728
+      }
+    },
+    {
+      "scenario_id": "transformer-single-gpu1",
+      "scenario": "Transformer · 1 GPU · 单 Pod",
+      "scheduler": "K8s",
+      "n": 3,
+      "run_ids": [
+        "khalil-bm-k8s-179016-transform-o36604f7b-c006-r01",
+        "khalil-bm-k8s-179016-transform-o36604f7b-c007-r03",
+        "khalil-bm-k8s-179016-transform-o36604f7b-c008-r02"
+      ],
+      "queue_time": {
+        "min": 0.301527,
+        "median": 0.302469,
+        "max": 0.305915
+      },
+      "training_time": {
+        "min": 7.942143,
+        "median": 8.201485,
+        "max": 8.502881
+      },
+      "wall_clock_time": {
+        "min": 23.086,
+        "median": 23.54,
+        "max": 23.947
+      },
+      "gpu_utilization": {
+        "min": 11.4,
+        "median": 11.928571,
+        "max": 12.714286
+      },
+      "throughput": {
+        "min": 150.537219,
+        "median": 156.069288,
+        "max": 161.165567
+      }
+    },
+    {
+      "scenario_id": "transformer-single-gpu1",
+      "scenario": "Transformer · 1 GPU · 单 Pod",
+      "scheduler": "Kueue",
+      "n": 3,
+      "run_ids": [
+        "khalil-bm-kueue-179016-transfo-o5f4a5736-c003-r01",
+        "khalil-bm-kueue-179016-transfo-o5f4a5736-c017-r03",
+        "khalil-bm-kueue-179016-transfo-o5f4a5736-c020-r02"
+      ],
+      "queue_time": {
+        "min": 0.433812,
+        "median": 0.438548,
+        "max": 0.457184
+      },
+      "training_time": {
+        "min": 7.952728,
+        "median": 8.029038,
+        "max": 8.066611
+      },
+      "wall_clock_time": {
+        "min": 21.711,
+        "median": 24.885,
+        "max": 27.061
+      },
+      "gpu_utilization": {
+        "min": 12.0,
+        "median": 12.214286,
+        "max": 12.857143
+      },
+      "throughput": {
+        "min": 158.678784,
+        "median": 159.421337,
+        "max": 160.951059
+      }
+    },
+    {
+      "scenario_id": "transformer-single-gpu1",
+      "scenario": "Transformer · 1 GPU · 单 Pod",
+      "scheduler": "Volcano",
+      "n": 3,
+      "run_ids": [
+        "khalil-bm-volcano-179016-trans-o5f4a5736-c001-r02",
+        "khalil-bm-volcano-179016-trans-o5f4a5736-c012-r01",
+        "khalil-bm-volcano-179016-trans-o5f4a5736-c014-r03"
+      ],
+      "queue_time": {
+        "min": 0.0,
+        "median": 0.0,
+        "max": 0.114
+      },
+      "training_time": {
+        "min": 7.937718,
+        "median": 7.948987,
+        "max": 8.079069
+      },
+      "wall_clock_time": {
+        "min": 22.873,
+        "median": 23.881,
+        "max": 24.114
+      },
+      "gpu_utilization": {
+        "min": 12.285714,
+        "median": 12.428571,
+        "max": 13.214286
+      },
+      "throughput": {
+        "min": 158.434104,
+        "median": 161.026808,
+        "max": 161.255422
+      }
+    },
+    {
+      "scenario_id": "transformer-single-gpu4",
+      "scenario": "Transformer · 4 GPU · 单 Pod",
+      "scheduler": "K8s",
+      "n": 3,
+      "run_ids": [
+        "khalil-bm-k8s-d08b90-transform-o36604f7b-c001-r02",
+        "khalil-bm-k8s-d08b90-transform-o36604f7b-c004-r03",
+        "khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01"
+      ],
+      "queue_time": {
+        "min": 0.278406,
+        "median": 0.284381,
+        "max": 0.302995
+      },
+      "training_time": {
+        "min": 8.819323,
+        "median": 8.946993,
+        "max": 8.954991
+      },
+      "wall_clock_time": {
+        "min": 26.569,
+        "median": 27.808,
+        "max": 28.173
+      },
+      "gpu_utilization": {
+        "min": 29.321429,
+        "median": 32.732143,
+        "max": 36.267857
+      },
+      "throughput": {
+        "min": 142.937055,
+        "median": 143.064833,
+        "max": 145.13586
+      }
+    },
+    {
+      "scenario_id": "transformer-single-gpu4",
+      "scenario": "Transformer · 4 GPU · 单 Pod",
+      "scheduler": "Kueue",
+      "n": 3,
+      "run_ids": [
+        "khalil-bm-kueue-d08b90-transfo-o5f4a5736-c004-r03",
+        "khalil-bm-kueue-d08b90-transfo-o5f4a5736-c007-r02",
+        "khalil-bm-kueue-d08b90-transfo-o5f4a5736-c010-r01"
+      ],
+      "queue_time": {
+        "min": 0.42132,
+        "median": 0.435902,
+        "max": 0.457243
+      },
+      "training_time": {
+        "min": 8.801794,
+        "median": 9.128663,
+        "max": 9.195455
+      },
+      "wall_clock_time": {
+        "min": 26.863,
+        "median": 26.928,
+        "max": 28.738
+      },
+      "gpu_utilization": {
+        "min": 31.482143,
+        "median": 40.571429,
+        "max": 41.607143
+      },
+      "throughput": {
+        "min": 139.199209,
+        "median": 140.217685,
+        "max": 145.424892
+      }
+    },
+    {
+      "scenario_id": "transformer-single-gpu4",
+      "scenario": "Transformer · 4 GPU · 单 Pod",
+      "scheduler": "Volcano",
+      "n": 3,
+      "run_ids": [
+        "khalil-bm-volcano-d08b90-trans-o5f4a5736-c002-r01",
+        "khalil-bm-volcano-d08b90-trans-o5f4a5736-c015-r02",
+        "khalil-bm-volcano-d08b90-trans-o5f4a5736-c018-r03"
+      ],
+      "queue_time": {
+        "min": 0.76,
+        "median": 0.833,
+        "max": 0.896
+      },
+      "training_time": {
+        "min": 9.076055,
+        "median": 9.120512,
+        "max": 9.249148
+      },
+      "wall_clock_time": {
+        "min": 27.833,
+        "median": 28.76,
+        "max": 30.896
+      },
+      "gpu_utilization": {
+        "min": 33.892857,
+        "median": 35.392857,
+        "max": 36.266667
+      },
+      "throughput": {
+        "min": 138.391132,
+        "median": 140.342992,
+        "max": 141.030439
+      }
+    },
+    {
+      "scenario_id": "transformer-multipod-gpu4",
+      "scenario": "Transformer · 4 GPU · 多 Pod",
+      "scheduler": "K8s",
+      "n": 3,
+      "run_ids": [
+        "khalil-bm-k8s-0635c1-transform-o36604f7b-c010-r02",
+        "khalil-bm-k8s-0635c1-transform-o36604f7b-c012-r03",
+        "khalil-bm-k8s-0635c1-transform-o36604f7b-c014-r01"
+      ],
+      "queue_time": {
+        "min": 0.671555,
+        "median": 0.672835,
+        "max": 0.679599
+      },
+      "training_time": {
+        "min": 25.709595,
+        "median": 26.06222,
+        "max": 34.946424
+      },
+      "wall_clock_time": {
+        "min": 48.385,
+        "median": 49.939,
+        "max": 59.146
+      },
+      "gpu_utilization": {
+        "min": 66.429487,
+        "median": 71.207792,
+        "max": 82.004808
+      },
+      "throughput": {
+        "min": 36.627496,
+        "median": 49.113237,
+        "max": 49.78686
+      }
+    },
+    {
+      "scenario_id": "transformer-multipod-gpu4",
+      "scenario": "Transformer · 4 GPU · 多 Pod",
+      "scheduler": "Kueue",
+      "n": 3,
+      "run_ids": [
+        "khalil-bm-kueue-0635c1-transfo-o5f4a5736-c019-r03",
+        "khalil-bm-kueue-0635c1-transfo-o5f4a5736-c022-r02",
+        "khalil-bm-kueue-0635c1-transfo-o5f4a5736-c029-r01"
+      ],
+      "queue_time": {
+        "min": 0.806986,
+        "median": 0.824342,
+        "max": 0.829753
+      },
+      "training_time": {
+        "min": 26.196262,
+        "median": 35.170762,
+        "max": 35.443987
+      },
+      "wall_clock_time": {
+        "min": 49.325,
+        "median": 59.116,
+        "max": 59.464
+      },
+      "gpu_utilization": {
+        "min": 67.576923,
+        "median": 81.528846,
+        "max": 81.701923
+      },
+      "throughput": {
+        "min": 36.113319,
+        "median": 36.393866,
+        "max": 48.861933
+      }
+    },
+    {
+      "scenario_id": "transformer-multipod-gpu4",
+      "scenario": "Transformer · 4 GPU · 多 Pod",
+      "scheduler": "Volcano",
+      "n": 3,
+      "run_ids": [
+        "khalil-bm-volcano-0635c1-trans-o5f4a5736-c005-r01",
+        "khalil-bm-volcano-0635c1-trans-o5f4a5736-c025-r02",
+        "khalil-bm-volcano-0635c1-trans-o5f4a5736-c027-r03"
+      ],
+      "queue_time": {
+        "min": 0.863,
+        "median": 1.093,
+        "max": 1.738
+      },
+      "training_time": {
+        "min": 25.504696,
+        "median": 34.698093,
+        "max": 34.810471
+      },
+      "wall_clock_time": {
+        "min": 48.863,
+        "median": 58.738,
+        "max": 59.093
+      },
+      "gpu_utilization": {
+        "min": 69.198718,
+        "median": 81.596154,
+        "max": 82.375
+      },
+      "throughput": {
+        "min": 36.770546,
+        "median": 36.889635,
+        "max": 50.186837
+      }
+    }
+  ]
+}
