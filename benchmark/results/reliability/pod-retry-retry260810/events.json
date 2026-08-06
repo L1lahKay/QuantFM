@@ -1,0 +1,355 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "action": "Binding",
+      "apiVersion": "v1",
+      "eventTime": "2026-08-06T07:57:45.018644Z",
+      "firstTimestamp": null,
+      "involvedObject": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "name": "khalil-pod-retry-retry260810-82fzl",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863166",
+        "uid": "ec4abe5c-5d33-4d06-9414-ad719952c034"
+      },
+      "kind": "Event",
+      "lastTimestamp": null,
+      "message": "Successfully assigned gpu-dev/khalil-pod-retry-retry260810-82fzl to gpu-dev-01",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T07:57:45Z",
+        "name": "khalil-pod-retry-retry260810-82fzl.18c9285332322066",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863170",
+        "uid": "fee5cf96-9691-4912-ae0e-302d958f424e"
+      },
+      "reason": "Scheduled",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "default-scheduler-zhisui",
+      "source": {},
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-06T07:57:45Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{trainer}",
+        "kind": "Pod",
+        "name": "khalil-pod-retry-retry260810-82fzl",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863168",
+        "uid": "ec4abe5c-5d33-4d06-9414-ad719952c034"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-06T07:57:45Z",
+      "message": "Container image \"registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574\" already present on machine and can be accessed by the pod",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T07:57:45Z",
+        "name": "khalil-pod-retry-retry260810-82fzl.18c928536092c601",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863179",
+        "uid": "a651e5c4-a671-4df3-93f4-9208f28d80cf"
+      },
+      "reason": "Pulled",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "gpu-dev-01",
+      "source": {
+        "component": "kubelet",
+        "host": "gpu-dev-01"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-06T07:57:45Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{trainer}",
+        "kind": "Pod",
+        "name": "khalil-pod-retry-retry260810-82fzl",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863168",
+        "uid": "ec4abe5c-5d33-4d06-9414-ad719952c034"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-06T07:57:45Z",
+      "message": "Container created",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T07:57:45Z",
+        "name": "khalil-pod-retry-retry260810-82fzl.18c928536205ca24",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863180",
+        "uid": "00ac0647-6cc7-400e-b01f-161eacdcc650"
+      },
+      "reason": "Created",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "gpu-dev-01",
+      "source": {
+        "component": "kubelet",
+        "host": "gpu-dev-01"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-06T07:57:47Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{trainer}",
+        "kind": "Pod",
+        "name": "khalil-pod-retry-retry260810-82fzl",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863168",
+        "uid": "ec4abe5c-5d33-4d06-9414-ad719952c034"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-06T07:57:47Z",
+      "message": "Container started",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T07:57:47Z",
+        "name": "khalil-pod-retry-retry260810-82fzl.18c92853b04fa217",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863183",
+        "uid": "9e602f27-246b-4638-b068-d847ebc9dc00"
+      },
+      "reason": "Started",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "gpu-dev-01",
+      "source": {
+        "component": "kubelet",
+        "host": "gpu-dev-01"
+      },
+      "type": "Normal"
+    },
+    {
+      "action": "Binding",
+      "apiVersion": "v1",
+      "eventTime": "2026-08-06T07:57:30.511145Z",
+      "firstTimestamp": null,
+      "involvedObject": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "name": "khalil-pod-retry-retry260810-gmxzc",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863094",
+        "uid": "bd60ec4e-0f50-4e46-9ad4-c564f5a1aa46"
+      },
+      "kind": "Event",
+      "lastTimestamp": null,
+      "message": "Successfully assigned gpu-dev/khalil-pod-retry-retry260810-gmxzc to gpu-dev-01",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T07:57:30Z",
+        "name": "khalil-pod-retry-retry260810-gmxzc.18c9284fd17b41f7",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863098",
+        "uid": "5cfb75b6-ef63-49e7-91a4-a75523cf4280"
+      },
+      "reason": "Scheduled",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "default-scheduler-zhisui",
+      "source": {},
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-06T07:57:31Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{trainer}",
+        "kind": "Pod",
+        "name": "khalil-pod-retry-retry260810-gmxzc",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863096",
+        "uid": "bd60ec4e-0f50-4e46-9ad4-c564f5a1aa46"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-06T07:57:31Z",
+      "message": "Container image \"registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574\" already present on machine and can be accessed by the pod",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T07:57:31Z",
+        "name": "khalil-pod-retry-retry260810-gmxzc.18c9284fff71f979",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863101",
+        "uid": "e9d880bc-1df4-4c04-a117-e63d06e67ae2"
+      },
+      "reason": "Pulled",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "gpu-dev-01",
+      "source": {
+        "component": "kubelet",
+        "host": "gpu-dev-01"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-06T07:57:31Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{trainer}",
+        "kind": "Pod",
+        "name": "khalil-pod-retry-retry260810-gmxzc",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863096",
+        "uid": "bd60ec4e-0f50-4e46-9ad4-c564f5a1aa46"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-06T07:57:31Z",
+      "message": "Container created",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T07:57:31Z",
+        "name": "khalil-pod-retry-retry260810-gmxzc.18c9285000d6e6c4",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863102",
+        "uid": "b0e9a192-6749-4a35-b4bf-0b9323d8565c"
+      },
+      "reason": "Created",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "gpu-dev-01",
+      "source": {
+        "component": "kubelet",
+        "host": "gpu-dev-01"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-06T07:57:32Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{trainer}",
+        "kind": "Pod",
+        "name": "khalil-pod-retry-retry260810-gmxzc",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863096",
+        "uid": "bd60ec4e-0f50-4e46-9ad4-c564f5a1aa46"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-06T07:57:32Z",
+      "message": "Container started",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T07:57:32Z",
+        "name": "khalil-pod-retry-retry260810-gmxzc.18c92850498a00de",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863109",
+        "uid": "62f57c66-a72b-43cb-b849-35f15cda91f7"
+      },
+      "reason": "Started",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "gpu-dev-01",
+      "source": {
+        "component": "kubelet",
+        "host": "gpu-dev-01"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-06T07:57:30Z",
+      "involvedObject": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "name": "khalil-pod-retry-retry260810",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863092",
+        "uid": "d320312c-ca0e-4ca9-9bb1-f8a913b5932c"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-06T07:57:30Z",
+      "message": "Created pod: khalil-pod-retry-retry260810-gmxzc",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T07:57:30Z",
+        "name": "khalil-pod-retry-retry260810.18c9284fd1181f23",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863095",
+        "uid": "049ecd33-623a-490f-97ab-a0ed74b2b18c"
+      },
+      "reason": "SuccessfulCreate",
+      "reportingComponent": "job-controller",
+      "reportingInstance": "",
+      "source": {
+        "component": "job-controller"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-06T07:57:45Z",
+      "involvedObject": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "name": "khalil-pod-retry-retry260810",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863140",
+        "uid": "d320312c-ca0e-4ca9-9bb1-f8a913b5932c"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-06T07:57:45Z",
+      "message": "Created pod: khalil-pod-retry-retry260810-82fzl",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T07:57:45Z",
+        "name": "khalil-pod-retry-retry260810.18c9285331dd24bf",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863167",
+        "uid": "f872b1e9-d84e-4ba6-8882-b64f2f913db3"
+      },
+      "reason": "SuccessfulCreate",
+      "reportingComponent": "job-controller",
+      "reportingInstance": "",
+      "source": {
+        "component": "job-controller"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-06T07:58:41Z",
+      "involvedObject": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "name": "khalil-pod-retry-retry260810",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863397",
+        "uid": "d320312c-ca0e-4ca9-9bb1-f8a913b5932c"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-06T07:58:41Z",
+      "message": "Job completed",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T07:58:41Z",
+        "name": "khalil-pod-retry-retry260810.18c928603dd9242a",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29863400",
+        "uid": "7d63a0c4-8b15-40a7-99ab-0832e0ca43c1"
+      },
+      "reason": "Completed",
+      "reportingComponent": "job-controller",
+      "reportingInstance": "",
+      "source": {
+        "component": "job-controller"
+      },
+      "type": "Normal"
+    }
+  ]
+}

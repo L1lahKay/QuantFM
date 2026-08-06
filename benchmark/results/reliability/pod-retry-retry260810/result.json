@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "experiment": "pod-process-failure-job-retry",
+  "status": "passed",
+  "run_token": "retry260810",
+  "job_name": "khalil-pod-retry-retry260810",
+  "job_uid": "d320312c-ca0e-4ca9-9bb1-f8a913b5932c",
+  "first_pod": {
+    "name": "khalil-pod-retry-retry260810-gmxzc",
+    "uid": "bd60ec4e-0f50-4e46-9ad4-c564f5a1aa46",
+    "exit_code": 137
+  },
+  "retry_pod": {
+    "name": "khalil-pod-retry-retry260810-82fzl",
+    "uid": "ec4abe5c-5d33-4d06-9414-ad719952c034",
+    "exit_code": 0
+  },
+  "retry_training": {
+    "cuda_build": "13.0",
+    "driver_version": "595.71.05",
+    "experiment": "pod-process-failure-job-retry",
+    "gpu_name": "NVIDIA GeForce RTX 5090",
+    "gpu_uuid": "GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce",
+    "max_memory_allocated_mib": 156.0283203125,
+    "pod_name": "khalil-pod-retry-retry260810-82fzl",
+    "pod_uid": "ec4abe5c-5d33-4d06-9414-ad719952c034",
+    "run_token": "retry260810",
+    "schema_version": 1,
+    "status": "success",
+    "throughput_samples_per_second": 1068316.5070075411,
+    "timestamp": "2026-08-06T07:58:37.760Z",
+    "torch_version": "2.13.0+cu130",
+    "training_steps": 80,
+    "training_time_seconds": 0.30672557977959514,
+    "warmup_steps": 10
+  },
+  "owned_pod_count": 2,
+  "captured_event_count": 11,
+  "validated_at": "2026-08-06T07:58:42.375Z"
+}

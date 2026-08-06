@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="350" viewBox="0 0 1000 350" role="img" aria-labelledby="title desc">
+  <title id="title">Pod retry wall-clock timeline</title>
+  <desc id="desc">Timeline from Job creation to completion, showing first pod ready, failure injection, retry pod ready, and Job completion.</desc>
+  <rect width="1000" height="350" fill="#f8fafc"/>
+  <text x="55" y="48" font-family="sans-serif" font-size="26" font-weight="700" fill="#0f172a">Wall Clock: Job creation to completion</text>
+  <text x="55" y="77" font-family="sans-serif" font-size="15" fill="#475569">Total 70.561 s · failure injection to retry Pod ready 13.586 s</text>
+
+  <line x1="85" y1="180" x2="925" y2="180" stroke="#94a3b8" stroke-width="8" stroke-linecap="round"/>
+  <line x1="140" y1="180" x2="302" y2="180" stroke="#e11d48" stroke-width="8"/>
+  <line x1="302" y1="180" x2="925" y2="180" stroke="#059669" stroke-width="8"/>
+
+  <circle cx="85" cy="180" r="10" fill="#2563eb"/>
+  <line x1="85" y1="170" x2="85" y2="118" stroke="#2563eb" stroke-width="2"/>
+  <text x="85" y="103" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#1e3a8a">Job created</text>
+  <text x="85" y="222" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#475569">0.000 s</text>
+
+  <circle cx="128" cy="180" r="9" fill="#f59e0b"/>
+  <line x1="128" y1="190" x2="128" y2="246" stroke="#f59e0b" stroke-width="2"/>
+  <text x="128" y="270" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#92400e">First Pod ready</text>
+  <text x="128" y="291" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#475569">3.575 s</text>
+
+  <circle cx="140" cy="180" r="10" fill="#e11d48"/>
+  <line x1="140" y1="170" x2="140" y2="118" stroke="#e11d48" stroke-width="2"/>
+  <text x="205" y="103" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#9f1239">Failure injected</text>
+  <text x="205" y="124" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#475569">4.622 s</text>
+
+  <circle cx="302" cy="180" r="10" fill="#059669"/>
+  <line x1="302" y1="190" x2="302" y2="246" stroke="#059669" stroke-width="2"/>
+  <text x="302" y="270" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#065f46">Retry Pod ready</text>
+  <text x="302" y="291" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#475569">18.208 s</text>
+
+  <circle cx="925" cy="180" r="11" fill="#047857"/>
+  <line x1="925" y1="170" x2="925" y2="118" stroke="#047857" stroke-width="2"/>
+  <text x="925" y="103" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#065f46">Job Complete</text>
+  <text x="925" y="222" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#475569">70.561 s</text>
+
+  <rect x="55" y="320" width="890" height="1" fill="#cbd5e1"/>
+  <text x="55" y="341" font-family="sans-serif" font-size="12" fill="#64748b">Source: timeline.tsv; offsets use client-observed UTC timestamps.</text>
+</svg>

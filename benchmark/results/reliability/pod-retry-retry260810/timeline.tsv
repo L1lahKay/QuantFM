@@ -1,0 +1,10 @@
+2026-08-06T07:57:27.577Z	experiment-start	run_token=retry260810
+2026-08-06T07:57:27.577Z	preflight-start
+2026-08-06T07:57:30.236Z	preflight-complete
+2026-08-06T07:57:30.506Z	job-created	name=khalil-pod-retry-retry260810	uid=d320312c-ca0e-4ca9-9bb1-f8a913b5932c
+2026-08-06T07:57:34.081Z	first-attempt-running	pod=khalil-pod-retry-retry260810-gmxzc	uid=bd60ec4e-0f50-4e46-9ad4-c564f5a1aa46
+2026-08-06T07:57:35.128Z	failure-injected	pod=khalil-pod-retry-retry260810-gmxzc	uid=bd60ec4e-0f50-4e46-9ad4-c564f5a1aa46
+2026-08-06T07:57:48.714Z	retry-attempt-running	pod=khalil-pod-retry-retry260810-82fzl	uid=ec4abe5c-5d33-4d06-9414-ad719952c034
+2026-08-06T07:58:41.067Z	job-complete
+2026-08-06T07:58:42.375Z	validation-passed
+2026-08-06T07:58:43.459Z	cleanup-complete	job_absent=true	pods_absent=true	gpu_requests=0
