@@ -1,10 +1,15 @@
 import json
+import shutil
 from dataclasses import replace
 from pathlib import Path
 
 import polars as pl
+import pytest
 
+from quant_fm.data_coverage import write_coverage_receipt
 from quant_fm.manifest.build_manifest import Manifest, ShardEntry
+from quant_fm.manifest.validation import sha256_file, validate_manifest_shards
+from quant_fm.pretrain.train import _validate_training_shards
 from quant_fm.scripts.audit_v2_artifacts import audit_v2_artifacts
 from quant_fm.tokenizer.artifact_contract import (
     token_contract_path,
@@ -101,7 +106,8 @@ def _complete_artifacts(
     vocab = _full_vocab(wide_token=wide_token)
     vocab_path = data_dir / "vocab_v2.json"
     vocab.save(vocab_path)
-    token_path = data_dir / "tokens.parquet"
+    token_path = root / "tokens" / "SH" / "600000" / "2025-01-02.parquet"
+    token_path.parent.mkdir(parents=True)
     frame = _semantic_frame(vocab)
     metadata = None
     if q16:
@@ -116,8 +122,9 @@ def _complete_artifacts(
                 date="2025-01-02",
                 path=str(token_path),
                 rows=frame.height,
-                sha256="test",
+                sha256=sha256_file(token_path),
                 split="train",
+                data_contract_sha256=sha256_file(token_contract_path(token_path)),
             )
         ],
         vocab_path=str(vocab_path),
@@ -125,6 +132,16 @@ def _complete_artifacts(
         event_ordering_version=vocab.event_ordering_version,
         feature_transform_version=vocab.feature_transform_version,
     ).save(data_dir / "manifest.json")
+    clean_event = root / "clean" / "2025-01-02" / "SH" / "600000" / "events.parquet"
+    clean_event.parent.mkdir(parents=True)
+    clean_event.touch()
+    write_coverage_receipt(
+        workdir=root,
+        clean_dir=root / "clean" / "2025-01-02",
+        date="2025-01-02",
+        symbols_sz=(),
+        symbols_sh=("600000",),
+    )
     (root / "validation_windows.json").write_text("{}\n", encoding="utf-8")
     return root, vocab, token_path, metadata
 
@@ -159,9 +176,122 @@ def test_v2_audit_accepts_legacy_float32_storage(tmp_path: Path) -> None:
     result = audit_v2_artifacts(root)
 
     assert result["contract_ready"] is True
+    assert len(result["manifest_sha256"]) == 64
+    assert len(result["vocab_file_sha256"]) == 64
+    assert len(result["audit_input_sha256"]) == 64
     encoding = result["sampled_shards"][0]["storage_encoding"]
     assert encoding["mode"] == "legacy_float32"
     assert encoding["validated"] is True
+
+
+def test_v2_audit_rejects_live_payload_and_sidecar_hash_tamper(
+    tmp_path: Path,
+) -> None:
+    root, _, token_path, _ = _complete_artifacts(tmp_path, q16=False)
+    frame = pl.read_parquet(token_path).with_columns(
+        (pl.col("tok_evt_type") + 1).alias("tok_evt_type")
+    )
+    frame.write_parquet(token_path)
+
+    result = audit_v2_artifacts(root)
+    assert "token_shard_hash_mismatch" in {issue["code"] for issue in result["issues"]}
+
+    sidecar = token_contract_path(token_path)
+    sidecar.write_text(
+        sidecar.read_text(encoding="utf-8") + " ",
+        encoding="utf-8",
+    )
+    result = audit_v2_artifacts(root)
+    assert "token_sidecar_hash_mismatch" in {
+        issue["code"] for issue in result["issues"]
+    }
+
+
+def test_v2_audit_rejects_manifest_path_identity_mismatch(tmp_path: Path) -> None:
+    root, _, _, _ = _complete_artifacts(tmp_path, q16=False)
+    manifest_path = root / "data" / "manifest.json"
+    manifest = Manifest.load(manifest_path)
+    manifest.shards[0].symbol = "600001"
+    manifest.save(manifest_path)
+
+    result = audit_v2_artifacts(root, full_path_check=True)
+
+    assert result["contract_ready"] is False
+    assert "manifest_shard_path_invalid" in {
+        issue["code"] for issue in result["issues"]
+    }
+
+
+def test_v2_audit_rejects_external_tokens_generation(tmp_path: Path) -> None:
+    root, _, _, _ = _complete_artifacts(tmp_path / "source", q16=False)
+    external_tokens = tmp_path / "external" / "tokens"
+    external_tokens.parent.mkdir(parents=True)
+    shutil.move(root / "tokens", external_tokens)
+    manifest_path = root / "data" / "manifest.json"
+    manifest = Manifest.load(manifest_path)
+    manifest.shards[0].path = str(
+        external_tokens / "SH" / "600000" / "2025-01-02.parquet"
+    )
+    manifest.save(manifest_path)
+
+    result = audit_v2_artifacts(root, full_path_check=True)
+
+    assert result["contract_ready"] is False
+    assert "manifest_shard_path_invalid" in {
+        issue["code"] for issue in result["issues"]
+    }
+
+
+def test_v2_runtime_and_training_reject_external_tokens_generation(
+    tmp_path: Path,
+) -> None:
+    root, vocab, _, _ = _complete_artifacts(tmp_path / "source", q16=False)
+    external_tokens = tmp_path / "external" / "tokens"
+    external_tokens.parent.mkdir(parents=True)
+    shutil.move(root / "tokens", external_tokens)
+    manifest = Manifest.load(root / "data" / "manifest.json")
+    manifest.shards[0].path = str(
+        external_tokens / "SH" / "600000" / "2025-01-02.parquet"
+    )
+
+    with pytest.raises(ValueError, match="escape the expected tokens root"):
+        validate_manifest_shards(
+            manifest,
+            vocab,
+            context="runtime",
+            expected_tokens_root=root / "tokens",
+        )
+    with pytest.raises(ValueError, match="pretraining token provenance validation"):
+        _validate_training_shards(
+            manifest,
+            vocab,
+            expected_tokens_root=root / "tokens",
+            rank=0,
+            world_size=1,
+        )
+
+
+def test_v2_audit_rejects_explicit_replay_gaps(tmp_path: Path) -> None:
+    root, _, _, _ = _complete_artifacts(tmp_path, q16=False)
+    failure = root / "data" / ".failed" / "2025-01-02.json"
+    failure.parent.mkdir(parents=True)
+    failure.write_text('["600001", "600002"]\n', encoding="utf-8")
+
+    result = audit_v2_artifacts(root)
+
+    assert result["contract_ready"] is False
+    assert result["failed_symbol_gaps"] == {"2025-01-02": ["600001", "600002"]}
+    assert "symbol_coverage_gaps" in {issue["code"] for issue in result["issues"]}
+
+
+def test_v2_audit_requires_exact_universe_coverage_receipts(tmp_path: Path) -> None:
+    root, _, _, _ = _complete_artifacts(tmp_path, q16=False)
+    (root / "data" / "coverage" / "2025-01-02.json").unlink()
+
+    result = audit_v2_artifacts(root)
+
+    assert result["contract_ready"] is False
+    assert "universe_coverage_invalid" in {issue["code"] for issue in result["issues"]}
 
 
 def test_v2_audit_validates_q16_and_narrow_token_storage(tmp_path: Path) -> None:

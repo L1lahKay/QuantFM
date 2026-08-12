@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -17,20 +16,11 @@ from typing import TYPE_CHECKING
 
 import yaml
 
+from quant_fm._io import atomic_write_json
 from quant_fm.monitoring.training import training_process_alive
 
 if TYPE_CHECKING:
     from typing import Any
-
-
-def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
-    temporary.replace(path)
 
 
 def build_evaluation_plan(
@@ -40,6 +30,7 @@ def build_evaluation_plan(
     max_batches: int,
     unigram_max_batches: int,
     gradient_norm_batches: int,
+    validation_windows: int | None = None,
     baseline_checkpoint: Path | None = None,
     noninferiority_tolerance: float = 0.01,
     python_executable: str | None = None,
@@ -61,6 +52,16 @@ def build_evaluation_plan(
     validation_plan = Path(
         cfg["data"].get("validation_plan", run_dir / "validation_windows.json")
     )
+    configured_validation_windows = cfg["data"].get("validation_windows")
+    exact_validation_windows = (
+        validation_windows
+        if validation_windows is not None
+        else configured_validation_windows
+    )
+    if exact_validation_windows is not None:
+        if type(exact_validation_windows) is not int or exact_validation_windows < 1:
+            msg = "validation_windows must be a positive integer"
+            raise ValueError(msg)
     jobs: list[dict[str, Any]] = []
 
     def evaluation_job(
@@ -70,6 +71,7 @@ def build_evaluation_plan(
         selected_checkpoint: Path,
         plan_path: Path,
         out_path: Path,
+        exact_windows: int | None,
     ) -> dict[str, Any]:
         command = [
             executable,
@@ -81,9 +83,7 @@ def build_evaluation_plan(
             str(config_path),
             "--split",
             split,
-            "--max-batches",
-            str(max_batches),
-            "--unigram-max-batches",
+            "--unigram-windows",
             str(unigram_max_batches),
             "--gradient-norm-batches",
             str(gradient_norm_batches),
@@ -94,6 +94,10 @@ def build_evaluation_plan(
             "--out",
             str(out_path),
         ]
+        if exact_windows is None:
+            command.extend(["--max-batches", str(max_batches)])
+        else:
+            command.extend(["--validation-windows", str(exact_windows)])
         return {
             "name": name,
             "split": split,
@@ -111,6 +115,7 @@ def build_evaluation_plan(
             selected_checkpoint=checkpoint,
             plan_path=validation_plan,
             out_path=candidate_val,
+            exact_windows=exact_validation_windows,
         )
     )
     if baseline_checkpoint is not None:
@@ -122,6 +127,7 @@ def build_evaluation_plan(
                 selected_checkpoint=baseline_checkpoint,
                 plan_path=validation_plan,
                 out_path=baseline_val,
+                exact_windows=exact_validation_windows,
             )
         )
         acceptance_out = run_dir / "pretrain_acceptance.json"
@@ -153,6 +159,7 @@ def build_evaluation_plan(
             selected_checkpoint=checkpoint,
             plan_path=run_dir / "test_windows.json",
             out_path=run_dir / "eval_test.json",
+            exact_windows=None,
         )
     )
     return {
@@ -171,6 +178,8 @@ def build_evaluation_plan(
         "missing_required_artifacts": missing,
         "runnable": not missing,
         "device": device,
+        "validation_windows": exact_validation_windows,
+        "legacy_plan_window_cap": max_batches,
         "jobs": jobs,
     }
 
@@ -191,24 +200,24 @@ def execute_evaluation_plan(
         raise RuntimeError(msg)
     plan["state"] = "running"
     plan["started_utc"] = datetime.now(tz=UTC).isoformat()
-    _atomic_json(plan_path, plan)
+    atomic_write_json(plan_path, plan)
     for job in plan["jobs"]:
         job["state"] = "running"
         job["started_utc"] = datetime.now(tz=UTC).isoformat()
-        _atomic_json(plan_path, plan)
+        atomic_write_json(plan_path, plan)
         result = subprocess.run(job["command"], check=False)
         job["returncode"] = result.returncode
         job["finished_utc"] = datetime.now(tz=UTC).isoformat()
         job["state"] = "complete" if result.returncode == 0 else "failed"
-        _atomic_json(plan_path, plan)
+        atomic_write_json(plan_path, plan)
         if result.returncode != 0:
             plan["state"] = "failed"
-            _atomic_json(plan_path, plan)
+            atomic_write_json(plan_path, plan)
             msg = f"evaluation job failed: {job['name']}"
             raise RuntimeError(msg)
     plan["state"] = "complete"
     plan["finished_utc"] = datetime.now(tz=UTC).isoformat()
-    _atomic_json(plan_path, plan)
+    atomic_write_json(plan_path, plan)
     return plan
 
 
@@ -217,16 +226,48 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--device", default="cuda")
-    parser.add_argument("--max-batches", type=int, default=200)
-    parser.add_argument("--unigram-max-batches", type=int, default=200)
+    parser.add_argument(
+        "--max-batches",
+        type=int,
+        default=200,
+        help="deprecated creation cap when no exact --validation-windows is set",
+    )
+    parser.add_argument(
+        "--validation-windows",
+        type=int,
+        help="exact validation-plan window count (or use data.validation_windows)",
+    )
+    parser.add_argument("--unigram-windows", type=int)
+    parser.add_argument(
+        "--unigram-max-batches",
+        type=int,
+        help="deprecated alias for the exact --unigram-windows count",
+    )
     parser.add_argument("--gradient-norm-batches", type=int, default=1)
     parser.add_argument("--baseline-checkpoint", type=Path)
     parser.add_argument("--noninferiority-tolerance", type=float, default=0.01)
     parser.add_argument("--out", type=Path)
     parser.add_argument("--execute", action="store_true")
     args = parser.parse_args()
-    if args.max_batches < 1 or args.unigram_max_batches < 1:
-        parser.error("batch limits must be positive")
+    if (
+        args.unigram_windows is not None
+        and args.unigram_max_batches is not None
+        and args.unigram_windows != args.unigram_max_batches
+    ):
+        parser.error("--unigram-windows and --unigram-max-batches must agree")
+    unigram_windows = (
+        args.unigram_windows
+        if args.unigram_windows is not None
+        else args.unigram_max_batches
+        if args.unigram_max_batches is not None
+        else 200
+    )
+    if (
+        args.max_batches < 1
+        or unigram_windows < 1
+        or (args.validation_windows is not None and args.validation_windows < 1)
+    ):
+        parser.error("window limits must be positive")
     if args.gradient_norm_batches < 0:
         parser.error("--gradient-norm-batches must be non-negative")
     if args.noninferiority_tolerance < 0:
@@ -239,12 +280,13 @@ def main() -> None:
         args.config,
         device=args.device,
         max_batches=args.max_batches,
-        unigram_max_batches=args.unigram_max_batches,
+        unigram_max_batches=unigram_windows,
         gradient_norm_batches=args.gradient_norm_batches,
+        validation_windows=args.validation_windows,
         baseline_checkpoint=args.baseline_checkpoint,
         noninferiority_tolerance=args.noninferiority_tolerance,
     )
-    _atomic_json(plan_path, plan)
+    atomic_write_json(plan_path, plan)
     if args.execute:
         execute_evaluation_plan(plan, config_path=args.config, plan_path=plan_path)
     print(plan_path)

@@ -7,23 +7,23 @@ import argparse
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from collections.abc import Mapping, Sequence
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from render_pod_retry import render
 from run_pod_retry import (
     CONTEXT,
     EVENT_PREFIX,
-    ExperimentError,
     KUBECONFIG,
     NAMESPACE,
-    RESULTS_ROOT,
     RESULT_PREFIX,
+    RESULTS_ROOT,
+    ExperimentError,
     Runner,
     utc_now,
 )
-
 
 MATRIX_CASES = (
     {"backoff_limit": 0, "injected_failures": 1, "terminal": "Failed"},
@@ -55,9 +55,7 @@ class BackoffCaseRunner(Runner):
         self.manifest = render(run_token, backoff_limit)
         self.job_name = str(self.manifest["metadata"]["name"])
 
-    def wait_attempt(
-        self, excluded_uids: set[str], ordinal: int
-    ) -> tuple[str, str]:
+    def wait_attempt(self, excluded_uids: set[str], ordinal: int) -> tuple[str, str]:
         def attempt_ready() -> tuple[str, str] | None:
             pods = sorted(
                 self.list_owned_pods(),
@@ -77,9 +75,9 @@ class BackoffCaseRunner(Runner):
                     continue
                 phase = str(pod.get("status", {}).get("phase") or "")
                 log = self.pod_log(name)
-                (self.output / f"container-attempt-{ordinal}-{name}-observed.txt").write_text(
-                    log, encoding="utf-8"
-                )
+                (
+                    self.output / f"container-attempt-{ordinal}-{name}-observed.txt"
+                ).write_text(log, encoding="utf-8")
                 if phase in {"Failed", "Succeeded"} and EVENT_PREFIX not in log:
                     statuses = pod.get("status", {}).get("containerStatuses", [])
                     terminated = (
@@ -104,9 +102,7 @@ class BackoffCaseRunner(Runner):
             f"pod-attempt-{ordinal}-before-action.json",
             self.json_get(["-n", NAMESPACE, "get", "pod", name]),
         )
-        self.record(
-            "attempt-running", f"ordinal={ordinal}\tpod={name}\tuid={uid}"
-        )
+        self.record("attempt-running", f"ordinal={ordinal}\tpod={name}\tuid={uid}")
         return name, uid
 
     def inject_attempt_failure(self, name: str, uid: str, ordinal: int) -> None:
@@ -123,8 +119,8 @@ class BackoffCaseRunner(Runner):
                 "-c",
                 "for p in /proc/[0-9]*/comm; do "
                 "pid=${p#/proc/}; pid=${pid%/comm}; "
-                "n=$(cat \"$p\" 2>/dev/null || true); "
-                "printf '%s\\t%s\\n' \"$pid\" \"$n\"; done",
+                'n=$(cat "$p" 2>/dev/null || true); '
+                'printf \'%s\\t%s\\n\' "$pid" "$n"; done',
             ],
             check=False,
             timeout=20,
@@ -146,9 +142,9 @@ class BackoffCaseRunner(Runner):
                 "-c",
                 "for p in /proc/[0-9]*/comm; do "
                 "pid=${p#/proc/}; pid=${pid%/comm}; "
-                "n=$(cat \"$p\" 2>/dev/null || true); "
-                "if [ \"$pid\" != 1 ] && { [ \"$n\" = python ] || [ \"$n\" = python3 ]; }; then "
-                "kill -KILL \"$pid\"; exit 0; fi; done; exit 1",
+                'n=$(cat "$p" 2>/dev/null || true); '
+                'if [ "$pid" != 1 ] && { [ "$n" = python ] || [ "$n" = python3 ]; }; then '
+                'kill -KILL "$pid"; exit 0; fi; done; exit 1',
             ],
             check=False,
             timeout=20,
@@ -162,9 +158,7 @@ class BackoffCaseRunner(Runner):
             raise ExperimentError(
                 f"attempt {ordinal} failure injection returned {killed.returncode}"
             )
-        self.record(
-            "failure-injected", f"ordinal={ordinal}\tpod={name}\tuid={uid}"
-        )
+        self.record("failure-injected", f"ordinal={ordinal}\tpod={name}\tuid={uid}")
 
     def wait_terminal(self) -> None:
         condition = self.terminal.lower()
@@ -197,15 +191,15 @@ class BackoffCaseRunner(Runner):
         job = self.json_get(["-n", NAMESPACE, "get", "job", self.job_name])
         pods = sorted(
             self.list_owned_pods(),
-            key=lambda item: str(item.get("metadata", {}).get("creationTimestamp") or ""),
+            key=lambda item: str(
+                item.get("metadata", {}).get("creationTimestamp") or ""
+            ),
         )
         self.write_json("job-final.json", job)
         self.write_json(
             "pods-final.json", {"apiVersion": "v1", "kind": "List", "items": pods}
         )
-        pod_uids = {
-            str(pod.get("metadata", {}).get("uid") or "") for pod in pods
-        }
+        pod_uids = {str(pod.get("metadata", {}).get("uid") or "") for pod in pods}
         expected_uids = {str(attempt["uid"]) for attempt in attempts}
         if len(pods) != len(attempts) or pod_uids != expected_uids:
             raise ExperimentError(
@@ -294,7 +288,9 @@ class BackoffCaseRunner(Runner):
         )
         api_wall = None
         if creation and terminal_time:
-            api_wall = (parse_timestamp(terminal_time) - parse_timestamp(creation)).total_seconds()
+            api_wall = (
+                parse_timestamp(terminal_time) - parse_timestamp(creation)
+            ).total_seconds()
         result = {
             "schema_version": 1,
             "experiment": "kubernetes-job-backoff-limit-matrix",

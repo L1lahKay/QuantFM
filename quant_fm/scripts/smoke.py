@@ -166,6 +166,8 @@ def run(workdir: Path) -> None:
             "min_len": 8,
             "cache_size": 4,
             "num_workers": 0,
+            "min_validation_dates": len(val_dates),
+            "min_test_dates": len(test_dates),
         },
         "model": {
             "d_model": 32,
@@ -201,7 +203,7 @@ def run(workdir: Path) -> None:
 
     from quant_fm.pretrain.train import load_checkpoint, resolve_device, train
 
-    train(cfg_path)
+    train(cfg_path, resume="auto" if run_dir.exists() else None)
 
     # ========== 阶段 6：用训好的模型抽 embedding ==========
     import torch

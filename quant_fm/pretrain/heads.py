@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -57,14 +58,14 @@ class TargetSpec:
         if self.loss_type not in {"ce", "ordinal_ce"}:
             msg = f"unsupported loss type {self.loss_type!r} for {self.name}"
             raise ValueError(msg)
-        if self.weight < 0:
-            msg = f"target weight must be non-negative: {self.name}"
+        if not math.isfinite(self.weight) or self.weight < 0:
+            msg = f"target weight must be finite and non-negative: {self.name}"
             raise ValueError(msg)
-        if self.entropy <= 0:
-            msg = f"target entropy must be positive: {self.name}"
+        if not math.isfinite(self.entropy) or self.entropy <= 0:
+            msg = f"target entropy must be finite and positive: {self.name}"
             raise ValueError(msg)
-        if self.ordinal_weight < 0:
-            msg = f"ordinal weight must be non-negative: {self.name}"
+        if not math.isfinite(self.ordinal_weight) or self.ordinal_weight < 0:
+            msg = f"ordinal weight must be finite and non-negative: {self.name}"
             raise ValueError(msg)
         if self.ordinal_start_id < 0:
             msg = f"ordinal_start_id must be non-negative: {self.name}"
@@ -87,7 +88,24 @@ def target_specs_from_config(
     if not loss_config or not loss_config.get("targets"):
         return None
     configured = loss_config["targets"]
+    if not isinstance(configured, dict):
+        msg = "loss.targets must be a mapping"
+        raise TypeError(msg)
+    unknown_targets = sorted(set(configured) - set(target_fields))
+    if unknown_targets:
+        msg = (
+            "loss.targets contains fields that are not model targets: "
+            f"{unknown_targets}"
+        )
+        raise ValueError(msg)
     entropy_by_field = loss_config.get("train_entropy", {})
+    if not isinstance(entropy_by_field, dict):
+        msg = "loss.train_entropy must be a mapping"
+        raise TypeError(msg)
+    unknown_entropy = sorted(set(entropy_by_field) - set(target_fields))
+    if unknown_entropy:
+        msg = f"loss.train_entropy contains fields that are not model targets: {unknown_entropy}"
+        raise ValueError(msg)
     specs: list[TargetSpec] = []
     for name in target_fields:
         item = configured.get(name)
@@ -104,6 +122,20 @@ def target_specs_from_config(
         if not isinstance(item, dict):
             msg = f"loss.targets.{name} must be a mapping"
             raise TypeError(msg)
+        allowed_item_keys = {
+            "applicable_event_ids",
+            "entropy",
+            "ignore_ids",
+            "mask_field",
+            "ordinal_start_id",
+            "ordinal_weight",
+            "type",
+            "weight",
+        }
+        unknown_item_keys = sorted(set(item) - allowed_item_keys)
+        if unknown_item_keys:
+            msg = f"unknown loss.targets.{name} keys: {unknown_item_keys}"
+            raise ValueError(msg)
         applicable = item.get("applicable_event_ids", ())
         if any(not isinstance(value, int) for value in applicable):
             msg = f"loss.targets.{name}.applicable_event_ids must contain token ids"
@@ -124,6 +156,9 @@ def target_specs_from_config(
         )
         spec.validate()
         specs.append(spec)
+    if not any(spec.weight > 0 for spec in specs):
+        msg = "loss.targets must enable at least one model target with positive weight"
+        raise ValueError(msg)
     return tuple(specs)
 
 

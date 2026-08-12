@@ -31,6 +31,7 @@ from pathlib import Path
 from pylob.pipeline.config import PipelineConfig
 from pylob.pipeline.workflow import build_clean_dataset
 
+from quant_fm.data_coverage import write_coverage_receipt
 from quant_fm.lob_rebuild.export_events import canonicalize_clean_dir
 from quant_fm.manifest.build_manifest import build_manifest
 from quant_fm.schema.cn_l2_v1 import SCHEMA_VERSION as V1_SCHEMA_VERSION
@@ -92,9 +93,7 @@ def run(
     tokens_dir = workdir / "tokens"
     data_dir = workdir / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
-    schema_version = (
-        V2_SCHEMA_VERSION if data_version == "v2" else V1_SCHEMA_VERSION
-    )
+    schema_version = V2_SCHEMA_VERSION if data_version == "v2" else V1_SCHEMA_VERSION
 
     for date in dates:
         if not skip_clean:
@@ -104,6 +103,14 @@ def run(
                 market,
                 clean_dir / date,
                 capture_book_state=data_version == "v2",
+            )
+        if data_version == "v2":
+            write_coverage_receipt(
+                workdir=workdir,
+                clean_dir=clean_dir / date,
+                date=date,
+                symbols_sz=symbols if market == "SZ" else (),
+                symbols_sh=symbols if market == "SH" else (),
             )
         canonicalize_clean_dir(
             clean_dir / date,
@@ -161,7 +168,8 @@ def run(
 
         audit = audit_v2_artifacts(workdir, sample_shards=12, full_path_check=True)
         audit_path = workdir / "artifact_audit.json"
-        audit_path.write_text(
+        temporary = audit_path.with_name(f".{audit_path.name}.tmp")
+        temporary.write_text(
             json.dumps(
                 audit,
                 ensure_ascii=False,
@@ -171,6 +179,7 @@ def run(
             + "\n",
             encoding="utf-8",
         )
+        temporary.replace(audit_path)
         if not audit["contract_ready"]:
             msg = f"V2 artifact audit failed: {audit_path}"
             raise RuntimeError(msg)

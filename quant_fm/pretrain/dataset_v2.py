@@ -11,6 +11,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
+from quant_fm.pretrain.dataset import validate_window_geometry
 from quant_fm.tokenizer.storage_encoding_v2 import read_token_frame_v2
 from quant_fm.tokenizer.vocab_v2 import NA_ID, PAD_ID
 
@@ -123,10 +124,16 @@ class EventWindowDatasetV2(Dataset):
         min_len: int = 16,
         cache_size: int = 8,
     ) -> None:
+        context, effective_stride, min_len, cache_size = validate_window_geometry(
+            context=context,
+            stride=stride,
+            min_len=min_len,
+            cache_size=cache_size,
+        )
         self.shards = shards
         self.layout = field_layout_from_vocab(vocab)
         self.context = context
-        self.stride = stride or context
+        self.stride = effective_stride
         self.min_len = min_len
         self._cache = _V2ShardCache(cache_size, self.layout, vocab)
         self._windows = self._index_windows()

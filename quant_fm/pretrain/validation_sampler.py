@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING, Any
 from torch.utils.data import Sampler
 
 from quant_fm.manifest.build_manifest import Manifest
+from quant_fm.manifest.validation import validate_manifest_shard_paths
 from quant_fm.schema.cn_l2_v1 import board_of, exchange_of
 
 if TYPE_CHECKING:
@@ -38,8 +39,27 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-PLAN_VERSION = 1
+PLAN_VERSION = 2
 ShardKey = tuple[str, str, str]
+
+
+def _is_sha256(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(char in "0123456789abcdef" for char in value.lower())
+    )
+
+
+def _canonical_sha256(payload: object) -> str:
+    raw = json.dumps(
+        payload,
+        allow_nan=False,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,6 +101,11 @@ class ValidationSamplePlan:
     stride: int
     min_len: int
     source_fingerprint: str
+    max_windows: int | None
+    windows_per_stratum: int | None
+    n_liquidity_buckets: int
+    n_activity_buckets: int
+    stratification_fingerprint: str
     total_candidate_windows: int
     windows: tuple[ValidationWindow, ...]
 
@@ -95,42 +120,137 @@ class ValidationSamplePlan:
         counts = Counter("|".join(window.stratum) for window in self.windows)
         return dict(sorted(counts.items()))
 
-    def save(self, path: Path) -> None:
-        """Write the plan as stable JSON."""
-        payload = {
+    def identity_payload(self) -> dict[str, object]:
+        """Return the complete canonical identity covered by ``sha256``."""
+        return {
             "version": self.version,
             "seed": self.seed,
             "context": self.context,
             "stride": self.stride,
             "min_len": self.min_len,
             "source_fingerprint": self.source_fingerprint,
+            "selection": {
+                "max_windows": self.max_windows,
+                "windows_per_stratum": self.windows_per_stratum,
+            },
+            "stratification": {
+                "n_liquidity_buckets": self.n_liquidity_buckets,
+                "n_activity_buckets": self.n_activity_buckets,
+                "input_fingerprint": self.stratification_fingerprint,
+            },
             "total_candidate_windows": self.total_candidate_windows,
+            "windows": [asdict(window) for window in self.windows],
+        }
+
+    @property
+    def sha256(self) -> str:
+        """Hash seed, exact windows, selection rules, and stratification inputs."""
+        return _canonical_sha256(self.identity_payload())
+
+    def save(self, path: Path) -> None:
+        """Write the plan as stable JSON."""
+        payload = {
+            **self.identity_payload(),
+            "plan_sha256": self.sha256,
             "selected_windows": len(self.windows),
             "stratum_counts": self.stratum_counts,
-            "windows": [asdict(window) for window in self.windows],
         }
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+        temporary = path.with_name(f".{path.name}.tmp")
+        temporary.write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        temporary.replace(path)
 
     @classmethod
     def load(cls, path: Path) -> ValidationSamplePlan:
         """Load a plan and reject unsupported versions."""
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            msg = "validation sample plan must be a JSON object"
+            raise TypeError(msg)
         version = int(payload.get("version", 0))
         if version != PLAN_VERSION:
-            msg = f"unsupported validation sample plan version: {version}"
+            msg = (
+                f"unsupported validation sample plan version: {version}; "
+                "regenerate it to obtain a bound canonical plan identity"
+            )
             raise ValueError(msg)
-        return cls(
+        required = {
+            "version",
+            "seed",
+            "context",
+            "stride",
+            "min_len",
+            "source_fingerprint",
+            "selection",
+            "stratification",
+            "total_candidate_windows",
+            "selected_windows",
+            "stratum_counts",
+            "windows",
+            "plan_sha256",
+        }
+        missing = sorted(required - set(payload))
+        if missing:
+            msg = f"validation sample plan is missing fields: {missing}"
+            raise ValueError(msg)
+        unknown = sorted(set(payload) - required)
+        if unknown:
+            msg = f"validation sample plan contains unknown fields: {unknown}"
+            raise ValueError(msg)
+        selection = payload["selection"]
+        stratification = payload["stratification"]
+        if not isinstance(selection, dict) or not isinstance(stratification, dict):
+            msg = "validation sample plan selection/stratification must be objects"
+            raise TypeError(msg)
+        if set(selection) != {"max_windows", "windows_per_stratum"}:
+            msg = "validation sample plan selection fields are not exact"
+            raise ValueError(msg)
+        expected_stratification = {
+            "n_liquidity_buckets",
+            "n_activity_buckets",
+            "input_fingerprint",
+        }
+        if set(stratification) != expected_stratification:
+            msg = "validation sample plan stratification fields are not exact"
+            raise ValueError(msg)
+        plan = cls(
             version=version,
             seed=int(payload["seed"]),
             context=int(payload["context"]),
             stride=int(payload["stride"]),
             min_len=int(payload["min_len"]),
             source_fingerprint=str(payload["source_fingerprint"]),
+            max_windows=(
+                None
+                if selection["max_windows"] is None
+                else int(selection["max_windows"])
+            ),
+            windows_per_stratum=(
+                None
+                if selection["windows_per_stratum"] is None
+                else int(selection["windows_per_stratum"])
+            ),
+            n_liquidity_buckets=int(stratification["n_liquidity_buckets"]),
+            n_activity_buckets=int(stratification["n_activity_buckets"]),
+            stratification_fingerprint=str(stratification["input_fingerprint"]),
             total_candidate_windows=int(payload["total_candidate_windows"]),
             windows=tuple(ValidationWindow(**row) for row in payload["windows"]),
         )
+        if payload["selected_windows"] != len(plan.windows):
+            msg = "validation sample plan selected_windows is inconsistent"
+            raise ValueError(msg)
+        if payload["stratum_counts"] != plan.stratum_counts:
+            msg = "validation sample plan stratum_counts is inconsistent"
+            raise ValueError(msg)
+        declared_sha = payload["plan_sha256"]
+        if not _is_sha256(declared_sha) or declared_sha != plan.sha256:
+            msg = "validation sample plan canonical SHA-256 is invalid"
+            raise ValueError(msg)
+        return plan
 
     def validate(
         self,
@@ -139,6 +259,9 @@ class ValidationSamplePlan:
         context: int,
         stride: int | None,
         min_len: int,
+        liquidity_values: Mapping[ShardKey, float] | None = None,
+        n_liquidity_buckets: int = 3,
+        n_activity_buckets: int = 3,
     ) -> None:
         """Fail fast if a plan is reused with another dataset or window layout."""
         effective_stride = stride or context
@@ -154,11 +277,32 @@ class ValidationSamplePlan:
                 f"plan={actual_config}, requested={expected_config}"
             )
             raise ValueError(msg)
-        if (
-            self.windows
-            and self.windows[-1].dataset_index >= self.total_candidate_windows
-        ):
-            msg = "validation plan contains an out-of-range dataset index"
+        expected_stratification = stratification_fingerprint(
+            shards,
+            liquidity_values=liquidity_values,
+            n_liquidity_buckets=n_liquidity_buckets,
+            n_activity_buckets=n_activity_buckets,
+        )
+        if self.stratification_fingerprint != expected_stratification:
+            msg = "validation plan stratification inputs have changed"
+            raise ValueError(msg)
+        rebuilt = build_validation_sample_plan(
+            shards,
+            context=context,
+            stride=stride,
+            min_len=min_len,
+            seed=self.seed,
+            max_windows=self.max_windows,
+            windows_per_stratum=self.windows_per_stratum,
+            liquidity_values=liquidity_values,
+            n_liquidity_buckets=n_liquidity_buckets,
+            n_activity_buckets=n_activity_buckets,
+        )
+        if rebuilt.total_candidate_windows != self.total_candidate_windows:
+            msg = "validation plan candidate-window count has changed"
+            raise ValueError(msg)
+        if rebuilt.windows != self.windows:
+            msg = "validation plan selected windows do not match its frozen inputs"
             raise ValueError(msg)
 
 
@@ -196,6 +340,44 @@ def manifest_fingerprint(shards: Sequence[ShardEntry]) -> str:
 def shard_key(shard: ShardEntry) -> ShardKey:
     """Return the canonical key used by optional point-in-time metadata."""
     return shard.date, shard.market.upper(), str(shard.symbol).zfill(6)
+
+
+def stratification_fingerprint(
+    shards: Sequence[ShardEntry],
+    *,
+    liquidity_values: Mapping[ShardKey, float] | None,
+    n_liquidity_buckets: int,
+    n_activity_buckets: int,
+) -> str:
+    """Hash every raw value that can change the validation strata."""
+    if n_liquidity_buckets < 1 or n_activity_buckets < 1:
+        msg = "validation stratification bucket counts must be positive"
+        raise ValueError(msg)
+    rows: list[dict[str, object]] = []
+    for index, shard in enumerate(shards):
+        key = shard_key(shard)
+        raw_liquidity = (
+            float(liquidity_values.get(key, math.nan))
+            if liquidity_values is not None
+            else math.nan
+        )
+        rows.append(
+            {
+                "index": index,
+                "key": list(key),
+                "activity_rows": int(shard.rows),
+                "liquidity_hex": (
+                    raw_liquidity.hex() if math.isfinite(raw_liquidity) else None
+                ),
+            }
+        )
+    return _canonical_sha256(
+        {
+            "n_liquidity_buckets": n_liquidity_buckets,
+            "n_activity_buckets": n_activity_buckets,
+            "rows": rows,
+        }
+    )
 
 
 def _bucket_labels(n_buckets: int) -> tuple[str, ...]:
@@ -366,6 +548,12 @@ def build_validation_sample_plan(
     if windows_per_stratum is not None and windows_per_stratum < 1:
         msg = "windows_per_stratum must be >= 1 when provided"
         raise ValueError(msg)
+    stratification_id = stratification_fingerprint(
+        shards,
+        liquidity_values=liquidity_values,
+        n_liquidity_buckets=n_liquidity_buckets,
+        n_activity_buckets=n_activity_buckets,
+    )
 
     candidates = _enumerate_windows(
         shards,
@@ -389,6 +577,11 @@ def build_validation_sample_plan(
         stride=effective_stride,
         min_len=min_len,
         source_fingerprint=manifest_fingerprint(shards),
+        max_windows=max_windows,
+        windows_per_stratum=windows_per_stratum,
+        n_liquidity_buckets=n_liquidity_buckets,
+        n_activity_buckets=n_activity_buckets,
+        stratification_fingerprint=stratification_id,
         total_candidate_windows=len(candidates),
         windows=selected,
     )
@@ -428,7 +621,18 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
 
-    shards = Manifest.load(args.manifest).split(args.split)
+    manifest = Manifest.load(args.manifest)
+    if manifest.schema_version == "cn_l2_v2":
+        validate_manifest_shard_paths(
+            manifest,
+            context="validation sample plan",
+            expected_tokens_root=(
+                args.manifest.parent.parent / "tokens"
+                if args.manifest.parent.name == "data"
+                else args.manifest.parent / "tokens"
+            ),
+        )
+    shards = manifest.split(args.split)
     if not shards:
         msg = f"no shards for split={args.split}"
         raise SystemExit(msg)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from typing import TYPE_CHECKING
@@ -39,6 +40,9 @@ def _manifest(path: Path, scores: pl.DataFrame) -> Path:
         },
         "data": {
             "file": "scores.parquet",
+            "file_sha256": hashlib.sha256(
+                path.with_name("scores.parquet").read_bytes()
+            ).hexdigest(),
             "schema": {"date": "string", "symbol": "string", "score": "float64"},
             "primary_key": ["date", "symbol"],
             "rows": scores.height,

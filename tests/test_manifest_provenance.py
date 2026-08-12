@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 from typing import TYPE_CHECKING
 
 import polars as pl
@@ -8,8 +9,12 @@ import pytest
 if TYPE_CHECKING:
     from pathlib import Path
 
-from quant_fm.manifest.build_manifest import Manifest, build_manifest
-from quant_fm.manifest.validation import sha256_file, validate_manifest_shards
+from quant_fm.manifest.build_manifest import Manifest, ShardEntry, build_manifest
+from quant_fm.manifest.validation import (
+    sha256_file,
+    validate_manifest_shard_paths,
+    validate_manifest_shards,
+)
 from quant_fm.scripts.make_adhoc_manifest import build_adhoc_manifest
 from quant_fm.tokenizer.artifact_contract import token_contract_path
 from quant_fm.tokenizer.tokenize_events import tokenize_path
@@ -55,6 +60,49 @@ def _artifacts(tmp_path: Path):
     return vocab, token, manifest
 
 
+def test_manifest_rejects_split_that_disagrees_with_declared_boundaries(
+    tmp_path: Path,
+) -> None:
+    manifest = Manifest(
+        shards=[
+            ShardEntry(
+                "SZ",
+                "000001",
+                "2025-01-02",
+                "unused.parquet",
+                1,
+                "hash",
+                "test",
+            )
+        ],
+        train_end="2025-01-02",
+        val_end="2025-01-03",
+    )
+
+    with pytest.raises(ValueError, match="disagrees with declared boundaries"):
+        manifest.save(tmp_path / "manifest.json")
+
+
+@pytest.mark.parametrize(
+    ("train_end", "val_end", "message"),
+    [
+        ("2025-1-2", "2025-01-03", "canonical YYYY-MM-DD"),
+        ("2025-01-04", "2025-01-03", "train_end <= val_end"),
+        ("2025-01-02", None, "declare train_end and val_end together"),
+    ],
+)
+def test_manifest_rejects_invalid_declared_boundaries(
+    tmp_path: Path,
+    train_end: str | None,
+    val_end: str | None,
+    message: str,
+) -> None:
+    manifest = Manifest(train_end=train_end, val_end=val_end)
+
+    with pytest.raises(ValueError, match=message):
+        manifest.save(tmp_path / "manifest.json")
+
+
 def test_manifest_runtime_validation_rejects_live_parquet_hash_tamper(
     tmp_path: Path,
 ) -> None:
@@ -84,6 +132,92 @@ def test_manifest_runtime_validation_rejects_sidecar_hash_tamper(
             manifest,
             vocab,
             context="test",
+        )
+
+
+def test_manifest_runtime_validation_rejects_swapped_logical_paths(
+    tmp_path: Path,
+) -> None:
+    _vocab, train_token, manifest = _artifacts(tmp_path)
+    validation_token = tmp_path / "tokens" / "SZ" / "000001" / "2025-01-03.parquet"
+    shutil.copy2(train_token, validation_token)
+    shutil.copy2(
+        token_contract_path(train_token),
+        token_contract_path(validation_token),
+    )
+    train = manifest.shards[0]
+    train.path = str(validation_token.resolve())
+    validation = ShardEntry(
+        market="SZ",
+        symbol="000001",
+        date="2025-01-03",
+        path=str(train_token.resolve()),
+        rows=train.rows,
+        sha256=sha256_file(train_token),
+        split="val",
+        data_contract_sha256=sha256_file(token_contract_path(train_token)),
+    )
+    manifest.shards.append(validation)
+
+    with pytest.raises(ValueError, match="path does not match its logical identity"):
+        validate_manifest_shard_paths(manifest, context="test")
+
+
+def test_manifest_path_contract_requires_one_root_and_unique_logical_keys(
+    tmp_path: Path,
+) -> None:
+    first = ShardEntry(
+        "SZ",
+        "000001",
+        "2025-01-02",
+        str(tmp_path / "first" / "tokens" / "SZ" / "000001" / "2025-01-02.parquet"),
+        1,
+        "a",
+    )
+    second = ShardEntry(
+        "SH",
+        "600000",
+        "2025-01-03",
+        str(tmp_path / "second" / "tokens" / "SH" / "600000" / "2025-01-03.parquet"),
+        1,
+        "b",
+    )
+    with pytest.raises(ValueError, match="do not share one tokens root"):
+        validate_manifest_shard_paths(
+            Manifest(shards=[first, second]),
+            context="test",
+        )
+
+    duplicate = ShardEntry(
+        first.market,
+        first.symbol,
+        first.date,
+        first.path,
+        first.rows,
+        first.sha256,
+    )
+    with pytest.raises(ValueError, match="duplicate logical shard"):
+        validate_manifest_shard_paths(
+            Manifest(shards=[first, duplicate]),
+            context="test",
+        )
+
+
+def test_manifest_path_contract_rejects_external_tokens_root(tmp_path: Path) -> None:
+    shard = ShardEntry(
+        "SZ",
+        "000001",
+        "2025-01-02",
+        str(tmp_path / "external" / "tokens" / "SZ" / "000001" / "2025-01-02.parquet"),
+        1,
+        "hash",
+    )
+
+    with pytest.raises(ValueError, match="escape the expected tokens root"):
+        validate_manifest_shard_paths(
+            Manifest(shards=[shard]),
+            context="test",
+            expected_tokens_root=tmp_path / "generation" / "tokens",
         )
 
 

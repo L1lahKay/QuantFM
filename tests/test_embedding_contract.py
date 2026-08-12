@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+from hashlib import sha256
 from typing import TYPE_CHECKING
 
 import polars as pl
@@ -82,7 +84,33 @@ def test_embedding_contract_round_trip_and_optional_legacy(tmp_path: Path) -> No
     expected = _contract()
     written = write_embedding_contract(path, expected)
     assert written == embedding_contract_path(path)
+    sidecar = json.loads(written.read_text(encoding="utf-8"))
+    assert sidecar["embedding_file_sha256"] == sha256(path.read_bytes()).hexdigest()
     assert load_embedding_contract(path, require_vocab=True) == expected
+
+
+def test_embedding_contract_rejects_parquet_byte_tampering(tmp_path: Path) -> None:
+    path = tmp_path / "embedding.parquet"
+    _write_frame(path, (1.0, 2.0))
+    write_embedding_contract(path, _contract())
+
+    _write_frame(path, (9.0, 8.0))
+
+    with pytest.raises(ValueError, match="parquet SHA-256 disagrees"):
+        load_embedding_contract(path)
+
+
+def test_unbound_v2_sidecar_requires_explicit_legacy_loading(tmp_path: Path) -> None:
+    path = tmp_path / "embedding.parquet"
+    _write_frame(path, (1.0, 2.0))
+    embedding_contract_path(path).write_text(
+        json.dumps(_contract().to_dict()),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="not bound to parquet bytes"):
+        load_embedding_contract(path)
+    assert load_embedding_contract(path, required=False) == _contract()
 
 
 @pytest.mark.parametrize(

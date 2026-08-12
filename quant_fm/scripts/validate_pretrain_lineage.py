@@ -30,8 +30,9 @@ from quant_fm.embedding.contract import (
 )
 from quant_fm.embedding.pooling_spec import DEFAULT_V2_MULTI_SCALE_OUTPUTS
 from quant_fm.manifest.build_manifest import Manifest
-from quant_fm.manifest.validation import sha256_file
+from quant_fm.manifest.validation import sha256_file, validate_manifest_shard_paths
 from quant_fm.monitoring.acceptance import (
+    DEFAULT_NONINFERIORITY_TOLERANCE,
     compare_pretrain_evaluations,
     validate_pretrain_acceptance,
 )
@@ -281,6 +282,8 @@ def _embedding_artifact(
 def _reverify_acceptance_sources(
     acceptance_path: Path,
     acceptance: dict[str, Any],
+    *,
+    expected_noninferiority_tolerance: float,
 ) -> tuple[Path, dict[str, Any]]:
     candidate_path = _existing_path(
         acceptance["candidate"],
@@ -295,7 +298,7 @@ def _reverify_acceptance_sources(
     recomputed = compare_pretrain_evaluations(
         candidate_path,
         baseline_path,
-        noninferiority_tolerance=float(acceptance["noninferiority_tolerance"]),
+        noninferiority_tolerance=expected_noninferiority_tolerance,
     )
     immutable_fields = (
         "candidate",
@@ -333,6 +336,7 @@ def validate_pretrain_lineage(
     train_embeddings: Path,
     oos_embeddings: Path,
     expected_training_end: str | None = None,
+    expected_noninferiority_tolerance: float = DEFAULT_NONINFERIORITY_TOLERANCE,
 ) -> dict[str, Any]:
     """Return a fail-closed lineage report for strict Top-K retraining."""
     if expected_training_end is not None:
@@ -342,10 +346,14 @@ def validate_pretrain_lineage(
         )
 
     acceptance_path = Path(acceptance_path).resolve()
-    acceptance = validate_pretrain_acceptance(acceptance_path)
+    acceptance = validate_pretrain_acceptance(
+        acceptance_path,
+        expected_noninferiority_tolerance=expected_noninferiority_tolerance,
+    )
     candidate_path, candidate = _reverify_acceptance_sources(
         acceptance_path,
         acceptance,
+        expected_noninferiority_tolerance=expected_noninferiority_tolerance,
     )
     if candidate.get("split") != "val":
         msg = "accepted candidate evaluation must use split=val"
@@ -384,6 +392,15 @@ def validate_pretrain_lineage(
         raise TypeError(msg)
     _validate_manifest_date_contract(manifest)
     _validate_vocab_dates(vocab)
+    validate_manifest_shard_paths(
+        manifest,
+        context="accepted FM lineage",
+        expected_tokens_root=(
+            manifest_path.parent.parent / "tokens"
+            if manifest_path.parent.name == "data"
+            else manifest_path.parent / "tokens"
+        ),
+    )
     split_contract = validate_pretrain_split_contract(
         manifest,
         vocab,
@@ -514,6 +531,7 @@ def validate_pretrain_lineage(
         "acceptance": {
             "path": str(acceptance_path),
             "sha256": sha256_file(acceptance_path),
+            "expected_noninferiority_tolerance": (expected_noninferiority_tolerance),
             "validation_plan_source_fingerprint": acceptance[
                 "validation_plan_source_fingerprint"
             ],
@@ -547,6 +565,12 @@ def main() -> None:
     parser.add_argument("--train-embeddings", type=Path, required=True)
     parser.add_argument("--oos-embeddings", type=Path, required=True)
     parser.add_argument("--expected-training-end")
+    parser.add_argument(
+        "--expected-tolerance",
+        type=float,
+        default=DEFAULT_NONINFERIORITY_TOLERANCE,
+        help="independent pretrain noninferiority policy threshold (default: 0.01)",
+    )
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     try:
@@ -555,6 +579,7 @@ def main() -> None:
             train_embeddings=args.train_embeddings,
             oos_embeddings=args.oos_embeddings,
             expected_training_end=args.expected_training_end,
+            expected_noninferiority_tolerance=args.expected_tolerance,
         )
     except (FileNotFoundError, OSError, TypeError, ValueError) as exc:
         parser.error(str(exc))

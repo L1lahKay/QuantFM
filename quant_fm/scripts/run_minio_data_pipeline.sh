@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # MinIO V2 数据流水线（无训练）：真实盘口回放 → V2 tokens → 审计 → MinIO
-# 上传后默认删除本地 tokens。若还要训练，请用：
+# 上传后保留本地产物；自动递归删除已禁用。离线停写并独立验收后再显式清理。
+# 若还要训练，请用：
 #   make minio-full-pipeline / run_minio_full_pipeline.sh
 #
 # 用法：
@@ -27,6 +28,7 @@ fi
 
 MODE="${MODE:-try}"
 LOG="${LOG:-$ROOT/quant_fm/runs/minio_pipeline.log}"
+PARALLEL_V2=0
 
 case "$MODE" in
   try)
@@ -43,7 +45,9 @@ case "$MODE" in
   full)
     WORKDIR="$ROOT/quant_fm/runs/v2_shared"
     TAG="v2_shared"
-    EXTRA=(--resume --v2-full-audit)
+    DATES="$ROOT/quant_fm/data/medium_60_dates.txt"
+    PARALLEL_V2=1
+    EXTRA=()
     ;;
   *)
     echo "MODE must be try|smoke|full" >&2
@@ -64,25 +68,29 @@ echo "schema: cn_l2_v2 (real post-event book state, Q16 scalar storage)"
 
 python -m quant_fm.scripts.check_minio
 
-python -m quant_fm.scripts.run_medium \
-  --workdir "$WORKDIR" \
-  --data-version v2 \
-  --drop-clean \
-  --drop-events \
-  --upload-minio \
-  --upload-tag "$TAG" \
-  --delete-local-after-upload \
-  "${EXTRA[@]}"
+if [[ "$PARALLEL_V2" == "1" ]]; then
+  python -m quant_fm.scripts.run_v2_parallel_data \
+    --workdir "$WORKDIR" \
+    --dates-file "$DATES" \
+    --groups "${NGROUPS:-2}" \
+    --clean-workers "${CLEAN_WORKERS:-30}" \
+    --canon-workers "${CANON_WORKERS:-8}" \
+    --tokenize-workers "${TOKENIZE_WORKERS:-16}"
+  python -m quant_fm.scripts.upload_to_minio \
+    --workdir "$WORKDIR" --tag "$TAG"
+else
+  python -m quant_fm.scripts.run_medium \
+    --workdir "$WORKDIR" \
+    --data-version v2 \
+    --fast-clean \
+    --drop-clean \
+    --drop-events \
+    --v2-full-audit \
+    --upload-minio \
+    --upload-tag "$TAG" \
+    "${EXTRA[@]}"
+fi
 
-python -m quant_fm.scripts.upload_to_minio --tag "$TAG" --verify-only 2>/dev/null || \
-  python3 <<PY
-from quant_fm.scripts.upload_to_minio import _ensure_mc_alias, remote_uri, output_bucket, output_prefix
-import subprocess
-alias = _ensure_mc_alias()
-remote = f"{alias}/{output_bucket()}/{output_prefix('$TAG')}"
-r = subprocess.run(["mc", "find", remote, "--name", "*.parquet"], capture_output=True, text=True, check=True)
-n = len([l for l in r.stdout.splitlines() if l.strip()])
-print(f"verify: {remote_uri('$TAG')} parquet count={n}")
-PY
+python -m quant_fm.scripts.upload_to_minio --tag "$TAG" --verify-only
 
 echo "======== $(date -Is) DONE → s3://model-cache/$OUT_PREFIX/$TAG/ ========"

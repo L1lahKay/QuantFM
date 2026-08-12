@@ -43,6 +43,37 @@ DEFAULT_TARGET_FIELDS: tuple[str, ...] = (
 )
 
 
+def validate_window_geometry(
+    *,
+    context: int,
+    stride: int | None,
+    min_len: int,
+    cache_size: int,
+) -> tuple[int, int, int, int]:
+    """校验滑窗参数并返回规范化后的正整数配置。"""
+    values = {
+        "context": context,
+        "min_len": min_len,
+        "cache_size": cache_size,
+    }
+    for name, value in values.items():
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            msg = f"{name} must be a positive integer, got {value!r}"
+            raise ValueError(msg)
+    effective_stride = context if stride is None else stride
+    if (
+        isinstance(effective_stride, bool)
+        or not isinstance(effective_stride, int)
+        or effective_stride < 1
+    ):
+        msg = f"stride must be a positive integer, got {effective_stride!r}"
+        raise ValueError(msg)
+    if min_len > context:
+        msg = f"min_len ({min_len}) cannot exceed context ({context})"
+        raise ValueError(msg)
+    return context, effective_stride, min_len, cache_size
+
+
 @dataclass(slots=True)
 class _Window:
     shard_idx: int
@@ -84,9 +115,15 @@ class EventWindowDataset(Dataset):
         min_len: int = 16,
         cache_size: int = 8,
     ) -> None:
+        context, effective_stride, min_len, cache_size = validate_window_geometry(
+            context=context,
+            stride=stride,
+            min_len=min_len,
+            cache_size=cache_size,
+        )
         self.shards = shards
         self.context = context
-        self.stride = stride or context
+        self.stride = effective_stride
         self.min_len = min_len
         self._cache = _ShardCache(capacity=cache_size)
         self._windows: list[_Window] = self._index_windows()

@@ -32,6 +32,81 @@ class ManifestVocab(Protocol):
         """Return the stable vocabulary serialization."""
 
 
+def validate_manifest_shard_paths(
+    manifest: Manifest,
+    *,
+    context: str,
+    expected_tokens_root: Path | None = None,
+) -> Path:
+    """
+    Bind every logical shard identity to one canonical token-tree path.
+
+    ``expected_tokens_root`` is the caller-owned trust boundary. Formal V2
+    entrypoints pass it from their manifest/workdir location so a self-consistent
+    manifest cannot redirect every shard to another artifact generation.
+    """
+    if not manifest.shards:
+        msg = f"{context} contains no token shards"
+        raise ValueError(msg)
+
+    token_roots: set[Path] = set()
+    logical_keys: set[tuple[str, str, str]] = set()
+    resolved_paths: set[Path] = set()
+    for index, shard in enumerate(manifest.shards):
+        prefix = f"{context} shard[{index}]"
+        path = Path(shard.path)
+        if path.is_symlink():
+            msg = f"{prefix} path must not be a symlink: {path}"
+            raise ValueError(msg)
+        resolved = path.resolve()
+        expected_name = f"{shard.date}.parquet"
+        if (
+            resolved.name != expected_name
+            or resolved.parent.name != shard.symbol
+            or resolved.parent.parent.name != shard.market
+            or resolved.parent.parent.parent.name != "tokens"
+        ):
+            msg = (
+                f"{prefix} path does not match its logical identity; expected tail "
+                f"tokens/{shard.market}/{shard.symbol}/{expected_name}, got {resolved}"
+            )
+            raise ValueError(msg)
+
+        logical_key = (shard.market, shard.symbol, shard.date)
+        if logical_key in logical_keys:
+            msg = f"{context} contains a duplicate logical shard: {logical_key}"
+            raise ValueError(msg)
+        logical_keys.add(logical_key)
+        if resolved in resolved_paths:
+            msg = f"{context} contains a duplicate resolved shard path: {resolved}"
+            raise ValueError(msg)
+        resolved_paths.add(resolved)
+        token_roots.add(resolved.parent.parent.parent)
+
+    if len(token_roots) != 1:
+        msg = (
+            f"{context} shard paths do not share one tokens root: "
+            f"{sorted(str(path) for path in token_roots)}"
+        )
+        raise ValueError(msg)
+    token_root = next(iter(token_roots))
+    if expected_tokens_root is not None:
+        expected_path = Path(expected_tokens_root)
+        if expected_path.is_symlink():
+            msg = (
+                f"{context} expected tokens root must not be a symlink: {expected_path}"
+            )
+            raise ValueError(msg)
+        expected_root = expected_path.resolve()
+        if token_root != expected_root:
+            msg = (
+                f"{context} shard paths escape the expected tokens root: "
+                f"expected={expected_root}, actual={token_root}"
+            )
+            raise ValueError(msg)
+    return token_root
+
+
 def sha256_file(path: Path, *, chunk_size: int = 8 << 20) -> str:
     """Return a streaming SHA-256 for a materialized artifact."""
     digest = hashlib.sha256()
@@ -94,6 +169,7 @@ def validate_manifest_shards(
     *,
     shards: Sequence[ShardEntry] | None = None,
     context: str,
+    expected_tokens_root: Path | None = None,
 ) -> dict[str, int]:
     """
     Validate every selected shard against live bytes, sidecar, and vocab.
@@ -103,6 +179,15 @@ def validate_manifest_shards(
     Sidecar-less historical shards therefore remain legacy-only; legacy diagnostic
     manifests may omit the parquet hash only when another auditable identity exists.
     """
+    # Formal V2 datasets use the canonical market/symbol/date token tree and must
+    # bind the logical split identity to it.  V1 manifests predate that storage
+    # convention and remain loadable for backwards-compatible diagnostics.
+    if vocab.schema_version == "cn_l2_v2":
+        validate_manifest_shard_paths(
+            manifest,
+            context=context,
+            expected_tokens_root=expected_tokens_root,
+        )
     selected = list(manifest.shards if shards is None else shards)
     unhashed_parquet = 0
     for shard in selected:
@@ -168,6 +253,7 @@ def validate_manifest_shards(
 
 __all__ = [
     "sha256_file",
+    "validate_manifest_shard_paths",
     "validate_manifest_shards",
     "validate_manifest_vocab_contract",
 ]

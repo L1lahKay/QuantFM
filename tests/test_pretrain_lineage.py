@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass
+from hashlib import sha256
 from typing import TYPE_CHECKING
 
 import polars as pl
@@ -32,6 +34,10 @@ from quant_fm.monitoring.acceptance import compare_pretrain_evaluations
 from quant_fm.pretrain.data_contract import (
     build_pretrain_data_contract,
     write_checkpoint_contract,
+)
+from quant_fm.pretrain.validation_sampler import (
+    ValidationSamplePlan,
+    build_validation_sample_plan,
 )
 from quant_fm.scripts.validate_pretrain_lineage import validate_pretrain_lineage
 from quant_fm.tokenizer.artifact_contract import stable_vocab_sha256
@@ -64,18 +70,70 @@ def _write_evaluation(
     path: Path,
     *,
     loss: float,
-    checkpoint: Path | None = None,
+    checkpoint: Path,
+    validation_plan_path: Path,
+    train_unigram_plan_path: Path,
     config: Path | None = None,
 ) -> None:
+    validation_plan = ValidationSamplePlan.load(validation_plan_path)
+    train_plan = ValidationSamplePlan.load(train_unigram_plan_path)
+    counts_payload = {"tok_evt_type": [0, 1, 1]}
+    counts_sha = sha256(
+        json.dumps(counts_payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    entropy = -math.fsum(
+        (count / 2) * math.log(count / 2)
+        for count in counts_payload["tok_evt_type"]
+        if count > 0
+    )
+    normalization_contract = {
+        "format_version": "train_unigram_normalization_v3",
+        "target_fields": ["tok_evt_type"],
+        "train_unigram_plan_sha256": train_plan.sha256,
+        "train_unigram_plan_source_fingerprint": train_plan.source_fingerprint,
+        "train_unigram_windows": len(train_plan.windows),
+        "train_unigram_counts": counts_payload,
+        "train_unigram_counts_sha256": counts_sha,
+        "train_unigram_entropy": {"tok_evt_type": entropy},
+    }
+    normalization_sha = sha256(
+        json.dumps(
+            normalization_contract,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    prediction_count = sum(
+        max(window.length - 1, 0) for window in validation_plan.windows
+    )
     payload: dict[str, object] = {
         "split": "val",
-        "validation_plan_source_fingerprint": "frozen-validation-plan",
-        "validation_windows": 8,
+        "validation_plan": str(validation_plan_path.resolve()),
+        "validation_plan_source_fingerprint": validation_plan.source_fingerprint,
+        "validation_plan_sha256": validation_plan.sha256,
+        "validation_windows": len(validation_plan.windows),
+        "evaluated_windows": len(validation_plan.windows),
+        "n_predictions": {"tok_evt_type": prediction_count},
+        "train_unigram_plan": str(train_unigram_plan_path.resolve()),
+        "train_unigram_plan_source_fingerprint": train_plan.source_fingerprint,
+        "train_unigram_plan_sha256": train_plan.sha256,
+        "train_unigram_windows": len(train_plan.windows),
+        "train_unigram_evaluated_windows": len(train_plan.windows),
+        "train_unigram_prediction_counts": {"tok_evt_type": 2},
+        "normalization_target_fields": ["tok_evt_type"],
+        "checkpoint_target_fields": ["tok_evt_type"],
+        "train_unigram_counts": counts_payload,
+        "train_unigram_counts_sha256": counts_sha,
+        "normalization_contract_sha256": normalization_sha,
+        "unigram_source": "train",
+        "train_unigram_entropy": {"tok_evt_type": entropy},
+        "ce_over_unigram_entropy": {"tok_evt_type": loss},
+        "checkpoint": str(checkpoint.resolve()),
+        "checkpoint_sha256": sha256_file(checkpoint),
         "total_normalized_ce": loss,
-        "per_field_ce": {"tok_evt_type": loss / 2},
+        "total_ce": loss * entropy,
+        "per_field_ce": {"tok_evt_type": loss * entropy},
     }
-    if checkpoint is not None:
-        payload["checkpoint"] = str(checkpoint.resolve())
     if config is not None:
         payload["config"] = str(config.resolve())
     path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
@@ -129,19 +187,35 @@ def _write_embeddings(
     write_embedding_contract(path, contract)
 
 
-def _lineage_fixture(tmp_path: Path) -> LineageFixture:
+def _lineage_fixture(
+    tmp_path: Path,
+    *,
+    acceptance_tolerance: float = 0.01,
+) -> LineageFixture:
     tmp_path.mkdir(parents=True, exist_ok=True)
     vocab = default_vocab_v2()
     vocab.fit_dates = ("2025-01-02", "2025-01-03")
     vocab_path = tmp_path / "vocab.json"
     vocab.save(vocab_path)
 
+    tokens_root = tmp_path / "tokens" / "SZ" / "000001"
     manifest = Manifest(
         shards=[
-            ShardEntry("SZ", "000001", "2025-01-02", "a", 1, "a", "train"),
-            ShardEntry("SZ", "000001", "2025-01-03", "b", 1, "b", "train"),
-            ShardEntry("SZ", "000001", "2025-01-06", "c", 1, "c", "val"),
-            ShardEntry("SZ", "000001", "2025-01-07", "d", 1, "d", "test"),
+            ShardEntry(
+                "SZ",
+                "000001",
+                date,
+                str(tokens_root / f"{date}.parquet"),
+                2,
+                content_hash,
+                split,
+            )
+            for date, content_hash, split in (
+                ("2025-01-02", "a", "train"),
+                ("2025-01-03", "b", "train"),
+                ("2025-01-06", "c", "val"),
+                ("2025-01-07", "d", "test"),
+            )
         ],
         train_end="2025-01-03",
         val_end="2025-01-06",
@@ -177,6 +251,7 @@ def _lineage_fixture(tmp_path: Path) -> LineageFixture:
         vocab=vocab,
     )
     model_contract = {
+        "target_fields": ["tok_evt_type"],
         "vocab_version": "2.0",
         "vocab_sha256": stable_vocab_sha256(vocab),
         "schema_version": vocab.schema_version,
@@ -205,18 +280,52 @@ def _lineage_fixture(tmp_path: Path) -> LineageFixture:
         pretrain_data_contract=data_contract,
     )
 
+    validation_plan_path = tmp_path / "validation-plan.json"
+    build_validation_sample_plan(
+        manifest.split("val"),
+        context=2,
+        stride=2,
+        min_len=2,
+        seed=42,
+        max_windows=1,
+    ).save(validation_plan_path)
+    train_unigram_plan_path = tmp_path / "train-unigram-plan.json"
+    build_validation_sample_plan(
+        manifest.split("train"),
+        context=2,
+        stride=2,
+        min_len=2,
+        seed=42,
+        max_windows=2,
+    ).save(train_unigram_plan_path)
+
     candidate = tmp_path / "candidate.json"
     baseline = tmp_path / "baseline.json"
     _write_evaluation(
         candidate,
         loss=1.0,
         checkpoint=checkpoint,
+        validation_plan_path=validation_plan_path,
+        train_unigram_plan_path=train_unigram_plan_path,
         config=config_path,
     )
-    _write_evaluation(baseline, loss=1.0)
+    _write_evaluation(
+        baseline,
+        loss=1.0,
+        checkpoint=checkpoint,
+        validation_plan_path=validation_plan_path,
+        train_unigram_plan_path=train_unigram_plan_path,
+    )
     acceptance = tmp_path / "acceptance.json"
     acceptance.write_text(
-        json.dumps(compare_pretrain_evaluations(candidate, baseline), sort_keys=True),
+        json.dumps(
+            compare_pretrain_evaluations(
+                candidate,
+                baseline,
+                noninferiority_tolerance=acceptance_tolerance,
+            ),
+            sort_keys=True,
+        ),
         encoding="utf-8",
     )
 
@@ -250,12 +359,18 @@ def _lineage_fixture(tmp_path: Path) -> LineageFixture:
     )
 
 
-def _validate(fixture: LineageFixture, *, expected: str | None = None):
+def _validate(
+    fixture: LineageFixture,
+    *,
+    expected: str | None = None,
+    expected_tolerance: float = 0.01,
+):
     return validate_pretrain_lineage(
         acceptance_path=fixture.acceptance,
         train_embeddings=fixture.train_embeddings,
         oos_embeddings=fixture.oos_embeddings,
         expected_training_end=expected,
+        expected_noninferiority_tolerance=expected_tolerance,
     )
 
 
@@ -287,12 +402,28 @@ def test_lineage_derives_training_end_and_accepts_matching_declaration(
     assert derived["oos_embeddings"]["date_end"] == "2025-01-09"
 
 
+def test_lineage_uses_an_independent_expected_acceptance_tolerance(
+    tmp_path: Path,
+) -> None:
+    fixture = _lineage_fixture(tmp_path, acceptance_tolerance=0.02)
+
+    report = _validate(fixture, expected_tolerance=0.02)
+    assert report["acceptance"]["expected_noninferiority_tolerance"] == 0.02
+    with pytest.raises(ValueError, match="independently configured expected"):
+        _validate(fixture)
+
+    default_fixture = _lineage_fixture(tmp_path / "default")
+    with pytest.raises(ValueError, match="independently configured expected"):
+        _validate(default_fixture, expected_tolerance=0.02)
+
+
 def test_lineage_report_hashes_live_embedding_bytes(tmp_path: Path) -> None:
     fixture = _lineage_fixture(tmp_path)
     before = _validate(fixture)
     pl.read_parquet(fixture.train_embeddings).with_columns(
         (pl.col("emb_0") + 1.0).alias("emb_0")
     ).write_parquet(fixture.train_embeddings)
+    write_embedding_contract(fixture.train_embeddings, fixture.embedding_contract)
 
     after = _validate(fixture)
 
@@ -347,16 +478,13 @@ def test_lineage_rejects_noncanonical_or_inconsistent_manifest_boundaries(
 ) -> None:
     fixture = _lineage_fixture(tmp_path)
     fixture.manifest.train_end = "2025-1-3"
-    fixture.manifest.save(fixture.manifest_path)
-
     with pytest.raises(ValueError, match="canonical YYYY-MM-DD"):
-        _validate(fixture)
+        fixture.manifest.save(fixture.manifest_path)
 
     fixture = _lineage_fixture(tmp_path / "wrong-split")
     fixture.manifest.shards[2].split = "train"
-    fixture.manifest.save(fixture.manifest_path)
-    with pytest.raises(ValueError, match="split disagrees"):
-        _validate(fixture)
+    with pytest.raises(ValueError, match="disagrees with declared boundaries"):
+        fixture.manifest.save(fixture.manifest_path)
 
 
 def test_lineage_rejects_checkpoint_bytes_or_payload_contract_tamper(
@@ -384,7 +512,7 @@ def test_lineage_rejects_checkpoint_bytes_or_payload_contract_tamper(
         },
         pretrain_data_contract=payload["pretrain_data_contract"],
     )
-    with pytest.raises(ValueError, match="strict V2 Top-K representation"):
+    with pytest.raises(ValueError, match="candidate_checkpoint SHA-256"):
         _validate(fixture)
 
 
@@ -416,7 +544,7 @@ def test_lineage_rejects_non_strict_checkpoint_representation(
         pretrain_data_contract=payload["pretrain_data_contract"],
     )
 
-    with pytest.raises(ValueError, match="strict V2 Top-K representation"):
+    with pytest.raises(ValueError, match="candidate_checkpoint SHA-256"):
         _validate(fixture)
 
 
@@ -433,7 +561,7 @@ def test_lineage_rejects_checkpoint_without_v2_artifact_marker(
         pretrain_data_contract=payload["pretrain_data_contract"],
     )
 
-    with pytest.raises(ValueError, match=r"fm_artifact_version='2\.0'"):
+    with pytest.raises(ValueError, match="candidate_checkpoint SHA-256"):
         _validate(fixture)
 
 
@@ -457,6 +585,7 @@ def test_lineage_rejects_embedding_identity_schema_or_missing_sidecar(
     pl.read_parquet(fixture.train_embeddings).drop("emb_3").write_parquet(
         fixture.train_embeddings
     )
+    write_embedding_contract(fixture.train_embeddings, fixture.embedding_contract)
     with pytest.raises(ValueError, match="embedding columns"):
         _validate(fixture)
 
@@ -509,6 +638,7 @@ def test_lineage_rejects_duplicate_or_blank_embedding_keys(tmp_path: Path) -> No
     fixture = _lineage_fixture(tmp_path)
     frame = pl.read_parquet(fixture.train_embeddings)
     pl.concat([frame, frame.head(1)]).write_parquet(fixture.train_embeddings)
+    write_embedding_contract(fixture.train_embeddings, fixture.embedding_contract)
     with pytest.raises(ValueError, match=r"duplicate \(date, symbol\) keys"):
         _validate(fixture)
 
@@ -516,5 +646,6 @@ def test_lineage_rejects_duplicate_or_blank_embedding_keys(tmp_path: Path) -> No
     pl.read_parquet(fixture.oos_embeddings).with_columns(
         pl.lit(" ").alias("symbol")
     ).write_parquet(fixture.oos_embeddings)
+    write_embedding_contract(fixture.oos_embeddings, fixture.embedding_contract)
     with pytest.raises(ValueError, match="blank date/symbol keys"):
         _validate(fixture)

@@ -10,6 +10,7 @@ from pylob.pipeline.workflow import _clean_one_symbol
 
 from quant_fm.manifest.build_manifest import Manifest, ShardEntry
 from quant_fm.scripts.download_from_minio import _rebase_downloaded_manifest
+from quant_fm.scripts.run_medium import run as run_medium
 from quant_fm.scripts.run_pilot import run
 from quant_fm.tokenizer.artifact_contract import read_token_contract
 from quant_fm.tokenizer.field_spec import BOOK_FIELD_SPECS_V2
@@ -38,15 +39,26 @@ def test_download_rebases_manifest_to_local_v2_root(tmp_path: Path) -> None:
     _rebase_downloaded_manifest(tmp_path, "vocab_v2.json")
 
     rebased = Manifest.load(manifest_path)
-    assert rebased.vocab_path == str(
-        (tmp_path / "data" / "vocab_v2.json").resolve()
-    )
+    assert rebased.vocab_path == str((tmp_path / "data" / "vocab_v2.json").resolve())
     assert rebased.shards[0].path == str(
         (tmp_path / "tokens" / "SZ" / "000001" / "2025-01-02.parquet").resolve()
     )
 
 
-def test_clean_replay_persists_real_aligned_book_features(tmp_path: Path) -> None:
+def test_clean_replay_persists_real_aligned_book_features(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import pylob.book_state as book_state_module
+
+    original_snapshot = book_state_module.snapshot_book_state
+    snapshot_calls = 0
+
+    def counted_snapshot(*args, **kwargs):
+        nonlocal snapshot_calls
+        snapshot_calls += 1
+        return original_snapshot(*args, **kwargs)
+
+    monkeypatch.setattr(book_state_module, "snapshot_book_state", counted_snapshot)
     orders = standardize_order_frame(
         pl.DataFrame(
             {
@@ -78,13 +90,12 @@ def test_clean_replay_persists_real_aligned_book_features(tmp_path: Path) -> Non
     )
 
     assert status == "written"
-    features = pl.read_parquet(
-        tmp_path / "SZ" / "000001" / "book_features.parquet"
-    )
+    features = pl.read_parquet(tmp_path / "SZ" / "000001" / "book_features.parquet")
     assert features.height == 2
     assert features["book_valid_post"].to_list() == [False, True]
     assert features["spread_ticks_post"].to_list() == [None, 2]
     assert features["imbalance_l1_post"][1] == pytest.approx(-0.5)
+    assert snapshot_calls == orders.height + 1
 
 
 def _clean_events(date_index: int) -> pl.DataFrame:
@@ -134,6 +145,41 @@ def _write_clean_day(root: Path, date: str, date_index: int) -> None:
     _book_features().write_parquet(symbol_dir / "book_features.parquet")
 
 
+def test_medium_events_only_defers_global_vocab_and_tokens(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    dates = ["2025-01-02", "2025-01-03", "2025-01-06"]
+    for index, date in enumerate(dates):
+        _write_clean_day(tmp_path, date, index)
+    monkeypatch.setenv("CANON_WORKERS", "1")
+
+    run_medium(
+        dates=dates,
+        symbols_sz=("000001",),
+        symbols_sh=(),
+        workdir=tmp_path,
+        train_end=dates[0],
+        val_end=dates[1],
+        n_bins=8,
+        skip_clean=True,
+        drop_clean=True,
+        drop_events=False,
+        fit_sample_days=None,
+        resume=False,
+        estimate_only=False,
+        events_only=True,
+    )
+
+    assert len(list((tmp_path / "events").rglob("*.parquet"))) == len(dates)
+    assert not (tmp_path / "data" / "vocab_v2.json").exists()
+    assert not (tmp_path / "tokens").exists()
+    assert not (tmp_path / "data" / "manifest.json").exists()
+    for date in dates:
+        marker = tmp_path / "data" / ".done" / date
+        assert marker.read_text(encoding="utf-8") == "canonicalized:cn_l2_v2\n"
+
+
 def test_pilot_builds_audited_v2_artifacts_from_captured_book_state(
     tmp_path: Path,
     monkeypatch,
@@ -173,7 +219,4 @@ def test_pilot_builds_audited_v2_artifacts_from_captured_book_state(
     assert physical.schema["val_spread_ticks_post"] == pl.Int16
     assert physical.schema["tok_spread_ticks_post_bin"] == pl.UInt8
     assert contract["schema_version"] == "cn_l2_v2"
-    assert (
-        contract["storage_encoding"]["format_version"]
-        == "token_uint_scalar_q16_v1"
-    )
+    assert contract["storage_encoding"]["format_version"] == "token_uint_scalar_q16_v1"

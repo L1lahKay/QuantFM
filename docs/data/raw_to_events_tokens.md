@@ -439,9 +439,10 @@ python -m quant_fm.scripts.run_medium \
   --workdir quant_fm/runs/v2_try \
   --data-version v2 \
   --drop-clean --drop-events \
-  --upload-minio --upload-tag v2_try \
-  --delete-local-after-upload
+  --upload-minio --upload-tag v2_try
 ```
+
+上传默认保留本地生成；自动递归删除已禁用。释放空间前须停写、独立验收远端，并在离线维护步骤中明确清理目标。
 
 ### 7.2 写入路径
 

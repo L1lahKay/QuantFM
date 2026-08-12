@@ -44,6 +44,7 @@ SKIP_UPLOAD="${SKIP_UPLOAD:-0}"
 FORCE_DOWNLOAD="${FORCE_DOWNLOAD:-0}"
 DELETE_LOCAL_AFTER_TRAIN="${DELETE_LOCAL_AFTER_TRAIN:-0}"
 LOG="${LOG:-$ROOT/quant_fm/runs/minio_full_pipeline.log}"
+PARALLEL_V2=0
 
 case "$MODE" in
   try)
@@ -64,7 +65,9 @@ case "$MODE" in
     WORKDIR="$ROOT/quant_fm/runs/v2_shared"
     TAG="v2_shared"
     CONFIG="${CONFIG:-quant_fm/pretrain/config_v2_230m.yaml}"
-    EXTRA=(--resume --v2-full-audit)
+    DATES="$ROOT/quant_fm/data/medium_60_dates.txt"
+    PARALLEL_V2=1
+    EXTRA=()
     ;;
   *)
     echo "MODE must be try|smoke|full" >&2
@@ -97,18 +100,33 @@ elif [[ "$SKIP_DATA" == "1" ]]; then
   echo "==> SKIP_DATA=1 and local ready → $WORKDIR"
 else
   echo "==> run_medium: MinIO raw → tokens"
-  UPLOAD_FLAGS=()
-  if [[ "$SKIP_UPLOAD" != "1" ]]; then
-    # 上传到 MinIO，但保留本地 tokens 供训练（勿加 --delete-local-after-upload）
-    UPLOAD_FLAGS=(--upload-minio --upload-tag "$TAG")
+  if [[ "$PARALLEL_V2" == "1" ]]; then
+    python -m quant_fm.scripts.run_v2_parallel_data \
+      --workdir "$WORKDIR" \
+      --dates-file "$DATES" \
+      --groups "${NGROUPS:-2}" \
+      --clean-workers "${CLEAN_WORKERS:-30}" \
+      --canon-workers "${CANON_WORKERS:-8}" \
+      --tokenize-workers "${TOKENIZE_WORKERS:-16}"
+    if [[ "$SKIP_UPLOAD" != "1" ]]; then
+      python -m quant_fm.scripts.upload_to_minio --workdir "$WORKDIR" --tag "$TAG"
+    fi
+  else
+    UPLOAD_FLAGS=()
+    if [[ "$SKIP_UPLOAD" != "1" ]]; then
+      # 上传到 MinIO，但保留本地 tokens 供训练（勿加 --delete-local-after-upload）
+      UPLOAD_FLAGS=(--upload-minio --upload-tag "$TAG")
+    fi
+    python -m quant_fm.scripts.run_medium \
+      --workdir "$WORKDIR" \
+      --data-version v2 \
+      --fast-clean \
+      --drop-clean \
+      --drop-events \
+      --v2-full-audit \
+      "${UPLOAD_FLAGS[@]}" \
+      "${EXTRA[@]}"
   fi
-  python -m quant_fm.scripts.run_medium \
-    --workdir "$WORKDIR" \
-    --data-version v2 \
-    --drop-clean \
-    --drop-events \
-    "${UPLOAD_FLAGS[@]}" \
-    "${EXTRA[@]}"
 
   if [[ "$SKIP_UPLOAD" != "1" ]]; then
     echo "==> verify / ensure upload to model-cache"
@@ -126,6 +144,7 @@ echo "==> data ready: $WORKDIR/data/manifest.json"
 python -m quant_fm.scripts.audit_v2_artifacts \
   --root "$WORKDIR" \
   --sample-shards 12 \
+  --full-path-check \
   --out "$WORKDIR/artifact_audit.json"
 
 # ── 2) 训练（读本地 tokens；MinIO 已有副本）──

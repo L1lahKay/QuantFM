@@ -13,6 +13,7 @@ import hashlib
 import json
 import logging
 from dataclasses import asdict, dataclass, field
+from datetime import date as calendar_date
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -30,6 +31,21 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 logger = logging.getLogger(__name__)
+
+_VALID_SPLITS = frozenset({"train", "val", "test"})
+
+
+def _canonical_date(value: str, *, field_name: str) -> str:
+    """Return a canonical ISO date or reject ambiguous lexical comparisons."""
+    try:
+        parsed = calendar_date.fromisoformat(value)
+    except (TypeError, ValueError) as exc:
+        msg = f"{field_name} must be a canonical YYYY-MM-DD date, got {value!r}"
+        raise ValueError(msg) from exc
+    if parsed.isoformat() != value:
+        msg = f"{field_name} must be a canonical YYYY-MM-DD date, got {value!r}"
+        raise ValueError(msg)
+    return value
 
 
 @dataclass(slots=True)
@@ -69,8 +85,49 @@ class Manifest:
         """返回某切分的排序后唯一日期列表。"""
         return sorted({s.date for s in self.split(name)})
 
+    def validate_split_contract(self, *, context: str = "manifest") -> None:
+        """Validate split labels and bind them to declared date boundaries."""
+        if (self.train_end is None) != (self.val_end is None):
+            msg = f"{context} must declare train_end and val_end together"
+            raise ValueError(msg)
+
+        train_end = val_end = None
+        if self.train_end is not None and self.val_end is not None:
+            train_end = _canonical_date(self.train_end, field_name="train_end")
+            val_end = _canonical_date(self.val_end, field_name="val_end")
+            if train_end > val_end:
+                msg = (
+                    f"{context} requires train_end <= val_end, got "
+                    f"{train_end} > {val_end}"
+                )
+                raise ValueError(msg)
+
+        seen_paths: set[str] = set()
+        for index, shard in enumerate(self.shards):
+            prefix = f"{context} shard[{index}]"
+            _canonical_date(shard.date, field_name=f"{prefix}.date")
+            if shard.split not in _VALID_SPLITS:
+                msg = (
+                    f"{prefix}.split must be one of {sorted(_VALID_SPLITS)}, "
+                    f"got {shard.split!r}"
+                )
+                raise ValueError(msg)
+            if shard.path in seen_paths:
+                msg = f"{context} contains duplicate shard path: {shard.path}"
+                raise ValueError(msg)
+            seen_paths.add(shard.path)
+            if train_end is not None and val_end is not None:
+                expected = _assign_split(shard.date, train_end, val_end)
+                if shard.split != expected:
+                    msg = (
+                        f"{prefix}.split={shard.split!r} disagrees with declared "
+                        f"boundaries; expected {expected!r} for {shard.date}"
+                    )
+                    raise ValueError(msg)
+
     def save(self, path: Path) -> None:
         """将清单序列化为 JSON。"""
+        self.validate_split_contract(context="manifest save")
         payload = {
             "schema_version": self.schema_version,
             "train_end": self.train_end,
@@ -83,14 +140,21 @@ class Manifest:
             "feature_transform_version": self.feature_transform_version,
             "shards": [asdict(s) for s in self.shards],
         }
-        Path(path).write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        destination = Path(path)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        temporary = destination.with_name(f".{destination.name}.tmp")
+        temporary.write_text(
+            json.dumps(payload, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        temporary.replace(destination)
 
     @classmethod
     def load(cls, path: Path) -> Manifest:
         """从 JSON 加载清单。"""
         data = json.loads(Path(path).read_text(encoding="utf-8"))
         shards = [ShardEntry(**s) for s in data["shards"]]
-        return cls(
+        manifest = cls(
             shards=shards,
             train_end=data.get("train_end"),
             val_end=data.get("val_end"),
@@ -102,6 +166,8 @@ class Manifest:
             event_ordering_version=data.get("event_ordering_version"),
             feature_transform_version=data.get("feature_transform_version"),
         )
+        manifest.validate_split_contract(context=f"manifest {path}")
+        return manifest
 
 
 def _sha256(path: Path, *, chunk: int = 1 << 20) -> str:
@@ -190,6 +256,11 @@ def build_manifest(
     -------
     Manifest
     """
+    train_end = _canonical_date(train_end, field_name="train_end")
+    val_end = _canonical_date(val_end, field_name="val_end")
+    if train_end > val_end:
+        msg = f"train_end must be <= val_end, got {train_end} > {val_end}"
+        raise ValueError(msg)
     entries = scan_token_dir(tokens_dir, markets=markets)
     vocab = None
     if vocab_path is not None:
@@ -226,6 +297,7 @@ def build_manifest(
             vocab.feature_transform_version if vocab is not None else None
         ),
     )
+    manifest.validate_split_contract(context="built manifest")
     for name in ("train", "val", "test"):
         logger.info("split %s: %d shards", name, len(manifest.split(name)))
     return manifest

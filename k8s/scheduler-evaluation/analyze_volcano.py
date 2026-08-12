@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Validate Volcano GPU evidence, derive wall-clock metrics, and render images.
+"""
+Validate Volcano GPU evidence, derive wall-clock metrics, and render images.
 
 The script deliberately works from captured Kubernetes objects, UID-filtered
 Events, and monotonic client timestamps.  It never reads a kubeconfig or talks
@@ -11,12 +12,10 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from analyze_and_render import parse_time, render_terminal, seconds
-
 
 ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "docs/assets/gpu-scheduler-evaluation"
@@ -24,8 +23,7 @@ RAW = ASSETS / "raw/volcano"
 SCREENSHOTS = ASSETS / "screenshots"
 RESULTS = ASSETS / "volcano-results.json"
 UPSTREAM = (
-    ROOT
-    / "k8s/scheduler-evaluation/volcano/upstream/volcano-development-v1.15.1.yaml"
+    ROOT / "k8s/scheduler-evaluation/volcano/upstream/volcano-development-v1.15.1.yaml"
 )
 UPSTREAM_SUMS = ROOT / "k8s/scheduler-evaluation/volcano/upstream/SHA256SUMS"
 
@@ -45,12 +43,16 @@ def items(name: str) -> list[dict[str, Any]]:
 def named(objects: list[dict[str, Any]], name: str) -> dict[str, Any]:
     matches = [obj for obj in objects if obj["metadata"]["name"] == name]
     if len(matches) != 1:
-        raise ValueError(f"expected exactly one object named {name}, got {len(matches)}")
+        raise ValueError(
+            f"expected exactly one object named {name}, got {len(matches)}"
+        )
     return matches[0]
 
 
 def condition(obj: dict[str, Any], type_name: str) -> dict[str, Any]:
-    matches = [c for c in obj.get("status", {}).get("conditions", []) if c["type"] == type_name]
+    matches = [
+        c for c in obj.get("status", {}).get("conditions", []) if c["type"] == type_name
+    ]
     if len(matches) != 1:
         raise ValueError(
             f"expected exactly one {type_name} condition on "
@@ -69,7 +71,9 @@ def container_state(pod: dict[str, Any]) -> dict[str, Any]:
 def gpu_request(pod: dict[str, Any]) -> int:
     total = 0
     for container in pod["spec"]["containers"]:
-        total += int(container.get("resources", {}).get("requests", {}).get("nvidia.com/gpu", 0))
+        total += int(
+            container.get("resources", {}).get("requests", {}).get("nvidia.com/gpu", 0)
+        )
     return total
 
 
@@ -92,9 +96,7 @@ def timeline(name: str) -> dict[str, dict[str, Any]]:
     return parsed
 
 
-def monotonic_seconds(
-    stamps: dict[str, dict[str, Any]], start: str, end: str
-) -> float:
+def monotonic_seconds(stamps: dict[str, dict[str, Any]], start: str, end: str) -> float:
     return round(
         (stamps[end]["monotonic_ns"] - stamps[start]["monotonic_ns"]) / 1_000_000_000,
         3,
@@ -186,7 +188,9 @@ def config_payload(text: str) -> str:
 def installation() -> dict[str, Any]:
     install_text = read("install-apply.txt")
     begin_match = re.search(r"^INSTALL_BEGIN_(\S+)$", install_text, re.MULTILINE)
-    return_match = re.search(r"^INSTALL_APPLY_RETURN_(\S+)$", install_text, re.MULTILINE)
+    return_match = re.search(
+        r"^INSTALL_APPLY_RETURN_(\S+)$", install_text, re.MULTILINE
+    )
     if not begin_match or not return_match:
         raise ValueError("installation apply timestamps missing")
     install_begin = begin_match.group(1)
@@ -197,7 +201,11 @@ def installation() -> dict[str, Any]:
     if actual_digest != expected_digest:
         raise ValueError("pinned Volcano manifest digest mismatch")
 
-    dry_run_objects = [line for line in read("install-server-dry-run-complete.txt").splitlines() if line]
+    dry_run_objects = [
+        line
+        for line in read("install-server-dry-run-complete.txt").splitlines()
+        if line
+    ]
     if len(dry_run_objects) != 43:
         raise ValueError(f"expected 43 dry-run objects, got {len(dry_run_objects)}")
 
@@ -224,7 +232,9 @@ def installation() -> dict[str, Any]:
         )
     for config in volcano_webhook_configs:
         webhooks = config.get("webhooks", [])
-        if not webhooks or not all(webhook["clientConfig"].get("caBundle") for webhook in webhooks):
+        if not webhooks or not all(
+            webhook["clientConfig"].get("caBundle") for webhook in webhooks
+        ):
             raise ValueError(f"webhook CA bundle missing: {config['metadata']['name']}")
 
     endpoint_slices = items("installation-endpointslices.json")
@@ -246,9 +256,15 @@ def installation() -> dict[str, Any]:
         if not name.startswith("volcano-"):
             continue
         available = condition(deploy, "Available")
-        if available["status"] != "True" or deploy.get("status", {}).get("readyReplicas") != 1:
+        if (
+            available["status"] != "True"
+            or deploy.get("status", {}).get("readyReplicas") != 1
+        ):
             raise ValueError(f"Volcano deployment not healthy: {name}")
-        images = [container["image"] for container in deploy["spec"]["template"]["spec"]["containers"]]
+        images = [
+            container["image"]
+            for container in deploy["spec"]["template"]["spec"]["containers"]
+        ]
         if len(images) != 1 or not images[0].endswith(":v1.15.1"):
             raise ValueError(f"unexpected image for {name}: {images}")
         available_at = available["lastTransitionTime"]
@@ -284,7 +300,9 @@ def installation() -> dict[str, Any]:
         "kubectl_apply_return_at": apply_return,
         "kubectl_apply_rtt_seconds": seconds(install_begin, apply_return),
         "last_deployment_available_at": last_available,
-        "install_begin_to_last_deployment_available_seconds": seconds(install_begin, last_available),
+        "install_begin_to_last_deployment_available_seconds": seconds(
+            install_begin, last_available
+        ),
         "time_precision_note": "Deployment condition timestamps have one-second precision",
         "volcano_crds_established": len(volcano_crds),
         "volcano_webhook_configurations_with_ca_bundle": len(volcano_webhook_configs),
@@ -386,7 +404,8 @@ def gpu_smoke() -> dict[str, Any]:
                 stamps, "CUDA_SMOKE_JOB_CREATE_BEGIN", "CUDA_SMOKE_JOB_CREATE_RETURN"
             ),
             "api_job_create_to_pod_scheduled": seconds(
-                job["metadata"]["creationTimestamp"], scheduled_condition["lastTransitionTime"]
+                job["metadata"]["creationTimestamp"],
+                scheduled_condition["lastTransitionTime"],
             ),
             "api_job_create_to_container_start": seconds(
                 job["metadata"]["creationTimestamp"], state["startedAt"]
@@ -400,16 +419,21 @@ def gpu_smoke() -> dict[str, Any]:
                 stamps, "CUDA_SMOKE_JOB_CREATE_BEGIN", "CUDA_SMOKE_COMPLETE_OBSERVED"
             ),
         },
-        "quota_gpu_hard": int(before_quota["status"]["hard"]["requests.nvidia.com/gpu"]),
-        "quota_gpu_used_before": int(before_quota["status"]["used"]["requests.nvidia.com/gpu"]),
-        "quota_gpu_used_after_cleanup": int(after_quota["status"]["used"]["requests.nvidia.com/gpu"]),
+        "quota_gpu_hard": int(
+            before_quota["status"]["hard"]["requests.nvidia.com/gpu"]
+        ),
+        "quota_gpu_used_before": int(
+            before_quota["status"]["used"]["requests.nvidia.com/gpu"]
+        ),
+        "quota_gpu_used_after_cleanup": int(
+            after_quota["status"]["used"]["requests.nvidia.com/gpu"]
+        ),
         "event_filter": "Job, Pod, and PodGroup metadata.uid",
     }
 
 
 def queue_capability(node_gpu: int) -> dict[str, Any]:
     stamps = timeline("evaluation-timeline.txt")
-    during_jobs = items("queue-during-jobs.json")
     during_pods = items("queue-during-pods.json")
     during_pgs = items("queue-during-podgroups.json")
     during_queues = items("queue-during-queues.json")
@@ -551,8 +575,12 @@ def gang() -> dict[str, Any]:
         for pod in items("gang-below-threshold-pods.json")
         if pod["metadata"]["name"].startswith("khalil-volcano-gang-")
     ]
-    below_pg = named(items("gang-below-threshold-podgroups.json"), "khalil-volcano-gang-pg")
-    below_queue = named(items("gang-below-threshold-queues.json"), "khalil-volcano-gang")
+    below_pg = named(
+        items("gang-below-threshold-podgroups.json"), "khalil-volcano-gang-pg"
+    )
+    below_queue = named(
+        items("gang-below-threshold-queues.json"), "khalil-volcano-gang"
+    )
     final_job = named(items("gang-final-jobs.json"), "khalil-volcano-gang")
     final_pods = sorted(
         [
@@ -617,7 +645,9 @@ def gang() -> dict[str, Any]:
     ):
         raise ValueError("Gang success chain is incomplete")
 
-    scheduled_times = [condition(pod, "PodScheduled")["lastTransitionTime"] for pod in final_pods]
+    scheduled_times = [
+        condition(pod, "PodScheduled")["lastTransitionTime"] for pod in final_pods
+    ]
     started_times = [state["startedAt"] for state in states]
     return {
         "effective": True,
@@ -631,7 +661,9 @@ def gang() -> dict[str, Any]:
         ),
         "initial_snapshot": {
             "pod_count": len(below_pods),
-            "pending_pods": sum(pod["status"]["phase"] == "Pending" for pod in below_pods),
+            "pending_pods": sum(
+                pod["status"]["phase"] == "Pending" for pod in below_pods
+            ),
             "bound_pods": sum(bool(pod["spec"].get("nodeName")) for pod in below_pods),
             "podgroup_phase": below_pg["status"]["phase"],
             "event_reason": quota_event["reason"],
@@ -665,13 +697,16 @@ def gang() -> dict[str, Any]:
                 stamps, "GANG_CREATE_BEGIN", "GANG_CREATE_RETURN"
             ),
             "api_job_create_to_both_scheduled": seconds(
-                final_job["metadata"]["creationTimestamp"], max(scheduled_times, key=parse_time)
+                final_job["metadata"]["creationTimestamp"],
+                max(scheduled_times, key=parse_time),
             ),
             "api_job_create_to_both_container_started": seconds(
-                final_job["metadata"]["creationTimestamp"], max(started_times, key=parse_time)
+                final_job["metadata"]["creationTimestamp"],
+                max(started_times, key=parse_time),
             ),
             "api_scheduled_spread": seconds(
-                min(scheduled_times, key=parse_time), max(scheduled_times, key=parse_time)
+                min(scheduled_times, key=parse_time),
+                max(scheduled_times, key=parse_time),
             ),
             "api_container_start_spread": seconds(
                 min(started_times, key=parse_time), max(started_times, key=parse_time)
@@ -679,7 +714,8 @@ def gang() -> dict[str, Any]:
             "application_start_spread": start_spread,
             "application_finish_spread": finish_spread,
             "api_job_wall_clock": seconds(
-                final_job["metadata"]["creationTimestamp"], final_job["status"]["completionTime"]
+                final_job["metadata"]["creationTimestamp"],
+                final_job["status"]["completionTime"],
             ),
             "client_create_to_complete_observed": monotonic_seconds(
                 stamps, "GANG_CREATE_BEGIN", "GANG_COMPLETE_OBSERVED"
@@ -704,11 +740,15 @@ def preemption(node_gpu: int, quota_hard: int) -> dict[str, Any]:
     victim_job_before = named(before_jobs, "khalil-volcano-preempt-victim")
     victim_job_after = named(after_jobs, "khalil-volcano-preempt-victim")
     victim_pod = next(
-        pod for pod in before_pods if pod["metadata"]["name"].startswith("khalil-volcano-preempt-victim-")
+        pod
+        for pod in before_pods
+        if pod["metadata"]["name"].startswith("khalil-volcano-preempt-victim-")
     )
     high_job = named(after_jobs, "khalil-volcano-preempt-high")
     high_pod = next(
-        pod for pod in after_pods if pod["metadata"]["name"].startswith("khalil-volcano-preempt-high-")
+        pod
+        for pod in after_pods
+        if pod["metadata"]["name"].startswith("khalil-volcano-preempt-high-")
     )
     victim_pg = named(before_pgs, "khalil-volcano-preempt-victim-pg")
     high_pg = named(after_pgs, "khalil-volcano-preempt-high-pg")
@@ -777,7 +817,9 @@ def preemption(node_gpu: int, quota_hard: int) -> dict[str, Any]:
         "temporary_test_scheduler_actions": test_actions,
         "restored_scheduler_actions": restored_actions,
         "queue": before_queue["metadata"]["name"],
-        "queue_gpu_capability": int(before_queue["spec"]["capability"]["nvidia.com/gpu"]),
+        "queue_gpu_capability": int(
+            before_queue["spec"]["capability"]["nvidia.com/gpu"]
+        ),
         "queue_gpu_allocated_before": int(
             before_queue["status"]["allocated"]["nvidia.com/gpu"]
         ),
@@ -827,10 +869,15 @@ def preemption(node_gpu: int, quota_hard: int) -> dict[str, Any]:
             "client_high_create_to_ready_observed": monotonic_seconds(
                 stamps, "PREEMPT_HIGH_CREATE_BEGIN", "PREEMPT_HIGH_READY_OBSERVED"
             ),
-            "victim_api_runtime_before_evict": seconds(victim_started, event_time(evict)),
-            "preemptor_container_runtime": seconds(high_state["startedAt"], high_state["finishedAt"]),
+            "victim_api_runtime_before_evict": seconds(
+                victim_started, event_time(evict)
+            ),
+            "preemptor_container_runtime": seconds(
+                high_state["startedAt"], high_state["finishedAt"]
+            ),
             "api_high_job_wall_clock": seconds(
-                high_job["metadata"]["creationTimestamp"], high_job["status"]["completionTime"]
+                high_job["metadata"]["creationTimestamp"],
+                high_job["status"]["completionTime"],
             ),
             "client_high_create_to_complete_observed": monotonic_seconds(
                 stamps, "PREEMPT_HIGH_CREATE_BEGIN", "PREEMPT_HIGH_COMPLETE_OBSERVED"
@@ -856,17 +903,33 @@ def cleanup(default_actions: list[str]) -> dict[str, Any]:
     job_pg_absent = read("cleanup-jobs-podgroups-absent.txt")
     queue_absent = read("cleanup-queues-absent.txt")
     priority_absent = read("cleanup-priorityclasses-absent.txt")
-    jobs_absent = len(re.findall(r'jobs\.batch "khalil-volcano-[^"]+" not found', job_pg_absent))
+    jobs_absent = len(
+        re.findall(r'jobs\.batch "khalil-volcano-[^"]+" not found', job_pg_absent)
+    )
     podgroups_absent = len(
-        re.findall(r'podgroups\.scheduling\.volcano\.sh "khalil-volcano-[^"]+" not found', job_pg_absent)
+        re.findall(
+            r'podgroups\.scheduling\.volcano\.sh "khalil-volcano-[^"]+" not found',
+            job_pg_absent,
+        )
     )
     queues_absent = len(
-        re.findall(r'queues\.scheduling\.volcano\.sh "khalil-volcano-[^"]+" not found', queue_absent)
+        re.findall(
+            r'queues\.scheduling\.volcano\.sh "khalil-volcano-[^"]+" not found',
+            queue_absent,
+        )
     )
     priorities_absent = len(
-        re.findall(r'priorityclasses\.scheduling\.k8s\.io "khalil-volcano-[^"]+" not found', priority_absent)
+        re.findall(
+            r'priorityclasses\.scheduling\.k8s\.io "khalil-volcano-[^"]+" not found',
+            priority_absent,
+        )
     )
-    if (jobs_absent, podgroups_absent, queues_absent, priorities_absent) != (6, 6, 4, 2):
+    if (jobs_absent, podgroups_absent, queues_absent, priorities_absent) != (
+        6,
+        6,
+        4,
+        2,
+    ):
         raise ValueError(
             "unexpected cleanup absence counts: "
             f"{jobs_absent}, {podgroups_absent}, {queues_absent}, {priorities_absent}"
@@ -877,7 +940,9 @@ def cleanup(default_actions: list[str]) -> dict[str, Any]:
     for name in ("volcano-admission", "volcano-controllers", "volcano-scheduler"):
         if not re.search(rf"^{name}\s+1/1\s+1\s+1\s+", volcano_health, re.MULTILINE):
             raise ValueError(f"cleanup health missing for {name}")
-    if not re.search(r"^kueue-controller-manager\s+1/1\s+1\s+1\s+", kueue_health, re.MULTILINE):
+    if not re.search(
+        r"^kueue-controller-manager\s+1/1\s+1\s+1\s+", kueue_health, re.MULTILINE
+    ):
         raise ValueError("Kueue not healthy in cleanup snapshot")
     quota_after = quota("evaluation-resourcequota-after.json")
     gpu_used_after = int(quota_after["status"]["used"]["requests.nvidia.com/gpu"])
@@ -901,7 +966,9 @@ def cleanup(default_actions: list[str]) -> dict[str, Any]:
 def analyze() -> dict[str, Any]:
     transcript = read("evaluation-transcript.txt")
     if kv_line(transcript, "ADMIN_KUBECONFIG_PATH") != "/etc/rancher/k3s/k3s.yaml":
-        raise ValueError("evaluation did not use the explicitly authorized kubeconfig path")
+        raise ValueError(
+            "evaluation did not use the explicitly authorized kubeconfig path"
+        )
     if kv_line(transcript, "ADMIN_CONTEXT") != "default":
         raise ValueError("evaluation did not use the captured default admin context")
     if kv_line(transcript, "NAMESPACE") != "gpu-dev":

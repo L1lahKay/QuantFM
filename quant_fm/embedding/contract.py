@@ -17,6 +17,24 @@ CAUSAL_OVERLAPPING_ENCODER = "causal_overlap_unique_emit_v2"
 STOCK_DAY_GRANULARITY = "stock_day"
 STRICT_EVENT_ORDERING_VERSION = "exchange_time_sequence_v2"
 STRICT_FEATURE_TRANSFORM_VERSION = "ew_vwap_causal_nan_v2"
+EMBEDDING_FILE_SHA256_FIELD = "embedding_file_sha256"
+
+
+def _sha256_file(path: Path, *, chunk_size: int = 8 << 20) -> str:
+    """Hash the exact embedding bytes named by a representation sidecar."""
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(chunk_size), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _is_sha256(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(char in "0123456789abcdef" for char in value.lower())
+    )
 
 
 def encoder_semantics_for(context: int, chunk_stride: int) -> str:
@@ -265,13 +283,21 @@ def write_embedding_contract(
     embedding_path: Path,
     contract: EmbeddingContract,
 ) -> Path:
-    """原子写入 embedding sidecar。"""
+    """原子写入 sidecar，并绑定当前 parquet 的精确字节。"""
     contract.validate()
+    embedding_path = Path(embedding_path)
+    if not embedding_path.is_file():
+        msg = f"cannot bind an embedding contract to a missing file: {embedding_path}"
+        raise FileNotFoundError(msg)
     destination = embedding_contract_path(embedding_path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_name(f".{destination.name}.tmp")
+    payload = {
+        **contract.to_dict(),
+        EMBEDDING_FILE_SHA256_FIELD: _sha256_file(embedding_path),
+    }
     temporary.write_text(
-        json.dumps(contract.to_dict(), sort_keys=True, indent=2) + "\n",
+        json.dumps(payload, sort_keys=True, indent=2) + "\n",
         encoding="utf-8",
     )
     temporary.replace(destination)
@@ -283,8 +309,10 @@ def load_embedding_contract(
     *,
     required: bool = True,
     require_vocab: bool = False,
+    require_file_identity: bool | None = None,
 ) -> EmbeddingContract | None:
-    """读取 sidecar；严格路径默认拒绝旧 embedding。"""
+    """读取 sidecar，并在严格路径验证其绑定的 parquet 字节。"""
+    embedding_path = Path(embedding_path)
     path = embedding_contract_path(embedding_path)
     if not path.is_file():
         if required:
@@ -303,7 +331,36 @@ def load_embedding_contract(
     if not isinstance(payload, dict):
         msg = f"embedding representation contract must be a JSON object: {path}"
         raise TypeError(msg)
-    return EmbeddingContract.from_dict(payload, require_vocab=require_vocab)
+    contract = EmbeddingContract.from_dict(payload, require_vocab=require_vocab)
+    enforce_identity = (
+        required if require_file_identity is None else require_file_identity
+    )
+    expected_hash = payload.get(EMBEDDING_FILE_SHA256_FIELD)
+    if expected_hash is None:
+        if enforce_identity:
+            msg = (
+                f"embedding representation contract is not bound to parquet bytes: "
+                f"{path}; regenerate embeddings, or use an explicit legacy "
+                "compatibility override"
+            )
+            raise ValueError(msg)
+    else:
+        if not _is_sha256(expected_hash):
+            msg = f"embedding contract file identity must be a SHA-256: {path}"
+            raise ValueError(msg)
+        if not embedding_path.is_file():
+            msg = (
+                f"embedding parquet named by its contract is missing: {embedding_path}"
+            )
+            raise FileNotFoundError(msg)
+        actual_hash = _sha256_file(embedding_path)
+        if actual_hash != expected_hash:
+            msg = (
+                "embedding parquet SHA-256 disagrees with its representation "
+                f"contract: {embedding_path}"
+            )
+            raise ValueError(msg)
+    return contract
 
 
 def validate_embedding_columns(

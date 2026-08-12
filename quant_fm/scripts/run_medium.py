@@ -29,7 +29,9 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from contextlib import contextmanager
 from pathlib import Path
 
 from pylob.event_ordering import (
@@ -39,6 +41,7 @@ from pylob.event_ordering import (
 from pylob.pipeline.config import PipelineConfig
 from pylob.pipeline.workflow import build_clean_dataset
 
+from quant_fm.data_coverage import coverage_receipt_path, write_coverage_receipt
 from quant_fm.lob_rebuild.export_events import (
     canonicalize_and_tokenize_clean_dir,
     canonicalize_clean_dir,
@@ -65,6 +68,24 @@ from quant_fm.tokenizer.vocab import Vocab
 from quant_fm.tokenizer.vocab_v2 import VocabV2
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def _timed_stage(stage: str, *, date: str | None = None):
+    """Log stable wall-clock timing for one pipeline stage."""
+    started = time.perf_counter()
+    status = "error"
+    try:
+        yield
+        status = "ok"
+    finally:
+        logger.info(
+            "stage timing stage=%s date=%s elapsed_s=%.3f status=%s",
+            stage,
+            date or "-",
+            time.perf_counter() - started,
+            status,
+        )
 
 
 def _load_vocab(path: Path) -> Vocab | VocabV2:
@@ -230,6 +251,7 @@ def run(
     resume: bool,
     estimate_only: bool,
     fast_clean: bool = False,
+    events_only: bool = False,
     skip_manifest: bool = False,
     reuse_vocab: Path | None = None,
     upload_minio: bool = False,
@@ -250,9 +272,22 @@ def run(
     if v2_max_samples_per_field < 1:
         msg = "v2_max_samples_per_field must be positive"
         raise ValueError(msg)
-    schema_version = (
-        V2_SCHEMA_VERSION if data_version == "v2" else V1_SCHEMA_VERSION
-    )
+    if events_only and reuse_vocab is not None:
+        msg = "--events-only cannot be combined with --reuse-vocab"
+        raise ValueError(msg)
+    if events_only and data_version != "v2":
+        msg = "--events-only is reserved for formal V2 preparation"
+        raise ValueError(msg)
+    if events_only and not (fast_clean or skip_clean):
+        msg = (
+            "--events-only requires --fast-clean or an existing --skip-clean tree "
+            "for exact symbol coverage receipts"
+        )
+        raise ValueError(msg)
+    if events_only and (drop_events or upload_minio or delete_local_after_upload):
+        msg = "--events-only cannot drop events or upload incomplete artifacts"
+        raise ValueError(msg)
+    schema_version = V2_SCHEMA_VERSION if data_version == "v2" else V1_SCHEMA_VERSION
     workdir = Path(workdir)
     clean_dir = workdir / "clean"
     events_dir = workdir / "events"
@@ -284,9 +319,7 @@ def run(
     if estimate_only:
         return
 
-    vocab_path = data_dir / (
-        "vocab_v2.json" if data_version == "v2" else "vocab.json"
-    )
+    vocab_path = data_dir / ("vocab_v2.json" if data_version == "v2" else "vocab.json")
     vocab: Vocab | VocabV2 | None = None
     # 下游抽 embedding 场景：提前加载冻结 vocab，以便按日 tokenize 后立刻
     # drop events，避免 60+ 天 events 堆积爆盘（约 4GB/天）。
@@ -393,11 +426,31 @@ def run(
 
     for date in dates:
         marker = _date_done_marker(workdir, date)
+        failure_path = data_dir / ".failed" / f"{date}.json"
+        coverage_path = coverage_receipt_path(workdir, date)
         # 旧 marker 可能只表示 canonicalize 完成、events 仍在磁盘上；
         # reuse-vocab 路径下补做按日 tokenize + drop。
-        if resume and _marker_matches(marker, schema_version):
+        marker_ready = (
+            resume
+            and _marker_matches(marker, schema_version)
+            and not (events_only and failure_path.is_file())
+            and (data_version != "v2" or coverage_path.is_file())
+        )
+        if (
+            marker_ready
+            and events_only
+            and not _is_date_canonicalized(events_dir, date)
+        ):
+            logger.warning(
+                "events-only marker exists but canonical events are missing; "
+                "rebuilding %s",
+                date,
+            )
+            marker_ready = False
+        if marker_ready:
             if vocab is not None and any(events_dir.rglob(f"{date}.parquet")):
-                n = _tokenize_day(date)
+                with _timed_stage("resume_tokenize_day", date=date):
+                    n = _tokenize_day(date)
                 logger.info(
                     "resume: tokenized leftover events for %s (%d shards)", date, n
                 )
@@ -412,8 +465,13 @@ def run(
             continue
 
         day_clean = clean_dir / date
+        failed_symbols_for_date: tuple[str, ...] = ()
         clean_marker = _clean_done_marker(workdir, date)
-        if resume and _marker_matches(clean_marker, schema_version):
+        if (
+            resume
+            and _marker_matches(clean_marker, schema_version)
+            and not (events_only and failure_path.is_file())
+        ):
             logger.info("resume: reuse completed clean/%s", date)
         elif not skip_clean and fast_clean:
             # P0/P1 高性能路径：读一次 MinIO、SZ+SH 同池清洗、带本地 raw 缓存。
@@ -426,20 +484,27 @@ def run(
             logger.info(
                 "clean(fast) %s SZ=%d SH=%d", date, len(symbols_sz), len(symbols_sh)
             )
-            clean_stats = clean_day_fast(
-                date=date,
-                symbols_sz=symbols_sz,
-                symbols_sh=symbols_sh,
-                clean_dir=day_clean,
-                cache_dir=raw_cache,
-                minio_config=load_read_config(),
-                bucket=read_bucket(),
-                skip_existing=resume,
-                event_ordering_version=effective_event_ordering,
-                capture_book_state=data_version == "v2",
-            )
+            with _timed_stage("clean_fast", date=date):
+                clean_stats = clean_day_fast(
+                    date=date,
+                    symbols_sz=symbols_sz,
+                    symbols_sh=symbols_sh,
+                    clean_dir=day_clean,
+                    cache_dir=raw_cache,
+                    minio_config=load_read_config(),
+                    bucket=read_bucket(),
+                    skip_existing=resume,
+                    event_ordering_version=effective_event_ordering,
+                    capture_book_state=data_version == "v2",
+                )
             if int(clean_stats["errors"]):
                 failed = clean_stats.get("failed_symbols", [])
+                failed_symbols_for_date = tuple(str(value) for value in failed)
+                if events_only:
+                    msg = (
+                        f"formal V2 preparation failed for {date}; symbol gaps={failed}"
+                    )
+                    raise RuntimeError(msg)
                 logger.warning(
                     "clean accepted with %s explicit gap(s) on %s: %s",
                     clean_stats["errors"],
@@ -455,42 +520,71 @@ def run(
         elif not skip_clean:
             if symbols_sz:
                 logger.info("clean %s SZ (%d symbols)", date, len(symbols_sz))
-                clean_one_day(
-                    date,
-                    symbols_sz,
-                    "SZ",
-                    day_clean,
-                    skip_existing=resume,
-                    event_ordering_version=effective_event_ordering,
-                    capture_book_state=data_version == "v2",
-                )
+                with _timed_stage("clean_legacy_sz", date=date):
+                    clean_one_day(
+                        date,
+                        symbols_sz,
+                        "SZ",
+                        day_clean,
+                        skip_existing=resume,
+                        event_ordering_version=effective_event_ordering,
+                        capture_book_state=data_version == "v2",
+                    )
             if symbols_sh:
                 logger.info("clean %s SH (%d symbols)", date, len(symbols_sh))
-                clean_one_day(
-                    date,
-                    symbols_sh,
-                    "SH",
-                    day_clean,
-                    skip_existing=resume,
-                    event_ordering_version=effective_event_ordering,
-                    capture_book_state=data_version == "v2",
-                )
+                with _timed_stage("clean_legacy_sh", date=date):
+                    clean_one_day(
+                        date,
+                        symbols_sh,
+                        "SH",
+                        day_clean,
+                        skip_existing=resume,
+                        event_ordering_version=effective_event_ordering,
+                        capture_book_state=data_version == "v2",
+                    )
             clean_marker.parent.mkdir(parents=True, exist_ok=True)
             clean_marker.write_text(
                 f"cleaned:{schema_version}\n",
                 encoding="utf-8",
             )
 
+        if data_version == "v2":
+            if skip_clean:
+                if not coverage_path.is_file() and day_clean.is_dir():
+                    write_coverage_receipt(
+                        workdir=workdir,
+                        clean_dir=day_clean,
+                        date=date,
+                        symbols_sz=symbols_sz,
+                        symbols_sh=symbols_sh,
+                    )
+                if not coverage_path.is_file():
+                    msg = (
+                        f"formal V2 --skip-clean requires an exact coverage receipt: "
+                        f"{coverage_path}"
+                    )
+                    raise RuntimeError(msg)
+            else:
+                write_coverage_receipt(
+                    workdir=workdir,
+                    clean_dir=day_clean,
+                    date=date,
+                    symbols_sz=symbols_sz,
+                    symbols_sh=symbols_sh,
+                    failed_symbols=failed_symbols_for_date,
+                )
+
         if vocab is not None:
-            token_paths = canonicalize_and_tokenize_clean_dir(
-                day_clean,
-                tokens_dir,
-                vocab_path=vocab_path,
-                date=date,
-                markets=("SZ", "SH"),
-                symbols=symbols_sz + symbols_sh,
-                skip_existing=resume,
-            )
+            with _timed_stage("canonicalize_tokenize", date=date):
+                token_paths = canonicalize_and_tokenize_clean_dir(
+                    day_clean,
+                    tokens_dir,
+                    vocab_path=vocab_path,
+                    date=date,
+                    markets=("SZ", "SH"),
+                    symbols=symbols_sz + symbols_sh,
+                    skip_existing=resume,
+                )
             if not token_paths:
                 msg = f"refusing to mark {date} done: no token shards were produced"
                 raise RuntimeError(msg)
@@ -498,16 +592,17 @@ def run(
 
             write_day_index(tokens_dir, date)
         else:
-            canonicalize_clean_dir(
-                day_clean,
-                events_dir,
-                date=date,
-                markets=("SZ", "SH"),
-                symbols=symbols_sz + symbols_sh,
-                skip_existing=resume,
-                strict=True,
-                schema_version=schema_version,
-            )
+            with _timed_stage("canonicalize_events", date=date):
+                canonicalize_clean_dir(
+                    day_clean,
+                    events_dir,
+                    date=date,
+                    markets=("SZ", "SH"),
+                    symbols=symbols_sz + symbols_sh,
+                    skip_existing=resume,
+                    strict=True,
+                    schema_version=schema_version,
+                )
 
         if drop_clean and day_clean.exists():
             shutil.rmtree(day_clean)
@@ -517,7 +612,6 @@ def run(
 
         marker.parent.mkdir(parents=True, exist_ok=True)
         if vocab is not None:
-            failure_path = data_dir / ".failed" / f"{date}.json"
             marker.write_text(
                 f"tokenized_with_gaps:{schema_version}\n"
                 if failure_path.exists()
@@ -530,6 +624,14 @@ def run(
                 f"canonicalized:{schema_version}\n",
                 encoding="utf-8",
             )
+
+    if events_only:
+        logger.info(
+            "events-only ready: dates=%d events=%s; global vocab/tokenize deferred",
+            len(dates),
+            events_dir,
+        )
+        return
 
     if vocab is None:
         # 预训练数据路径：先 fit_bins，再一次性 tokenize。
@@ -555,24 +657,25 @@ def run(
                 len(train_paths),
             )
 
-        if data_version == "v2":
-            vocab = fit_vocab_v2(
-                train_paths,
-                field_specs=FULL_FIELD_SPECS_V2,
-                max_samples_per_field=v2_max_samples_per_field,
-                fit_dates=fit_dates,
-                seed=v2_seed,
-                event_ordering_version=effective_event_ordering,
-                feature_transform_version=effective_feature_transform,
-            )
-        else:
-            vocab = fit_bins(
-                train_paths,
-                n_bins=n_bins,
-                fit_dates=fit_dates,
-                event_ordering_version=effective_event_ordering,
-                feature_transform_version=effective_feature_transform,
-            )
+        with _timed_stage("fit_vocab"):
+            if data_version == "v2":
+                vocab = fit_vocab_v2(
+                    train_paths,
+                    field_specs=FULL_FIELD_SPECS_V2,
+                    max_samples_per_field=v2_max_samples_per_field,
+                    fit_dates=fit_dates,
+                    seed=v2_seed,
+                    event_ordering_version=effective_event_ordering,
+                    feature_transform_version=effective_feature_transform,
+                )
+            else:
+                vocab = fit_bins(
+                    train_paths,
+                    n_bins=n_bins,
+                    fit_dates=fit_dates,
+                    event_ordering_version=effective_event_ordering,
+                    feature_transform_version=effective_feature_transform,
+                )
         vocab.save(vocab_path)
         if isinstance(vocab, VocabV2):
             assert_no_leakage_v2(vocab, val_dates, test_dates)
@@ -600,12 +703,13 @@ def run(
                 len(jobs),
                 _default_tokenize_workers(),
             )
-            _tokenize_shards_parallel(
-                jobs,
-                vocab_path=vocab_path,
-                drop_events=drop_events,
-                n_workers=_default_tokenize_workers(),
-            )
+            with _timed_stage("tokenize_all_events"):
+                _tokenize_shards_parallel(
+                    jobs,
+                    vocab_path=vocab_path,
+                    drop_events=drop_events,
+                    n_workers=_default_tokenize_workers(),
+                )
 
         if drop_events:
             _prune_empty_dirs(events_dir)
@@ -639,12 +743,13 @@ def run(
                 len(leftover_jobs),
                 _default_tokenize_workers(),
             )
-            _tokenize_shards_parallel(
-                leftover_jobs,
-                vocab_path=vocab_path,
-                drop_events=drop_events,
-                n_workers=_default_tokenize_workers(),
-            )
+            with _timed_stage("tokenize_leftover_events"):
+                _tokenize_shards_parallel(
+                    leftover_jobs,
+                    vocab_path=vocab_path,
+                    drop_events=drop_events,
+                    n_workers=_default_tokenize_workers(),
+                )
         if drop_events:
             _prune_empty_dirs(events_dir)
 
@@ -655,32 +760,35 @@ def run(
             "skip_manifest: 跳过收尾 manifest（vocab=%s，tokens 就绪）", vocab_path
         )
     else:
-        manifest = build_manifest(
-            tokens_dir,
-            train_end=train_end,
-            val_end=val_end,
-            markets=("SZ", "SH"),
-            vocab_path=str(vocab_path),
-        )
-        manifest_path = data_dir / "manifest.json"
-        manifest.save(manifest_path)
+        with _timed_stage("build_manifest"):
+            manifest = build_manifest(
+                tokens_dir,
+                train_end=train_end,
+                val_end=val_end,
+                markets=("SZ", "SH"),
+                vocab_path=str(vocab_path),
+            )
+            manifest_path = data_dir / "manifest.json"
+            manifest.save(manifest_path)
         logger.info("data ready: vocab=%s manifest=%s", vocab_path, manifest_path)
 
         if data_version == "v2":
             from quant_fm.scripts.audit_v2_artifacts import audit_v2_artifacts
 
-            audit = audit_v2_artifacts(
-                workdir,
-                sample_shards=12,
-                full_path_check=v2_full_audit,
-            )
-            audit_path = workdir / "artifact_audit.json"
-            temporary = audit_path.with_name(f".{audit_path.name}.tmp")
-            temporary.write_text(
-                json.dumps(audit, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-            )
-            temporary.replace(audit_path)
+            with _timed_stage("audit_v2_artifacts"):
+                audit = audit_v2_artifacts(
+                    workdir,
+                    sample_shards=12,
+                    full_path_check=v2_full_audit or upload_minio,
+                )
+                audit_path = workdir / "artifact_audit.json"
+                temporary = audit_path.with_name(f".{audit_path.name}.tmp")
+                temporary.write_text(
+                    json.dumps(audit, ensure_ascii=False, indent=2, sort_keys=True)
+                    + "\n",
+                    encoding="utf-8",
+                )
+                temporary.replace(audit_path)
             if not audit["contract_ready"]:
                 msg = f"V2 artifact audit failed: {audit_path}"
                 raise RuntimeError(msg)
@@ -689,12 +797,13 @@ def run(
     if upload_minio:
         from quant_fm.scripts.upload_to_minio import remote_uri, upload_workdir
 
-        uri = upload_workdir(
-            workdir,
-            tag=upload_tag,
-            include_events=upload_events,
-            delete_local=delete_local_after_upload,
-        )
+        with _timed_stage("upload_minio"):
+            uri = upload_workdir(
+                workdir,
+                tag=upload_tag,
+                include_events=upload_events,
+                delete_local=delete_local_after_upload,
+            )
         logger.info("MinIO upload complete: %s", uri)
         logger.info("remote: %s", remote_uri(upload_tag))
 
@@ -731,9 +840,7 @@ def main() -> None:
         "--data-version",
         choices=("v1", "v2"),
         default=None,
-        help=(
-            "数据合约；默认新数据为 v2，--reuse-vocab 时从 artifact 自动识别"
-        ),
+        help=("数据合约；默认新数据为 v2，--reuse-vocab 时从 artifact 自动识别"),
     )
     parser.add_argument(
         "--v2-max-samples-per-field",
@@ -795,6 +902,14 @@ def main() -> None:
         help="P0/P1 高性能清洗：每天只读一次 MinIO、SZ+SH 同池、本地 raw 缓存续跑",
     )
     parser.add_argument(
+        "--events-only",
+        action="store_true",
+        help=(
+            "仅并行清洗并生成 canonical events；不拟合 vocab、不 tokenize、"
+            "不构建 manifest。正式 V2 两阶段并行的准备阶段使用"
+        ),
+    )
+    parser.add_argument(
         "--skip-manifest",
         action="store_true",
         help="跳过收尾 manifest 构建（跨日并行时用，由驱动脚本统一建一次）",
@@ -831,7 +946,9 @@ def main() -> None:
     parser.add_argument(
         "--delete-local-after-upload",
         action="store_true",
-        help="上传成功后删除本地 tokens/（及 events/ 若上传）",
+        help=(
+            "已禁用：自动递归删除无法形成原子安全边界；请停写、独立验收远端后离线清理"
+        ),
     )
     args = parser.parse_args()
 
@@ -863,6 +980,7 @@ def main() -> None:
         resume=args.resume,
         estimate_only=args.estimate_only,
         fast_clean=args.fast_clean,
+        events_only=args.events_only,
         skip_manifest=args.skip_manifest,
         reuse_vocab=args.reuse_vocab,
         upload_minio=args.upload_minio,

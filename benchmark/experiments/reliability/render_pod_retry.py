@@ -12,7 +12,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-
 SCRIPT_DIR = Path(__file__).resolve().parent
 WORKLOAD = SCRIPT_DIR / "pod_retry_workload.py"
 IMAGE = (
@@ -47,7 +46,7 @@ def render(run_token: str, backoff_limit: int = 1) -> dict[str, Any]:
             "umask 077",
             'mkdir -p "$HOME" "$XDG_CACHE_HOME" "$TORCH_HOME" "$TMPDIR"',
             f"printf '%s' '{encoded}' | base64 -d > /experiment/pod_retry_workload.py",
-            "test \"$(sha256sum /experiment/pod_retry_workload.py | cut -d' ' -f1)\" = \"$WORKLOAD_SHA256\"",
+            'test "$(sha256sum /experiment/pod_retry_workload.py | cut -d\' \' -f1)" = "$WORKLOAD_SHA256"',
             "python -u /experiment/pod_retry_workload.py",
         )
     )
@@ -112,18 +111,25 @@ def render(run_token: str, backoff_limit: int = 1) -> dict[str, Any]:
                                 {"name": "INJECTION_WINDOW_SECONDS", "value": "45"},
                                 {"name": "WORKLOAD_SHA256", "value": payload_sha},
                                 {"name": "HOME", "value": "/experiment/home"},
-                                {"name": "XDG_CACHE_HOME", "value": "/experiment/cache"},
+                                {
+                                    "name": "XDG_CACHE_HOME",
+                                    "value": "/experiment/cache",
+                                },
                                 {"name": "TORCH_HOME", "value": "/experiment/torch"},
                                 {"name": "TMPDIR", "value": "/experiment/tmp"},
                                 {"name": "CUDA_CACHE_DISABLE", "value": "1"},
                                 {"name": "PYTHONDONTWRITEBYTECODE", "value": "1"},
                                 {
                                     "name": "POD_NAME",
-                                    "valueFrom": {"fieldRef": {"fieldPath": "metadata.name"}},
+                                    "valueFrom": {
+                                        "fieldRef": {"fieldPath": "metadata.name"}
+                                    },
                                 },
                                 {
                                     "name": "POD_UID",
-                                    "valueFrom": {"fieldRef": {"fieldPath": "metadata.uid"}},
+                                    "valueFrom": {
+                                        "fieldRef": {"fieldPath": "metadata.uid"}
+                                    },
                                 },
                             ],
                             "volumeMounts": [

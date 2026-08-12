@@ -6,17 +6,12 @@ import argparse
 import json
 from pathlib import Path
 
+from quant_fm._io import atomic_write_text
 from quant_fm.monitoring.acceptance import (
+    DEFAULT_NONINFERIORITY_TOLERANCE,
     compare_pretrain_evaluations,
     render_acceptance_report,
 )
-
-
-def _atomic_text(path: Path, value: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(value, encoding="utf-8")
-    temporary.replace(path)
 
 
 def main() -> None:
@@ -24,7 +19,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--candidate", type=Path, required=True)
     parser.add_argument("--baseline", type=Path, required=True)
-    parser.add_argument("--tolerance", type=float, default=0.01)
+    parser.add_argument(
+        "--tolerance",
+        type=float,
+        default=DEFAULT_NONINFERIORITY_TOLERANCE,
+    )
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--markdown", type=Path)
     args = parser.parse_args()
@@ -33,12 +32,12 @@ def main() -> None:
         args.baseline,
         noninferiority_tolerance=args.tolerance,
     )
-    _atomic_text(
+    atomic_write_text(
         args.out,
         json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
     )
     markdown = args.markdown or args.out.with_suffix(".md")
-    _atomic_text(markdown, render_acceptance_report(result))
+    atomic_write_text(markdown, render_acceptance_report(result))
     print(args.out)
     if not result["accepted"]:
         raise SystemExit(2)

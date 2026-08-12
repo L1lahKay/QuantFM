@@ -7,17 +7,19 @@ import json
 import os
 import subprocess
 import time
+from collections.abc import Mapping
 from datetime import datetime, timezone
-from typing import Any, Mapping
-
+from typing import Any
 
 EVENT_PREFIX = "POD_RETRY_EVENT_JSON="
 RESULT_PREFIX = "POD_RETRY_RESULT_JSON="
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace(
-        "+00:00", "Z"
+    return (
+        datetime.now(timezone.utc)
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z")
     )
 
 
@@ -42,7 +44,9 @@ def visible_gpu() -> dict[str, str]:
     )
     rows = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
     if len(rows) != 1:
-        raise RuntimeError(f"expected exactly one visible NVIDIA GPU, found {len(rows)}")
+        raise RuntimeError(
+            f"expected exactly one visible NVIDIA GPU, found {len(rows)}"
+        )
     fields = [value.strip() for value in rows[0].split(",", maxsplit=2)]
     if len(fields) != 3 or not all(fields):
         raise RuntimeError("nvidia-smi returned an invalid GPU identity")

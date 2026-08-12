@@ -7,21 +7,19 @@ import argparse
 import json
 import subprocess
 import sys
+from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from render_pod_deletion import render
 from run_pod_retry import (
-    CONTEXT,
-    ExperimentError,
-    KUBECONFIG,
     NAMESPACE,
     RESULTS_ROOT,
+    ExperimentError,
     Runner,
     utc_now,
 )
-
 
 EVENT_PREFIX = "POD_DELETE_EVENT_JSON="
 RESULT_PREFIX = "POD_DELETE_RESULT_JSON="
@@ -53,13 +51,9 @@ class PodDeletionRunner(Runner):
 
     def observe_replacement_capacity(self, stage: str) -> list[dict[str, Any]]:
         pods = self.list_owned_pods()
-        quota = self.json_get(
-            ["-n", NAMESPACE, "get", "resourcequota", "gpu-quota"]
-        )
+        quota = self.json_get(["-n", NAMESPACE, "get", "resourcequota", "gpu-quota"])
         used_gpu = int(
-            quota.get("status", {})
-            .get("used", {})
-            .get("requests.nvidia.com/gpu", "0")
+            quota.get("status", {}).get("used", {}).get("requests.nvidia.com/gpu", "0")
         )
         self.max_owned_pods = max(self.max_owned_pods, len(pods))
         self.max_gpu_requests = max(self.max_gpu_requests, used_gpu)
@@ -82,7 +76,9 @@ class PodDeletionRunner(Runner):
                 ],
             }
         )
-        self.write_json("replacement-capacity-observations.json", self.capacity_observations)
+        self.write_json(
+            "replacement-capacity-observations.json", self.capacity_observations
+        )
         if len(pods) > 2 or used_gpu > 2:
             raise ExperimentError(
                 f"replacement exceeded bound: pods={len(pods)} gpu_requests={used_gpu}"
@@ -193,7 +189,9 @@ class PodDeletionRunner(Runner):
             ["-n", NAMESPACE, "get", "pod", name, "-o", "json"], check=False
         )
         if terminating.returncode == 0:
-            self.write_json("first-pod-terminating.json", json.loads(terminating.stdout))
+            self.write_json(
+                "first-pod-terminating.json", json.loads(terminating.stdout)
+            )
 
         def pod_absent() -> bool:
             self.observe_replacement_capacity("waiting-for-deleted-pod-absence")
@@ -412,9 +410,7 @@ class PodDeletionRunner(Runner):
             {"apiVersion": "v1", "kind": "List", "items": pods},
         )
         all_events = self.json_get(["-n", NAMESPACE, "get", "events"])
-        pod_uids = {
-            str(pod.get("metadata", {}).get("uid") or "") for pod in pods
-        }
+        pod_uids = {str(pod.get("metadata", {}).get("uid") or "") for pod in pods}
         target_uids = {self.job_uid, *pod_uids}
         events = [
             event
@@ -454,7 +450,9 @@ class PodDeletionRunner(Runner):
             self.preflight()
             self.create()
             deleted_name, deleted_uid, marker_at = self.wait_for_deletion_point()
-            requested_at, confirmed_at = self.delete_owned_pod(deleted_name, deleted_uid)
+            requested_at, confirmed_at = self.delete_owned_pod(
+                deleted_name, deleted_uid
+            )
             replacement_name, replacement_uid, replacement_marker_at = (
                 self.wait_for_replacement(deleted_uid)
             )

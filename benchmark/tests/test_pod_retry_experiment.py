@@ -6,7 +6,6 @@ import sys
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 EXPERIMENT = REPO_ROOT / "benchmark" / "experiments" / "reliability"
 
@@ -39,18 +38,16 @@ class PodRetryExperimentTests(unittest.TestCase):
         self.assertEqual(pod["runtimeClassName"], "nvidia")
         self.assertFalse(pod["automountServiceAccountToken"])
         self.assertNotIn("runAsUser", pod["securityContext"])
-        self.assertEqual(pod["securityContext"]["seccompProfile"]["type"], "RuntimeDefault")
+        self.assertEqual(
+            pod["securityContext"]["seccompProfile"]["type"], "RuntimeDefault"
+        )
         container = pod["containers"][0]
         self.assertIn("@sha256:", container["image"])
         command = container["args"][0]
         self.assertIn("python -u", command)
         self.assertNotIn("exec python", command)
-        self.assertEqual(
-            container["resources"]["requests"]["nvidia.com/gpu"], "1"
-        )
-        self.assertEqual(
-            container["resources"]["limits"]["nvidia.com/gpu"], "1"
-        )
+        self.assertEqual(container["resources"]["requests"]["nvidia.com/gpu"], "1")
+        self.assertEqual(container["resources"]["limits"]["nvidia.com/gpu"], "1")
         self.assertNotIn("persistentVolumeClaim", str(manifest))
 
     def test_renderer_rejects_unbounded_token(self) -> None:
@@ -132,10 +129,7 @@ class PodRetryExperimentTests(unittest.TestCase):
         self.assertEqual(pod["restartPolicy"], "Never")
         self.assertEqual(pod["runtimeClassName"], "nvidia")
         self.assertNotIn("persistentVolumeClaim", str(manifest))
-        env = {
-            item["name"]: item.get("value")
-            for item in pod["containers"][0]["env"]
-        }
+        env = {item["name"]: item.get("value") for item in pod["containers"][0]["env"]}
         self.assertEqual(env["TOTAL_STEPS"], "300")
         self.assertEqual(env["DELETE_AFTER_STEP"], "75")
 
@@ -150,9 +144,7 @@ class PodRetryExperimentTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertIn('"mutation": "none"', completed.stdout)
         self.assertIn('"delete_after_step": 75', completed.stdout)
-        self.assertIn(
-            '"podReplacementPolicy": "TerminatingOrFailed"', completed.stdout
-        )
+        self.assertIn('"podReplacementPolicy": "TerminatingOrFailed"', completed.stdout)
         source = (EXPERIMENT / "run_pod_deletion.py").read_text(encoding="utf-8")
         self.assertIn("Pod deletion refused: UID changed", source)
         self.assertIn("Pod deletion refused: Job owner UID mismatch", source)

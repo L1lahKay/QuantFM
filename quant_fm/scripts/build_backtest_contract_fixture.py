@@ -8,6 +8,7 @@ independent of model artifacts and must never be interpreted as a model result.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -63,7 +64,12 @@ def _synthetic_scores() -> pl.DataFrame:
     )
 
 
-def _signal_manifest(scores: pl.DataFrame, *, created_utc: str) -> dict[str, object]:
+def _signal_manifest(
+    scores: pl.DataFrame,
+    *,
+    scores_path: Path,
+    created_utc: str,
+) -> dict[str, object]:
     """Create the required production manifest fields plus a fixture warning."""
     return {
         "format_version": "1.0",
@@ -71,6 +77,7 @@ def _signal_manifest(scores: pl.DataFrame, *, created_utc: str) -> dict[str, obj
         "score_semantics": _SEMANTICS,
         "data": {
             "file": "scores.parquet",
+            "file_sha256": hashlib.sha256(scores_path.read_bytes()).hexdigest(),
             "schema": _SCHEMA,
             "primary_key": ["date", "symbol"],
             "rows": scores.height,
@@ -158,10 +165,15 @@ def build_backtest_contract_fixture(
         source_dir = stage / _SOURCE_DIR
         source_dir.mkdir(parents=True)
         scores = _synthetic_scores()
-        scores.write_parquet(source_dir / "scores.parquet")
+        scores_path = source_dir / "scores.parquet"
+        scores.write_parquet(scores_path)
         (source_dir / "signal_manifest.json").write_text(
             json.dumps(
-                _signal_manifest(scores, created_utc=timestamp),
+                _signal_manifest(
+                    scores,
+                    scores_path=scores_path,
+                    created_utc=timestamp,
+                ),
                 ensure_ascii=False,
                 indent=2,
             )

@@ -25,6 +25,7 @@ import os
 import re
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from contextlib import contextmanager
 from typing import TYPE_CHECKING
 
 import polars as pl
@@ -61,6 +62,24 @@ _RETRYABLE_OBJECT_ERRORS = (
     "connection reset",
     "connection refused",
 )
+
+
+@contextmanager
+def _timed_stage(stage: str, *, date: str):
+    """Emit machine-readable timing for the expensive fast-clean sub-stages."""
+    started = time.perf_counter()
+    status = "error"
+    try:
+        yield
+        status = "ok"
+    finally:
+        logger.info(
+            "stage timing stage=%s date=%s elapsed_s=%.3f status=%s",
+            stage,
+            date,
+            time.perf_counter() - started,
+            status,
+        )
 
 
 def _is_retryable_object_error(exc: Exception) -> bool:
@@ -238,19 +257,21 @@ def clean_day_fast(
     for s in symbols_sh:
         market_of[s] = "SH"
 
-    raw_trade, raw_order = _load_raw_once(
-        date=date,
-        symbols=union,
-        minio_config=minio_config,
-        bucket=bucket,
-        cache_dir=cache_dir,
-        project_columns=project_columns,
-    )
+    with _timed_stage("raw_load", date=date):
+        raw_trade, raw_order = _load_raw_once(
+            date=date,
+            symbols=union,
+            minio_config=minio_config,
+            bucket=bucket,
+            cache_dir=cache_dir,
+            project_columns=project_columns,
+        )
     logger.info(
         "standardize: trade_rows=%d order_rows=%d", raw_trade.height, raw_order.height
     )
-    trade_df = standardize_trade_frame(raw_trade)
-    order_df = standardize_order_frame(raw_order)
+    with _timed_stage("standardize", date=date):
+        trade_df = standardize_trade_frame(raw_trade)
+        order_df = standardize_order_frame(raw_order)
     del raw_trade, raw_order
 
     # 已完成的 symbol 跳过（resume）。
@@ -298,7 +319,8 @@ def clean_day_fast(
         }
 
     # 一次分区覆盖两市场。
-    trade_parts, order_parts = _partition_by_symbol(trade_df, order_df, pending)
+    with _timed_stage("partition_symbols", date=date):
+        trade_parts, order_parts = _partition_by_symbol(trade_df, order_df, pending)
     empty_trade = trade_df.clear()
     empty_order = order_df.clear()
     del trade_df, order_df
@@ -325,6 +347,7 @@ def clean_day_fast(
 
     written = empty = errors = 0
     failed_symbols: list[str] = []
+    replay_started = time.perf_counter()
     ctx = mp.get_context("spawn")
     with ProcessPoolExecutor(max_workers=n_workers, mp_context=ctx) as pool:
         futs = [pool.submit(_worker_clean_symbol, p) for p in payloads]
@@ -386,6 +409,12 @@ def clean_day_fast(
                     still_failed.append(symbol)
                     logger.error("retry failed symbol=%s: %s", symbol, err)
         failed_symbols = sorted(still_failed)
+    logger.info(
+        "stage timing stage=replay_symbols date=%s elapsed_s=%.3f status=%s",
+        date,
+        time.perf_counter() - replay_started,
+        "error" if failed_symbols else "ok",
+    )
     logger.info(
         "clean done(fast) date=%s written=%d empty=%d errors=%d skipped=%d",
         date,

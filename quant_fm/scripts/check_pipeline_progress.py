@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import re
 import subprocess
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -111,7 +111,11 @@ def report(
     manifest = workdir / "data" / "manifest.json"
     vocab = workdir / "data" / "vocab.json"
 
-    done_dates = sorted(p.name for p in done_dir.glob("*") if p.is_file()) if done_dir.is_dir() else []
+    done_dates = (
+        sorted(p.name for p in done_dir.glob("*") if p.is_file())
+        if done_dir.is_dir()
+        else []
+    )
     done_set = set(done_dates)
     pending = [d for d in dates if d not in done_set]
     current = pending[0] if pending else None
@@ -130,7 +134,9 @@ def report(
     print(f"log:      {log_path}")
     print(f"进程:     {'运行中' if running else '未检测到'}")
     print()
-    print(f"日期:     {len(done_dates)}/{len(dates)} 完成 ({_fmt_pct(len(done_dates), len(dates))})")
+    print(
+        f"日期:     {len(done_dates)}/{len(dates)} 完成 ({_fmt_pct(len(done_dates), len(dates))})"
+    )
     if done_dates:
         print(f"已完成:   {', '.join(done_dates)}")
     if current:
@@ -169,7 +175,7 @@ def report(
         for d in done_dates[-4:]:
             p = done_dir / d
             if p.exists():
-                stamps.append((d, datetime.fromtimestamp(p.stat().st_mtime, tz=timezone.utc)))
+                stamps.append((d, datetime.fromtimestamp(p.stat().st_mtime, tz=UTC)))
         if len(stamps) >= 2:
             deltas = [
                 (stamps[i][1] - stamps[i - 1][1]).total_seconds() / 60.0
@@ -195,7 +201,9 @@ def report(
     print(f"  event shards (all dates): {total_event_shards:,}")
     print(f"  manifest: {'就绪' if manifest.is_file() else '未生成'}")
     print(f"  vocab:    {'就绪' if vocab.is_file() else '未生成'}")
-    print(f"  tokens:   {'就绪' if tokens_dir.is_dir() and any(tokens_dir.rglob('*.parquet')) else '未生成'}")
+    print(
+        f"  tokens:   {'就绪' if tokens_dir.is_dir() and any(tokens_dir.rglob('*.parquet')) else '未生成'}"
+    )
     print()
 
     if log_info["last_line"]:
@@ -216,6 +224,7 @@ def report(
 
 
 def main() -> None:
+    """Parse CLI arguments and print the current data-pipeline status."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--workdir",
@@ -243,9 +252,7 @@ def main() -> None:
         dates_file = candidate if candidate.is_file() else DEFAULT_DATES
 
     dates = _load_dates(dates_file)
-    raise SystemExit(
-        report(workdir=args.workdir, dates=dates, log_path=args.log)
-    )
+    raise SystemExit(report(workdir=args.workdir, dates=dates, log_path=args.log))
 
 
 if __name__ == "__main__":

@@ -10,11 +10,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from pylob.pipeline import PipelineConfig, build_clean_dataset
-from quant_fm.scripts.minio_config import load_read_config, read_bucket
+from pylob.pipeline import PipelineConfig, build_clean_dataset  # noqa: E402
+
+from quant_fm.scripts.minio_config import load_read_config, read_bucket  # noqa: E402
 
 
 def main() -> int:
+    """Run one environment-configured zeus-default cleaning job."""
     minio_config = load_read_config()
     date = os.getenv("PYLOB_DATE", "2026-02-02")
     symbols = tuple(os.getenv("PYLOB_SYMBOLS", "000001,000002").split(","))

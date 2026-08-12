@@ -57,6 +57,9 @@ from quant_fm.downstream.train_ranker import (
     predict,
 )
 from quant_fm.downstream.universe import (
+    cross_section_stats as _cross_section_stats,
+)
+from quant_fm.downstream.universe import (
     validate_pit_universe,
     validate_universe_alignment,
 )
@@ -103,12 +106,16 @@ _FROZEN_PRODUCTION_OBJECTIVE = RankerObjectiveConfig(
 )
 
 
-def _sha256_16(path: Path) -> str:
+def _sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as f:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
-    return h.hexdigest()[:16]
+    return h.hexdigest()
+
+
+def _sha256_16(path: Path) -> str:
+    return _sha256(path)[:16]
 
 
 def _load_emb(path: Path) -> pl.DataFrame:
@@ -412,30 +419,6 @@ def _foundation_model_provenance(
         "pretrain_acceptance_sha256": acceptance_sha256,
         "fm_checkpoint_sha256": checkpoint_sha256,
         "lineage_report": normalized,
-    }
-
-
-def _cross_section_stats(frame: pl.DataFrame) -> dict[str, int | float | str | None]:
-    """汇总逐日股票池宽度，供缓存、审计和交付清单使用。"""
-    if frame.is_empty():
-        return {
-            "rows": 0,
-            "days": 0,
-            "date_min": None,
-            "date_max": None,
-            "names_min": 0,
-            "names_median": 0.0,
-            "names_max": 0,
-        }
-    counts = frame.group_by("date").len()["len"]
-    return {
-        "rows": frame.height,
-        "days": frame["date"].n_unique(),
-        "date_min": str(frame["date"].min()),
-        "date_max": str(frame["date"].max()),
-        "names_min": int(counts.min()),
-        "names_median": float(counts.median()),
-        "names_max": int(counts.max()),
     }
 
 
@@ -1236,6 +1219,7 @@ def _build_oos_delivery_locked(
         },
         "data": {
             "file": "scores.parquet",
+            "file_sha256": _sha256(scores_path),
             "schema": {"date": "string", "symbol": "string", "score": "float64"},
             "primary_key": ["date", "symbol"],
             "rows": scores.height,

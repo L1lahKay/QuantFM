@@ -25,6 +25,10 @@ from quant_fm.pretrain.train import (  # noqa: E402
     _validate_resume_metadata,
     load_checkpoint,
 )
+from quant_fm.pretrain.validation_sampler import (  # noqa: E402
+    ValidationSamplePlan,
+    build_validation_sample_plan,
+)
 from quant_fm.tokenizer.artifact_contract import stable_vocab_sha256  # noqa: E402
 from quant_fm.tokenizer.field_spec import FieldSpec  # noqa: E402
 from quant_fm.tokenizer.fit_bins_v2 import fit_vocab_v2  # noqa: E402
@@ -171,6 +175,25 @@ def test_scalar_channel_changes_event_representation(tmp_path) -> None:
     assert not torch.equal(model.encode(batch), model.encode(changed))
 
 
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"context": -1},
+        {"stride": -1},
+        {"min_len": -1},
+        {"cache_size": -1},
+        {"context": 2, "min_len": 3},
+    ],
+)
+def test_v2_dataset_rejects_invalid_window_geometry(tmp_path, options) -> None:
+    vocab, _, shard = _artifacts(tmp_path)
+    kwargs = {"context": 3, "stride": 3, "min_len": 2, "cache_size": 1}
+    kwargs.update(options)
+
+    with pytest.raises(ValueError):
+        EventWindowDatasetV2([shard], vocab=vocab, **kwargs)
+
+
 def test_v2_checkpoint_requires_exact_vocab_artifact(tmp_path) -> None:
     vocab, vocab_path, _ = _artifacts(tmp_path)
     config = _model_config(vocab, vocab_path)
@@ -282,6 +305,93 @@ def test_v2_training_loader_persists_fixed_validation_plan(tmp_path) -> None:
     )
 
     assert plan_path.is_file()
+    plan = ValidationSamplePlan.load(plan_path)
+    assert plan.max_windows == len(plan.windows) == 2
     assert val_loader is not None
     assert "val_feature" in next(iter(train_loader))
     assert "mask_tok_feature_bin" in next(iter(val_loader))
+
+
+def test_v2_training_loader_rejects_exact_validation_window_shortage(
+    tmp_path,
+) -> None:
+    vocab, _, train_shard = _artifacts(tmp_path)
+    val_shard = ShardEntry(
+        market=train_shard.market,
+        symbol="600001",
+        date="2025-01-03",
+        path=train_shard.path,
+        rows=train_shard.rows,
+        sha256="val-shortage",
+        split="val",
+    )
+    plan_path = tmp_path / "validation.json"
+    config = {
+        "seed": 7,
+        "data": {
+            "context": 3,
+            "stride": 3,
+            "min_len": 2,
+            "cache_size": 2,
+            "num_workers": 0,
+            "validation_plan": str(plan_path),
+            "validation_windows": 3,
+        },
+        "optim": {"batch_size": 1},
+        "runtime": {"out_dir": str(tmp_path / "run"), "val_max_batches": 3},
+    }
+
+    with pytest.raises(ValueError, match="requires exactly 3 windows"):
+        _build_dataloaders(
+            Manifest(shards=[train_shard, val_shard]),
+            config,
+            vocab=vocab,
+            seed=7,
+        )
+    assert not plan_path.exists()
+
+
+def test_v2_training_loader_rejects_existing_validation_plan_count_mismatch(
+    tmp_path,
+) -> None:
+    vocab, _, train_shard = _artifacts(tmp_path)
+    val_shard = ShardEntry(
+        market=train_shard.market,
+        symbol="600001",
+        date="2025-01-03",
+        path=train_shard.path,
+        rows=train_shard.rows,
+        sha256="val-existing",
+        split="val",
+    )
+    plan_path = tmp_path / "validation.json"
+    build_validation_sample_plan(
+        [val_shard],
+        context=3,
+        stride=3,
+        min_len=2,
+        seed=7,
+        max_windows=1,
+    ).save(plan_path)
+    config = {
+        "seed": 7,
+        "data": {
+            "context": 3,
+            "stride": 3,
+            "min_len": 2,
+            "cache_size": 2,
+            "num_workers": 0,
+            "validation_plan": str(plan_path),
+            "validation_windows": 2,
+        },
+        "optim": {"batch_size": 1},
+        "runtime": {"out_dir": str(tmp_path / "run"), "val_max_batches": 2},
+    }
+
+    with pytest.raises(ValueError, match="requires exactly 2 windows"):
+        _build_dataloaders(
+            Manifest(shards=[train_shard, val_shard]),
+            config,
+            vocab=vocab,
+            seed=7,
+        )

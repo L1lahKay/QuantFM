@@ -10,6 +10,7 @@ OrderFlow FM 的可复现预训练循环。
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 import math
@@ -27,8 +28,10 @@ import torch
 import yaml
 from torch.utils.data import DataLoader
 
+from quant_fm.data_coverage import coverage_set_sha256
 from quant_fm.manifest.build_manifest import Manifest
 from quant_fm.manifest.validation import (
+    sha256_file,
     validate_manifest_shards,
     validate_manifest_vocab_contract,
 )
@@ -74,9 +77,362 @@ from quant_fm.tokenizer.vocab_v2 import PAD_ID as V2_PAD_ID
 from quant_fm.tokenizer.vocab_v2 import VocabV2
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from quant_fm.pretrain.heads import LossOutput, TargetSpec
 
 logger = logging.getLogger(__name__)
+
+_CONFIG_KEYS: dict[str, frozenset[str]] = {
+    "data": frozenset(
+        {
+            "artifact_audit",
+            "cache_size",
+            "context",
+            "drop_last",
+            "manifest",
+            "min_len",
+            "min_test_dates",
+            "min_validation_dates",
+            "num_workers",
+            "persistent_workers",
+            "prefetch_factor",
+            "shard_aware_sampler",
+            "stride",
+            "test_dates_file",
+            "train_dates_file",
+            "validation_dates_file",
+            "validation_plan",
+            "validation_seed",
+            "validation_windows",
+            "vocab",
+        }
+    ),
+    "model": frozenset(
+        {
+            "backbone_moe",
+            "d_model",
+            "dropout",
+            "ffn_hidden",
+            "ffn_mult",
+            "field_dim",
+            "field_dropout",
+            "field_fusion",
+            "field_input_norm",
+            "input_fields",
+            "max_seq_len",
+            "n_heads",
+            "n_layers",
+            "rope_theta",
+            "target_fields",
+        }
+    ),
+    "loss": frozenset({"normalize_by_train_entropy", "targets", "train_entropy"}),
+    "book": frozenset({"state_timing"}),
+    "pooling": frozenset({"method", "outputs", "stride", "version"}),
+    "optim": frozenset(
+        {
+            "batch_size",
+            "betas",
+            "grad_accum",
+            "grad_clip",
+            "lr",
+            "lr_schedule_steps",
+            "max_data_epochs",
+            "max_steps",
+            "max_train_tokens",
+            "max_update_steps",
+            "micro_batch_size",
+            "precision",
+            "warmup_steps",
+            "weight_decay",
+        }
+    ),
+    "runtime": frozenset(
+        {
+            "ckpt_every",
+            "device",
+            "eval_every",
+            "fsdp",
+            "fsdp_no_sync",
+            "log_every",
+            "out_dir",
+            "save_best",
+            "val_max_batches",
+        }
+    ),
+}
+
+
+def _validate_integer_config_value(
+    section: dict,
+    qualified_key: str,
+    *,
+    minimum: int,
+    required: bool = False,
+) -> None:
+    """Reject bool/coerced numeric controls before training mutates state."""
+    key = qualified_key.rsplit(".", 1)[-1]
+    if key not in section:
+        if not required:
+            return
+        value = None
+    else:
+        value = section[key]
+    if type(value) is not int or value < minimum:
+        qualifier = "positive" if minimum == 1 else "non-negative"
+        msg = f"{qualified_key} must be a {qualifier} integer"
+        raise ValueError(msg)
+
+
+def _validate_training_config(cfg: object) -> dict:
+    """拒绝未知/非法训练值，避免错误在训练中途才触发。"""
+    if not isinstance(cfg, dict):
+        msg = "training config must be a mapping"
+        raise TypeError(msg)
+    allowed_top = {"schema_version", "seed", *_CONFIG_KEYS}
+    unknown_top = sorted(set(cfg) - allowed_top)
+    if unknown_top:
+        msg = f"unknown training config keys: {unknown_top}"
+        raise ValueError(msg)
+    missing = sorted({"seed", "data", "model", "optim", "runtime"} - set(cfg))
+    if missing:
+        msg = f"training config is missing sections: {missing}"
+        raise ValueError(msg)
+    for section, allowed in _CONFIG_KEYS.items():
+        if section not in cfg and section in {"loss", "book", "pooling"}:
+            continue
+        value = cfg.get(section)
+        if not isinstance(value, dict):
+            msg = f"training config section {section!r} must be a mapping"
+            raise TypeError(msg)
+        unknown = sorted(set(value) - allowed)
+        if unknown:
+            msg = f"unknown training config keys in {section}: {unknown}"
+            raise ValueError(msg)
+    fusion = cfg["model"].get("field_fusion")
+    if isinstance(fusion, dict):
+        allowed_fusion = {
+            "categorical_dim",
+            "field_dim",
+            "field_dropout",
+            "input_norm",
+            "method",
+        }
+        unknown_fusion = sorted(set(fusion) - allowed_fusion)
+        if unknown_fusion:
+            msg = f"unknown model.field_fusion keys: {unknown_fusion}"
+            raise ValueError(msg)
+
+    runtime = cfg["runtime"]
+    for key in ("log_every", "eval_every", "ckpt_every"):
+        _validate_integer_config_value(
+            runtime,
+            f"runtime.{key}",
+            minimum=1,
+            required=True,
+        )
+    if "val_max_batches" in runtime:
+        _validate_integer_config_value(
+            runtime,
+            "runtime.val_max_batches",
+            minimum=0,
+        )
+    for key in ("fsdp", "fsdp_no_sync", "save_best"):
+        if key in runtime and not isinstance(runtime[key], bool):
+            msg = f"runtime.{key} must be a boolean"
+            raise TypeError(msg)
+
+    optim = cfg["optim"]
+    precision = optim.get("precision")
+    if not isinstance(precision, str) or precision not in {"bf16", "fp16", "fp32"}:
+        msg = "optim.precision must be one of: bf16, fp16, fp32"
+        raise ValueError(msg)
+    _validate_integer_config_value(
+        optim,
+        "optim.grad_accum",
+        minimum=1,
+        required=True,
+    )
+    for key in ("batch_size", "micro_batch_size", "lr_schedule_steps"):
+        if key in optim:
+            _validate_integer_config_value(optim, f"optim.{key}", minimum=1)
+    if "warmup_steps" in optim:
+        _validate_integer_config_value(optim, "optim.warmup_steps", minimum=0)
+    for key in (
+        "max_steps",
+        "max_update_steps",
+        "max_train_tokens",
+        "max_data_epochs",
+    ):
+        if key in optim:
+            _validate_integer_config_value(optim, f"optim.{key}", minimum=0)
+    max_update_steps = optim.get("max_update_steps", optim.get("max_steps", 0))
+    if not any(
+        value > 0
+        for value in (
+            max_update_steps,
+            optim.get("max_train_tokens", 0),
+            optim.get("max_data_epochs", 0),
+        )
+    ):
+        msg = (
+            "optim requires a positive max_update_steps/max_steps, "
+            "max_train_tokens, or max_data_epochs"
+        )
+        raise ValueError(msg)
+    if max_update_steps == 0 and "lr_schedule_steps" not in optim:
+        msg = "token/epoch-budget training requires a positive optim.lr_schedule_steps"
+        raise ValueError(msg)
+    return cfg
+
+
+def _immutable_training_config_sha256(cfg: dict) -> str:
+    """哈希所有会改变优化语义的配置，排除路径、停止预算和纯日志频率。"""
+    excluded: dict[str, set[str]] = {
+        "data": {
+            "artifact_audit",
+            "manifest",
+            "test_dates_file",
+            "train_dates_file",
+            "validation_dates_file",
+            "validation_plan",
+            "vocab",
+        },
+        "optim": {
+            "max_data_epochs",
+            "max_steps",
+            "max_train_tokens",
+            "max_update_steps",
+        },
+        "runtime": {"ckpt_every", "log_every", "out_dir"},
+    }
+    identity: dict[str, object] = {}
+    for section, value in cfg.items():
+        if isinstance(value, dict):
+            ignored = excluded.get(section, set())
+            identity[section] = {
+                key: item for key, item in value.items() if key not in ignored
+            }
+        else:
+            identity[section] = value
+    encoded = json.dumps(
+        identity,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _training_stop_budgets(cfg: dict) -> dict[str, int]:
+    """规范化三种可独立启用的停止预算；零表示该维度不设上限。"""
+    optim = cfg["optim"]
+    return {
+        "max_update_steps": max(
+            0,
+            int(optim.get("max_update_steps", optim.get("max_steps", 0))),
+        ),
+        "max_train_tokens": max(0, int(optim.get("max_train_tokens", 0))),
+        "max_data_epochs": max(0, int(optim.get("max_data_epochs", 0))),
+    }
+
+
+def _validate_stop_budget_extension(
+    saved: object,
+    current: dict[str, int],
+) -> None:
+    """续训只能延长既有停止预算；不得新增更早终止条件。"""
+    if not isinstance(saved, dict):
+        msg = "checkpoint stop-budget state is invalid"
+        raise TypeError(msg)
+    mismatches: dict[str, tuple[object, int]] = {}
+    for name, current_value in current.items():
+        saved_value = saved.get(name)
+        if isinstance(saved_value, bool) or not isinstance(saved_value, int):
+            mismatches[name] = (saved_value, current_value)
+            continue
+        is_extension = (
+            current_value == saved_value
+            or (saved_value > 0 and current_value == 0)
+            or (saved_value > 0 and current_value >= saved_value)
+        )
+        if not is_extension:
+            mismatches[name] = (saved_value, current_value)
+    if mismatches:
+        msg = f"resume stop budgets may only be extended: {mismatches}"
+        raise ValueError(msg)
+
+
+def _validate_config_schema(cfg: dict, vocab: Vocab | VocabV2) -> None:
+    """将 YAML 顶层 schema 声明绑定到实际加载的 vocab。"""
+    configured = cfg.get("schema_version")
+    if isinstance(vocab, VocabV2) and configured is None:
+        msg = "Tokenizer v2 training requires top-level schema_version"
+        raise ValueError(msg)
+    if configured is not None and configured != vocab.schema_version:
+        msg = (
+            f"training config schema_version={configured!r} does not match "
+            f"vocab schema_version={vocab.schema_version!r}"
+        )
+        raise ValueError(msg)
+
+
+def _validate_v2_artifact_audit(
+    cfg: dict,
+    *,
+    manifest_path: Path,
+    vocab_path: Path,
+    vocab: Vocab | VocabV2,
+) -> dict[str, object] | None:
+    """正式 cn_l2_v2 训练只接受绑定当前 generation 的全路径 PASS audit。"""
+    if not isinstance(vocab, VocabV2) or vocab.schema_version != "cn_l2_v2":
+        return None
+    configured = cfg["data"].get("artifact_audit")
+    audit_path = (
+        Path(configured)
+        if configured is not None
+        else manifest_path.parent.parent / "artifact_audit.json"
+    )
+    if not audit_path.is_file():
+        msg = f"cn_l2_v2 training requires a full artifact audit: missing {audit_path}"
+        raise FileNotFoundError(msg)
+    try:
+        audit = json.loads(audit_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        msg = f"invalid V2 artifact audit {audit_path}: {exc}"
+        raise ValueError(msg) from exc
+    if not isinstance(audit, dict):
+        msg = f"V2 artifact audit must contain a JSON object: {audit_path}"
+        raise TypeError(msg)
+    root = audit_path.parent
+    identities = {
+        "coverage_sha256": coverage_set_sha256(root),
+        "manifest_sha256": sha256_file(manifest_path),
+        "vocab_file_sha256": sha256_file(vocab_path),
+    }
+    audit_input_sha256 = hashlib.sha256(
+        json.dumps(identities, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    expected: dict[str, object] = {
+        "audit_version": "2.0",
+        "contract_ready": True,
+        "checked_all_paths": True,
+        "content_coverage_required": True,
+        "schema_version": vocab.schema_version,
+        "vocab_version": vocab.VOCAB_VERSION,
+        "audit_input_sha256": audit_input_sha256,
+        **identities,
+    }
+    mismatches = {
+        key: (audit.get(key), value)
+        for key, value in expected.items()
+        if audit.get(key) != value
+    }
+    if mismatches:
+        msg = f"V2 artifact audit does not match current artifacts: {mismatches}"
+        raise ValueError(msg)
+    return {"path": str(audit_path), **expected}
 
 
 def _load_vocab(path: Path) -> Vocab | VocabV2:
@@ -225,6 +581,7 @@ def _validate_training_shards(
     manifest: Manifest,
     vocab: Vocab | VocabV2,
     *,
+    expected_tokens_root: Path,
     rank: int,
     world_size: int,
 ) -> dict[str, int] | None:
@@ -233,12 +590,17 @@ def _validate_training_shards(
     error: str | None = None
     if rank == 0:
         try:
-            selected = [*manifest.split("train"), *manifest.split("val")]
+            selected = (
+                list(manifest.shards)
+                if isinstance(vocab, VocabV2)
+                else [*manifest.split("train"), *manifest.split("val")]
+            )
             result = validate_manifest_shards(
                 manifest,
                 vocab,
                 shards=selected,
                 context="pretraining",
+                expected_tokens_root=expected_tokens_root,
             )
         except (OSError, TypeError, ValueError) as exc:
             error = f"{type(exc).__name__}: {exc}"
@@ -286,6 +648,253 @@ def setup_distributed() -> tuple[int, int, int]:
     return local_rank, dist.get_rank(), dist.get_world_size()
 
 
+def _validate_distributed_runtime(cfg: dict, *, world_size: int) -> bool:
+    """多 rank 只能进入已实现且会同步梯度的 FSDP 路径。"""
+    requested = cfg["runtime"].get("fsdp", False)
+    if not isinstance(requested, bool):
+        msg = "runtime.fsdp must be a boolean"
+        raise TypeError(msg)
+    if world_size > 1 and not requested:
+        msg = (
+            f"world_size={world_size} requires runtime.fsdp=true; "
+            "unwrapped multi-process training would create divergent models"
+        )
+        raise ValueError(msg)
+    return requested and world_size > 1
+
+
+def _validate_run_directory(out_dir: Path, *, resume_path: Path | None) -> None:
+    """新训练拒绝复用非空目录；显式且已解析的 resume 才可复用。"""
+    if resume_path is not None or not out_dir.exists():
+        return
+    if not out_dir.is_dir():
+        msg = f"training output path exists and is not a directory: {out_dir}"
+        raise NotADirectoryError(msg)
+    try:
+        first_entry = next(out_dir.iterdir())
+    except StopIteration:
+        return
+    msg = (
+        f"refusing fresh training in non-empty output directory {out_dir}; "
+        f"found {first_entry.name!r}. Use --resume with a resumable checkpoint "
+        "or choose a new runtime.out_dir"
+    )
+    raise FileExistsError(msg)
+
+
+def _prepare_output_directory(
+    out_dir: Path,
+    config_path: Path,
+    *,
+    resume_path: Path | None,
+) -> None:
+    """在所有 resume 校验完成后创建目录，并保持原始配置快照不可变。"""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    snapshot = out_dir / "config.snapshot.yaml"
+    if resume_path is not None and snapshot.exists():
+        logger.info("preserving original config snapshot during resume: %s", snapshot)
+        return
+    temporary = snapshot.with_name(f".{snapshot.name}.tmp")
+    shutil.copyfile(config_path, temporary)
+    temporary.replace(snapshot)
+
+
+def _capture_rng_state() -> dict[str, object]:
+    """捕获当前 rank 的 Python/NumPy/Torch RNG，供断点续训恢复。"""
+    return {
+        "python": random.getstate(),
+        "numpy": np.random.get_state(),
+        "torch_cpu": torch.get_rng_state(),
+        "torch_cuda": torch.cuda.get_rng_state_all()
+        if torch.cuda.is_available()
+        else [],
+    }
+
+
+def _restore_rng_state(state: dict[str, object]) -> None:
+    """恢复由 :func:`_capture_rng_state` 保存的 RNG 状态。"""
+    required = {"python", "numpy", "torch_cpu", "torch_cuda"}
+    missing = sorted(required - set(state))
+    if missing:
+        msg = f"checkpoint RNG state is incomplete: missing={missing}"
+        raise ValueError(msg)
+    random.setstate(state["python"])  # type: ignore[arg-type]
+    np.random.set_state(state["numpy"])  # type: ignore[arg-type]
+    torch.set_rng_state(state["torch_cpu"])  # type: ignore[arg-type]
+    cuda_states = state["torch_cuda"]
+    if torch.cuda.is_available():
+        if not isinstance(cuda_states, list):
+            msg = "checkpoint CUDA RNG state must be a list"
+            raise TypeError(msg)
+        if len(cuda_states) != torch.cuda.device_count():
+            msg = (
+                "checkpoint CUDA RNG topology mismatch: "
+                f"saved={len(cuda_states)}, current={torch.cuda.device_count()}"
+            )
+            raise ValueError(msg)
+        torch.cuda.set_rng_state_all(cuda_states)
+
+
+def _set_data_epoch(
+    train_dl: DataLoader,
+    epoch: int,
+    *,
+    seed: int,
+    rank: int,
+) -> None:
+    """使 shard-aware 和普通随机 sampler 都按 epoch 确定性重放。"""
+    loader_generator = getattr(train_dl, "generator", None)
+    if isinstance(loader_generator, torch.Generator):
+        loader_generator.manual_seed(seed + rank + epoch)
+    sampler = train_dl.sampler
+    if hasattr(sampler, "set_epoch"):
+        sampler.set_epoch(epoch)
+        return
+    generator = getattr(sampler, "generator", None)
+    if isinstance(generator, torch.Generator):
+        generator.manual_seed(seed + rank + epoch)
+
+
+def _remaining_epoch_batches(
+    train_dl: DataLoader,
+    batches_consumed: int,
+) -> Iterator[dict[str, torch.Tensor]]:
+    """确定性跳过 checkpoint 已完成的 epoch 内 batch。"""
+    if batches_consumed < 0 or batches_consumed > len(train_dl):
+        msg = (
+            "checkpoint batches_consumed_in_epoch is outside the current loader: "
+            f"consumed={batches_consumed}, batches={len(train_dl)}"
+        )
+        raise ValueError(msg)
+    for batch_index, batch in enumerate(train_dl):
+        if batch_index < batches_consumed:
+            continue
+        yield batch
+
+
+def _data_order_state(
+    train_dl: DataLoader,
+    *,
+    next_epoch: int,
+    batches_consumed_in_epoch: int,
+    training_config_sha256: str,
+    validation_plan_sha256: str | None = None,
+    stop_budgets: dict[str, int],
+    seed: int,
+    rank: int,
+    world_size: int,
+) -> dict[str, object]:
+    """记录可安全恢复的数据顺序身份；未完成 epoch 会从头确定性重放。"""
+    return {
+        "sampler_type": type(train_dl.sampler).__name__,
+        "next_epoch": int(next_epoch),
+        "batches_consumed_in_epoch": int(batches_consumed_in_epoch),
+        "training_config_sha256": training_config_sha256,
+        "validation_plan_sha256": validation_plan_sha256,
+        "stop_budgets": dict(stop_budgets),
+        "seed": int(seed),
+        "rank": int(rank),
+        "world_size": int(world_size),
+    }
+
+
+def _restore_runtime_state(
+    checkpoint: dict[str, object],
+    train_dl: DataLoader,
+    state: TrainState,
+    *,
+    training_config_sha256: str,
+    validation_plan_sha256: str | None = None,
+    stop_budgets: dict[str, int],
+    seed: int,
+    rank: int,
+    world_size: int,
+    require_runtime_state: bool = False,
+) -> None:
+    """恢复当前 rank RNG，并校验/恢复确定性 sampler epoch。"""
+    saved_by_rank = checkpoint.get("runtime_state_by_rank")
+    if saved_by_rank is None:
+        if require_runtime_state:
+            msg = "Tokenizer v2 resume requires checkpoint RNG/sampler/config state"
+            raise ValueError(msg)
+        logger.warning(
+            "resume checkpoint has no RNG/sampler state; continuation is not "
+            "bitwise reproducible"
+        )
+        return
+    if not isinstance(saved_by_rank, list) or len(saved_by_rank) != world_size:
+        msg = (
+            "checkpoint runtime-state topology mismatch: "
+            f"saved={len(saved_by_rank) if isinstance(saved_by_rank, list) else 'invalid'}, "
+            f"current={world_size}"
+        )
+        raise ValueError(msg)
+    saved = saved_by_rank[rank]
+    if not isinstance(saved, dict):
+        msg = f"checkpoint runtime state for rank {rank} is invalid"
+        raise TypeError(msg)
+    order = saved.get("data_order")
+    if not isinstance(order, dict):
+        msg = f"checkpoint data-order state for rank {rank} is invalid"
+        raise TypeError(msg)
+    expected = {
+        "sampler_type": type(train_dl.sampler).__name__,
+        "next_epoch": state.data_epochs_completed,
+        "batches_consumed_in_epoch": state.batches_consumed_in_epoch,
+        "training_config_sha256": training_config_sha256,
+        "validation_plan_sha256": validation_plan_sha256,
+        "seed": seed,
+        "rank": rank,
+        "world_size": world_size,
+    }
+    mismatches = {
+        key: (order.get(key), value)
+        for key, value in expected.items()
+        if order.get(key) != value
+    }
+    if mismatches:
+        msg = f"checkpoint sampler state does not match current loader: {mismatches}"
+        raise ValueError(msg)
+    _validate_stop_budget_extension(order.get("stop_budgets"), stop_budgets)
+    rng = saved.get("rng")
+    if not isinstance(rng, dict):
+        msg = f"checkpoint RNG state for rank {rank} is invalid"
+        raise TypeError(msg)
+    _set_data_epoch(
+        train_dl,
+        state.data_epochs_completed,
+        seed=seed,
+        rank=rank,
+    )
+    _restore_rng_state(rng)
+
+
+def _validation_plan_sha256(val_dl: DataLoader | None) -> str | None:
+    """Return the canonical identity of the fixed validation window plan."""
+    if val_dl is None:
+        return None
+    sampler = val_dl.sampler
+    if not isinstance(sampler, FixedValidationSampler):
+        msg = "validation DataLoader must use FixedValidationSampler"
+        raise TypeError(msg)
+    return sampler.plan.sha256
+
+
+def _require_exact_validation_windows(
+    plan: ValidationSamplePlan,
+    *,
+    requested_windows: int,
+) -> None:
+    """Reject configured validation plans that silently select fewer than N windows."""
+    if plan.max_windows != requested_windows or len(plan.windows) != requested_windows:
+        msg = (
+            f"data.validation_windows requires exactly {requested_windows} windows, "
+            f"got selection.max_windows={plan.max_windows!r}, "
+            f"selected={len(plan.windows)}, candidates={plan.total_candidate_windows}"
+        )
+        raise ValueError(msg)
+
+
 def is_main_process(rank: int) -> bool:
     """是否为主进程（负责日志、存盘）。"""
     return rank == 0
@@ -309,6 +918,7 @@ class TrainState:
     samples_seen: int = 0
     non_pad_tokens_seen: int = 0
     data_epochs_completed: int = 0
+    batches_consumed_in_epoch: int = 0
     best_val: float = float("inf")
     best_update_step: int = -1
 
@@ -337,6 +947,7 @@ def _restore_train_state(
             samples_seen=int(saved.get("samples_seen", 0)),
             non_pad_tokens_seen=int(saved.get("non_pad_tokens_seen", 0)),
             data_epochs_completed=int(saved.get("data_epochs_completed", 0)),
+            batches_consumed_in_epoch=int(saved.get("batches_consumed_in_epoch", 0)),
             best_val=float(saved.get("best_val", float("inf"))),
             best_update_step=int(saved.get("best_update_step", -1)),
         )
@@ -354,6 +965,23 @@ def _restore_train_state(
 
 def _amp_dtype(precision: str) -> torch.dtype | None:
     return {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": None}[precision]
+
+
+def _build_grad_scaler(
+    precision: str,
+    *,
+    use_fsdp: bool,
+) -> torch.amp.GradScaler:
+    """Build an FP16 scaler whose overflow decision is identical on every rank."""
+    if precision == "fp16" and use_fsdp:
+        from torch.distributed.fsdp.sharded_grad_scaler import ShardedGradScaler
+
+        # The ordinary GradScaler only observes this rank's gradient shards.  A
+        # rank-local overflow decision could make some ranks skip optimizer.step
+        # while peers enter the following collectives.  ShardedGradScaler reduces
+        # found_inf across the FSDP process group before making that decision.
+        return ShardedGradScaler()
+    return torch.amp.GradScaler(enabled=precision == "fp16")
 
 
 def _fusion_options(model_config: dict) -> dict[str, object]:
@@ -479,6 +1107,20 @@ def _build_dataloaders(
     world_size: int = 1,
 ) -> tuple[DataLoader, DataLoader | None]:
     data = cfg["data"]
+    batch_size = int(
+        cfg["optim"].get("micro_batch_size", cfg["optim"].get("batch_size", 1))
+    )
+    if batch_size < 1:
+        msg = f"training batch size must be positive, got {batch_size}"
+        raise ValueError(msg)
+    grad_accum = int(cfg["optim"].get("grad_accum", 1))
+    if grad_accum < 1:
+        msg = f"optim.grad_accum must be positive, got {grad_accum}"
+        raise ValueError(msg)
+    num_workers = int(data["num_workers"])
+    if num_workers < 0:
+        msg = f"data.num_workers must be non-negative, got {num_workers}"
+        raise ValueError(msg)
     dataset_options = {
         "context": data["context"],
         "stride": data["stride"],
@@ -500,9 +1142,15 @@ def _build_dataloaders(
             **dataset_options,
         )
         collate_fn = collate_windows
-    batch_size = int(
-        cfg["optim"].get("micro_batch_size", cfg["optim"].get("batch_size", 1))
-    )
+    if train_ds.context < 2 or train_ds.min_len < 2:
+        msg = "next-event training requires data.context and data.min_len >= 2"
+        raise ValueError(msg)
+    if len(train_ds) == 0:
+        msg = (
+            "training dataset contains no windows; check the train split and "
+            "data.context/stride/min_len"
+        )
+        raise ValueError(msg)
     drop_last = bool(data.get("drop_last", True))
     train_sampler = None
     shuffle = True
@@ -514,18 +1162,20 @@ def _build_dataloaders(
             shuffle=True,
             seed=seed,
             drop_last=drop_last,
-            samples_per_rank_multiple=(
-                1 if drop_last else batch_size * int(cfg["optim"].get("grad_accum", 1))
-            ),
+            samples_per_rank_multiple=(1 if drop_last else batch_size * grad_accum),
         )
         shuffle = False
     generator = torch.Generator()
     generator.manual_seed(seed + rank)
     worker_options: dict[str, object] = {}
-    if int(data["num_workers"]) > 0:
+    if num_workers > 0:
+        prefetch_factor = int(data.get("prefetch_factor", 2))
+        if prefetch_factor < 1:
+            msg = f"data.prefetch_factor must be positive, got {prefetch_factor}"
+            raise ValueError(msg)
         worker_options = {
             "persistent_workers": bool(data.get("persistent_workers", True)),
-            "prefetch_factor": int(data.get("prefetch_factor", 2)),
+            "prefetch_factor": prefetch_factor,
         }
     train_dl = DataLoader(
         train_ds,
@@ -533,12 +1183,18 @@ def _build_dataloaders(
         shuffle=shuffle,
         sampler=train_sampler,
         collate_fn=collate_fn,
-        num_workers=data["num_workers"],
+        num_workers=num_workers,
         drop_last=drop_last,
-        generator=generator if train_sampler is None else None,
+        generator=generator,
         pin_memory=torch.cuda.is_available(),
         **worker_options,
     )
+    if len(train_dl) == 0:
+        msg = (
+            "training DataLoader contains no batches on this rank; reduce the "
+            "batch size, set data.drop_last=false, or provide more windows"
+        )
+        raise ValueError(msg)
     val_dl = None
     val_shards = manifest.split("val")
     if val_shards:
@@ -550,13 +1206,26 @@ def _build_dataloaders(
             )
         else:
             val_ds = EventWindowDataset(val_shards, **dataset_options)
+        if len(val_ds) == 0:
+            msg = (
+                "validation dataset contains no windows; check the validation "
+                "split and data.context/stride/min_len"
+            )
+            raise ValueError(msg)
         plan_path = Path(
             data.get(
                 "validation_plan",
                 Path(cfg["runtime"]["out_dir"]) / "validation_windows.json",
             )
         )
-        if rank == 0 and not plan_path.exists():
+        configured_validation_windows = data.get("validation_windows")
+        if configured_validation_windows is not None and (
+            type(configured_validation_windows) is not int
+            or configured_validation_windows < 1
+        ):
+            msg = "data.validation_windows must be a positive integer"
+            raise ValueError(msg)
+        if not plan_path.exists():
             max_batches = int(cfg["runtime"].get("val_max_batches", 50))
             plan = build_validation_sample_plan(
                 val_shards,
@@ -564,15 +1233,20 @@ def _build_dataloaders(
                 stride=data["stride"],
                 min_len=data["min_len"],
                 seed=int(data.get("validation_seed", cfg["seed"])),
-                max_windows=int(
-                    data.get(
-                        "validation_windows",
-                        max_batches * batch_size,
-                    )
+                max_windows=(
+                    configured_validation_windows
+                    if configured_validation_windows is not None
+                    else max_batches * batch_size
                 ),
             )
-            plan.save(plan_path)
-            logger.info("created fixed validation plan %s", plan_path)
+            if configured_validation_windows is not None:
+                _require_exact_validation_windows(
+                    plan,
+                    requested_windows=configured_validation_windows,
+                )
+            if rank == 0:
+                plan.save(plan_path)
+                logger.info("created fixed validation plan %s", plan_path)
         if world_size > 1:
             import torch.distributed as dist
 
@@ -584,14 +1258,28 @@ def _build_dataloaders(
             stride=data["stride"],
             min_len=data["min_len"],
         )
+        if configured_validation_windows is not None:
+            _require_exact_validation_windows(
+                plan,
+                requested_windows=configured_validation_windows,
+            )
         val_sampler = FixedValidationSampler(plan)
+        if len(val_sampler) == 0:
+            msg = "fixed validation plan contains no windows"
+            raise ValueError(msg)
+        # DataLoader creates an iterator base seed even with num_workers=0.  Without
+        # a private generator, every validation pass advances the global torch RNG
+        # and changes the next training dropout mask (including across resume).
+        val_generator = torch.Generator()
+        val_generator.manual_seed(seed + rank + 1_000_003)
         val_dl = DataLoader(
             val_ds,
             batch_size=batch_size,
             shuffle=False,
             sampler=val_sampler,
             collate_fn=collate_fn,
-            num_workers=data["num_workers"],
+            num_workers=num_workers,
+            generator=val_generator,
             pin_memory=torch.cuda.is_available(),
             **worker_options,
         )
@@ -606,17 +1294,24 @@ def evaluate(
     target_fields: tuple[str, ...],
     *,
     target_specs: tuple[TargetSpec, ...] | None = None,
-    max_batches: int = 50,
+    max_batches: int | None = None,
     world_size: int = 1,
 ) -> float:
-    """在若干验证批上返回平均总验证损失（多卡时 all-reduce 平均）。"""
+    """在完整固定计划上返回平均总验证损失（多卡时 all-reduce 平均）。"""
+    if max_batches is not None and max_batches < 1:
+        msg = "max_batches must be positive when provided"
+        raise ValueError(msg)
+    if isinstance(getattr(val_dl, "sampler", None), FixedValidationSampler):
+        # A persisted plan is the validation identity.  Never reinterpret the
+        # legacy batch budget as permission to evaluate only its prefix.
+        max_batches = None
     model.eval()
     total, n = 0.0, 0
     raw_sums = dict.fromkeys(target_fields, 0.0)
     ordinal_sums = dict.fromkeys(target_fields, 0.0)
     valid_counts = dict.fromkeys(target_fields, 0.0)
     for i, batch in enumerate(val_dl):
-        if i >= max_batches:
+        if max_batches is not None and i >= max_batches:
             break
         batch = {k: v.to(device) for k, v in batch.items()}
         logits = model(batch)
@@ -672,39 +1367,37 @@ def evaluate(
 def train(config_path: Path, *, resume: Path | str | None = None) -> None:
     """从 YAML 配置运行预训练。"""
     # [导读] yaml.safe_load 把 config.yaml 读成 Python 字典 cfg
-    cfg = yaml.safe_load(Path(config_path).read_text(encoding="utf-8"))
+    config_path = Path(config_path)
+    cfg = _validate_training_config(
+        yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    )
+    training_config_sha256 = _immutable_training_config_sha256(cfg)
+    stop_budgets = _training_stop_budgets(cfg)
     local_rank, rank, world_size = setup_distributed()
+    use_fsdp = _validate_distributed_runtime(cfg, world_size=world_size)
     set_seed(cfg["seed"] + rank)  # 固定随机种子，各 rank 略有偏移
     device = resolve_device(cfg["runtime"]["device"], local_rank=local_rank)
 
     out_dir = Path(cfg["runtime"]["out_dir"])
-    if is_main_process(rank):
-        out_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy(config_path, out_dir / "config.snapshot.yaml")  # 存档配置
-
-    if world_size > 1:
-        import torch.distributed as dist
-
-        dist.barrier()
-
-    writer = None
-    if is_main_process(rank):
-        try:
-            from torch.utils.tensorboard import SummaryWriter
-
-            writer = SummaryWriter(str(out_dir / "tb"))
-        except ImportError:
-            logger.warning("tensorboard unavailable; skipping scalar logging")
+    resume_path = _resolve_resume_path(out_dir, resume)
+    _validate_run_directory(out_dir, resume_path=resume_path)
 
     # [导读] manifest 告诉 DataLoader 读哪些 parquet；vocab 告诉模型每个字段词表多大
     manifest_path = Path(cfg["data"]["manifest"])
     manifest = Manifest.load(manifest_path)
     vocab_path = Path(cfg["data"]["vocab"])
     vocab = _load_vocab(vocab_path)
+    _validate_config_schema(cfg, vocab)
     validate_manifest_vocab_contract(
         manifest,
         vocab,
         context="pretraining",
+    )
+    artifact_audit = _validate_v2_artifact_audit(
+        cfg,
+        manifest_path=manifest_path,
+        vocab_path=vocab_path,
+        vocab=vocab,
     )
     expected_dates: dict[str, set[str]] = {}
     for split, key in (
@@ -733,6 +1426,11 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
     shard_contract = _validate_training_shards(
         manifest,
         vocab,
+        expected_tokens_root=(
+            manifest_path.parent.parent / "tokens"
+            if manifest_path.parent.name == "data"
+            else manifest_path.parent / "tokens"
+        ),
         rank=rank,
         world_size=world_size,
     )
@@ -745,15 +1443,8 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
     if is_main_process(rank):
         logger.info("pretraining shard contract: %s", shard_contract)
         logger.info("pretraining data contract: %s", pretrain_data_contract)
-
-    train_dl, val_dl = _build_dataloaders(
-        manifest,
-        cfg,
-        vocab=vocab,
-        seed=cfg["seed"],
-        rank=rank,
-        world_size=world_size,
-    )
+        if artifact_audit is not None:
+            logger.info("pretraining V2 artifact audit: %s", artifact_audit)
 
     mcfg = cfg["model"]
     if isinstance(vocab, VocabV2):
@@ -846,7 +1537,6 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
         **_fusion_options(mcfg),
     )
     model = OrderFlowFM(model_cfg).to(device)  # .to(device) 把模型放到 CPU/GPU
-    resume_path = _resolve_resume_path(out_dir, resume)
     resume_ckpt = None
     if resume_path is not None:
         resume_ckpt = torch.load(resume_path, map_location="cpu", weights_only=False)
@@ -876,7 +1566,6 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
         if is_main_process(rank):
             logger.info("loaded model checkpoint %s", resume_path)
 
-    use_fsdp = cfg["runtime"].get("fsdp") and world_size > 1
     if is_main_process(rank):
         logger.info("model parameters: %.2fM", model.num_parameters() / 1e6)
         if use_fsdp:
@@ -895,10 +1584,13 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
         betas=tuple(opt["betas"]),
     )
     amp_dtype = _amp_dtype(opt["precision"])
-    scaler = torch.amp.GradScaler(enabled=opt["precision"] == "fp16")
+    scaler = _build_grad_scaler(opt["precision"], use_fsdp=use_fsdp)
 
     state = TrainState()
     accum = int(opt["grad_accum"])
+    if accum < 1:
+        msg = f"optim.grad_accum must be positive, got {accum}"
+        raise ValueError(msg)
     if resume_ckpt is not None:
         optimizer_state = resume_ckpt.get("optimizer_state")
         if optimizer_state is not None:
@@ -913,6 +1605,12 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
         if "scaler_state" in resume_ckpt:
             scaler.load_state_dict(resume_ckpt["scaler_state"])
         state = _restore_train_state(resume_ckpt, grad_accum=accum)
+        if state.micro_step % accum:
+            msg = (
+                "resume checkpoint was saved mid gradient-accumulation cycle and "
+                "does not contain pending gradients"
+            )
+            raise ValueError(msg)
         if is_main_process(rank):
             logger.info(
                 "resumed training at update %d / micro %d (best %.4f @ %d)",
@@ -921,7 +1619,6 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
                 state.best_val,
                 state.best_update_step,
             )
-        del resume_ckpt
 
     max_update_steps = int(opt.get("max_update_steps", opt.get("max_steps", 0)))
     max_train_tokens = int(opt.get("max_train_tokens", 0))
@@ -939,6 +1636,81 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
             "cosine schedule has a fixed horizon"
         )
         raise ValueError(msg_1)
+
+    train_dl, val_dl = _build_dataloaders(
+        manifest,
+        cfg,
+        vocab=vocab,
+        seed=cfg["seed"],
+        rank=rank,
+        world_size=world_size,
+    )
+    validation_plan_sha256 = _validation_plan_sha256(val_dl)
+    if max_data_epochs > 0 and len(train_dl) % accum:
+        msg = (
+            "epoch-budget training requires the per-rank DataLoader batch count "
+            f"to be divisible by optim.grad_accum; batches={len(train_dl)}, "
+            f"grad_accum={accum}"
+        )
+        raise ValueError(msg)
+
+    if resume_ckpt is not None:
+        _restore_runtime_state(
+            resume_ckpt,
+            train_dl,
+            state,
+            training_config_sha256=training_config_sha256,
+            validation_plan_sha256=validation_plan_sha256,
+            stop_budgets=stop_budgets,
+            seed=cfg["seed"],
+            rank=rank,
+            world_size=world_size,
+            require_runtime_state=isinstance(vocab, VocabV2),
+        )
+        del resume_ckpt
+
+    output_error: str | None = None
+    if is_main_process(rank):
+        try:
+            _prepare_output_directory(
+                out_dir,
+                config_path,
+                resume_path=resume_path,
+            )
+        except OSError as exc:
+            output_error = f"{type(exc).__name__}: {exc}"
+    if world_size > 1:
+        import torch.distributed as dist
+
+        payload: list[object] = [output_error]
+        dist.broadcast_object_list(payload, src=0)
+        output_error = payload[0] if isinstance(payload[0], str) else None
+    if output_error is not None:
+        msg = f"failed to prepare training output directory: {output_error}"
+        raise OSError(msg)
+
+    writer = None
+    if is_main_process(rank):
+        try:
+            from torch.utils.tensorboard import SummaryWriter
+
+            writer = SummaryWriter(str(out_dir / "tb"))
+        except ImportError:
+            logger.warning("tensorboard unavailable; skipping scalar logging")
+
+    def checkpoint_data_order_state() -> dict[str, object]:
+        return _data_order_state(
+            train_dl,
+            next_epoch=state.data_epochs_completed,
+            batches_consumed_in_epoch=state.batches_consumed_in_epoch,
+            training_config_sha256=training_config_sha256,
+            validation_plan_sha256=validation_plan_sha256,
+            stop_budgets=stop_budgets,
+            seed=cfg["seed"],
+            rank=rank,
+            world_size=world_size,
+        )
+
     model.train()  # 训练模式（启用 dropout 等）
     optimizer.zero_grad(set_to_none=True)
     pending_samples = 0
@@ -956,9 +1728,16 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
 
     # 调度、日志、验证与存盘统一使用 optimizer update 计数。
     while not training_complete():
-        if hasattr(train_dl.sampler, "set_epoch"):
-            train_dl.sampler.set_epoch(state.data_epochs_completed)
-        for batch in train_dl:
+        _set_data_epoch(
+            train_dl,
+            state.data_epochs_completed,
+            seed=cfg["seed"],
+            rank=rank,
+        )
+        for batch in _remaining_epoch_batches(
+            train_dl,
+            state.batches_consumed_in_epoch,
+        ):
             batch = {k: v.to(device, non_blocking=True) for k, v in batch.items()}
             lr = cosine_lr(
                 state.update_step,
@@ -994,6 +1773,7 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
                 scaler.scale(loss).backward()
 
             state.micro_step += 1
+            state.batches_consumed_in_epoch += 1
             pending_samples += int(batch["attention_mask"].size(0))
             pending_tokens += int(batch["attention_mask"].sum().item())
 
@@ -1089,7 +1869,7 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
                     device,
                     target_fields,
                     target_specs=target_specs,
-                    max_batches=int(cfg["runtime"].get("val_max_batches", 50)),
+                    max_batches=None,
                     world_size=world_size,
                 )
                 if is_main_process(rank):
@@ -1105,6 +1885,7 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
                         val_loss=val_loss,
                         target_specs=target_specs,
                         pretrain_data_contract=pretrain_data_contract,
+                        data_order_state=checkpoint_data_order_state(),
                         rank=rank,
                         writer=writer,
                     )
@@ -1119,6 +1900,7 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
                     train_state=state,
                     target_specs=target_specs,
                     pretrain_data_contract=pretrain_data_contract,
+                    data_order_state=checkpoint_data_order_state(),
                     rank=rank,
                     step=state.update_step,
                 )
@@ -1127,9 +1909,10 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
                 break
         else:
             # 只有自然耗尽整个 DataLoader 才记为完整 epoch。中途按 token/update
-            # 预算停止或从 checkpoint 恢复时不会伪造全量覆盖；恢复会确定性重放
-            # 未完成 epoch，宁可有少量重复，也不遗漏 shard。
+            # 预算停止时不会伪造全量覆盖；checkpoint 会记录 epoch 内 batch offset，
+            # 恢复时按同一 sampler 顺序精确跳过已完成 batch。
             state.data_epochs_completed += 1
+            state.batches_consumed_in_epoch = 0
             if is_main_process(rank):
                 logger.info(
                     "completed data epoch %d/%s",
@@ -1137,37 +1920,37 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
                     max_data_epochs if max_data_epochs > 0 else "unbounded",
                 )
 
-    # 训练结束：再跑一轮验证，保证 best.pt 覆盖「最后一段未踩到 eval_every」的改进
-    if val_dl is not None and cfg["runtime"].get("save_best", True):
+    # 非周期的终点验证只是诊断，不参与 best checkpoint 选择。否则
+    # 先跑短预算、再延长预算会额外让中间终点参与选模，使分段续训
+    # 与一次性连续训练产生不同的 best.pt。刚刚完成周期验证时也无需重复。
+    final_needs_diagnostic = (
+        val_dl is not None
+        and cfg["runtime"].get("save_best", True)
+        and state.update_step % int(cfg["runtime"]["eval_every"]) != 0
+    )
+    if final_needs_diagnostic:
         val_loss = evaluate(
             model,
             val_dl,
             device,
             target_fields,
             target_specs=target_specs,
-            max_batches=int(cfg["runtime"].get("val_max_batches", 50)),
+            max_batches=None,
             world_size=world_size,
         )
         if is_main_process(rank):
             logger.info(
-                "final val_loss %.4f (best so far %.4f @ step %d)",
+                "final diagnostic val_loss %.4f (scheduled best %.4f @ step %d)",
                 val_loss,
                 state.best_val,
                 state.best_update_step,
             )
             if writer is not None:
-                writer.add_scalar("val/loss", val_loss, state.update_step)
-        _maybe_save_best(
-            model,
-            model_cfg,
-            out_dir,
-            state,
-            val_loss=val_loss,
-            target_specs=target_specs,
-            pretrain_data_contract=pretrain_data_contract,
-            rank=rank,
-            writer=writer,
-        )
+                writer.add_scalar(
+                    "val/final_diagnostic_loss",
+                    val_loss,
+                    state.update_step,
+                )
 
     _save_checkpoint(
         model,
@@ -1178,6 +1961,7 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
         train_state=state,
         target_specs=target_specs,
         pretrain_data_contract=pretrain_data_contract,
+        data_order_state=checkpoint_data_order_state(),
         rank=rank,
         step=state.update_step,
         val_loss=state.best_val if state.best_update_step >= 0 else None,
@@ -1189,6 +1973,7 @@ def train(config_path: Path, *, resume: Path | str | None = None) -> None:
         train_state=state,
         target_specs=target_specs,
         pretrain_data_contract=pretrain_data_contract,
+        data_order_state=checkpoint_data_order_state(),
         rank=rank,
         step=state.update_step,
         val_loss=state.best_val if state.best_update_step >= 0 else None,
@@ -1238,6 +2023,7 @@ def _maybe_save_best(
     scaler: torch.amp.GradScaler | None = None,
     target_specs: tuple[TargetSpec, ...] | None = None,
     pretrain_data_contract: dict[str, object] | None = None,
+    data_order_state: dict[str, object] | None = None,
     val_loss: float,
     rank: int,
     writer=None,
@@ -1256,6 +2042,7 @@ def _maybe_save_best(
             train_state=state,
             target_specs=target_specs,
             pretrain_data_contract=pretrain_data_contract,
+            data_order_state=data_order_state,
             rank=rank,
             step=state.update_step,
             val_loss=val_loss,
@@ -1285,6 +2072,7 @@ def _save_checkpoint(
     train_state: TrainState | None = None,
     target_specs: tuple[TargetSpec, ...] | None = None,
     pretrain_data_contract: dict[str, object] | None = None,
+    data_order_state: dict[str, object] | None = None,
     rank: int = 0,
     step: int | None = None,
     val_loss: float | None = None,
@@ -1295,6 +2083,19 @@ def _save_checkpoint(
 
     FSDP 下所有 rank 都必须进入 state_dict 收集；只有 rank0 写文件。
     """
+    local_runtime_state = {
+        "rng": _capture_rng_state(),
+        "data_order": dict(data_order_state or {}),
+    }
+    runtime_state_by_rank: list[object]
+    if torch.distributed.is_available() and torch.distributed.is_initialized():
+        runtime_state_by_rank = [None] * torch.distributed.get_world_size()
+        torch.distributed.all_gather_object(
+            runtime_state_by_rank,
+            local_runtime_state,
+        )
+    else:
+        runtime_state_by_rank = [local_runtime_state]
     state = _model_state_dict(model)
     optimizer_state = None
     if optimizer is not None:
@@ -1346,6 +2147,7 @@ def _save_checkpoint(
             "feature_transform_version": cfg.feature_transform_version,
             "backbone_moe": cfg.backbone_moe.to_dict(),
         },
+        "runtime_state_by_rank": runtime_state_by_rank,
     }
     if target_specs is not None:
         payload["target_specs"] = [asdict(spec) for spec in target_specs]
@@ -1362,6 +2164,7 @@ def _save_checkpoint(
             "samples_seen": train_state.samples_seen,
             "non_pad_tokens_seen": train_state.non_pad_tokens_seen,
             "data_epochs_completed": train_state.data_epochs_completed,
+            "batches_consumed_in_epoch": train_state.batches_consumed_in_epoch,
             "best_val": train_state.best_val,
             "best_update_step": train_state.best_update_step,
         }

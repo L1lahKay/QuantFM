@@ -76,13 +76,35 @@ assert torch.cuda.is_available(), "torch.cuda.is_available() == False"
 print(f"torch {torch.__version__}, GPUs: {torch.cuda.device_count()}")
 PY
 
-export TB_LOGDIR="$WORKDIR/run/tb"
-bash "$ROOT/quant_fm/scripts/start_tensorboard_medium.sh"
+RUN_DIR="$WORKDIR/run"
+shopt -s dotglob nullglob
+existing_run_entries=("$RUN_DIR"/*)
+if (( ${#existing_run_entries[@]} > 0 )); then
+  echo "ERROR: refusing fresh training in non-empty run directory: $RUN_DIR" >&2
+  echo "  Use the train CLI with --resume auto, or choose a new workdir." >&2
+  exit 1
+fi
+
+export TB_LOGDIR="$RUN_DIR/tb"
 
 echo "==> config=$EFFECTIVE_CONFIG  nproc=$NPROC  port=$MASTER_PORT"
 echo "==> workdir=$WORKDIR"
 echo "==> TensorBoard: http://127.0.0.1:${TB_PORT:-6006}"
 echo "==> checkpoints: $WORKDIR/run/"
+
+# train.py writes config.snapshot.yaml only after all resume/provenance checks pass.
+# Start telemetry after that point so it cannot make a fresh run directory non-empty
+# before the training preflight has claimed it.
+launcher_pid=$BASHPID
+(
+  while kill -0 "$launcher_pid" 2>/dev/null; do
+    if [[ -f "$RUN_DIR/config.snapshot.yaml" ]]; then
+      bash "$ROOT/quant_fm/scripts/start_tensorboard_medium.sh"
+      exit 0
+    fi
+    sleep 1
+  done
+) &
 
 exec torchrun \
   --standalone \

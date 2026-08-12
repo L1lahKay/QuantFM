@@ -95,6 +95,40 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["D100", "D102", "D103", "B018", "FBT001", "D400", "D415"]
 "quant_fm/**/*.py" = ["D400", "D415"]  # 中文 docstring 以句号结尾，非英文句点
+# The benchmark tree is also executed as standalone Python 3.10 scripts inside
+# minimal workload images.  Keep correctness/import checks enabled while
+# exempting it from application-library docstring, exception-style, and
+# pytest-style rules that conflict with its unittest/CLI boundary.
+"benchmark/**/*.py" = [
+    "B005",
+    "B904",
+    "B905",
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "EM101",
+    "EM102",
+    "FBT001",
+    "PT018",
+    "SIM105",
+    "SIM117",
+    "TC003",
+    "TRY004",
+    "TRY203",
+    "TRY300",
+    "TRY301",
+    "UP017",  # benchmark scripts intentionally support system Python 3.10
+    "W505",
+]
+"benchmark/**/test*.py" = ["E402", "PT009", "PT027"]
+"k8s/scheduler-evaluation/analyze*.py" = [
+    "D100",
+    "D103",
+    "EM101",
+    "EM102",
+    "PIE810",
+]
 
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 88
@@ -125,6 +159,29 @@ dev = [
 [tool.uv.build-backend]
 module-name = "quant_fm"
 module-root = ""
+# Generated datasets/checkpoints live below the import package in developer
+# workspaces.  Git ignores are not packaging rules, so exclude them explicitly
+# from both sdists and direct source-tree wheel builds.
+source-exclude = [
+    "quant_fm/runs",
+    "*.parquet",
+    "*.arrow",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.safetensors",
+    "events.out.tfevents*",
+]
+wheel-exclude = [
+    "quant_fm/runs",
+    "*.parquet",
+    "*.arrow",
+    "*.pt",
+    "*.pth",
+    "*.ckpt",
+    "*.safetensors",
+    "events.out.tfevents*",
+]
 
 [tool.uv]
 managed = true

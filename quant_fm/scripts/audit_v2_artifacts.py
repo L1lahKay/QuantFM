@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 from collections import Counter
@@ -15,11 +16,14 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 from pylob.event_ordering import CAUSAL_EXCHANGE_TIME_V2
 
+from quant_fm.data_coverage import coverage_set_sha256, verify_dataset_coverage
 from quant_fm.manifest.build_manifest import Manifest
+from quant_fm.manifest.validation import sha256_file, validate_manifest_shard_paths
 from quant_fm.scripts.audit_token_ordering import audit_token_shard_order
 from quant_fm.tokenizer.artifact_contract import (
     assert_token_contract_matches,
     read_token_contract,
+    token_contract_path,
 )
 from quant_fm.tokenizer.field_spec import BOOK_FIELD_SPECS_V2
 from quant_fm.tokenizer.storage_encoding_v2 import (
@@ -39,6 +43,52 @@ if TYPE_CHECKING:
 
 def _issue(severity: str, code: str, message: str) -> dict[str, str]:
     return {"severity": severity, "code": code, "message": message}
+
+
+def _audit_failure_records(
+    data_dir: Path,
+) -> tuple[dict[str, list[str]], list[dict[str, str]]]:
+    """Load explicit replay gaps so a formal artifact cannot hide them."""
+    gaps: dict[str, list[str]] = {}
+    issues: list[dict[str, str]] = []
+    for path in sorted((data_dir / ".failed").glob("*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            issues.append(
+                _issue(
+                    "critical",
+                    "failure_record_invalid",
+                    f"无法读取失败标的记录 {path}: {exc}",
+                )
+            )
+            continue
+        if not isinstance(payload, list) or any(
+            not isinstance(symbol, str) or not symbol for symbol in payload
+        ):
+            issues.append(
+                _issue(
+                    "critical",
+                    "failure_record_invalid",
+                    f"失败标的记录必须是非空字符串列表: {path}",
+                )
+            )
+            continue
+        symbols = sorted(set(payload))
+        if symbols:
+            gaps[path.stem] = symbols
+    if gaps:
+        summary = ", ".join(
+            f"{date}({len(symbols)})" for date, symbols in sorted(gaps.items())
+        )
+        issues.append(
+            _issue(
+                "critical",
+                "symbol_coverage_gaps",
+                f"存在显式回放失败标的，正式 V2 不可就绪: {summary}",
+            )
+        )
+    return gaps, issues
 
 
 def _sample_shards(manifest: Manifest, limit: int) -> list[Any]:
@@ -323,6 +373,8 @@ def audit_v2_artifacts(
     vocab_path = data_dir / "vocab_v2.json"
     validation_plan = root / "validation_windows.json"
     issues: list[dict[str, str]] = []
+    failed_symbol_gaps, failure_issues = _audit_failure_records(data_dir)
+    issues.extend(failure_issues)
     for name, path in (("manifest", manifest_path), ("vocab_v2", vocab_path)):
         if not path.is_file():
             issues.append(_issue("critical", f"missing_{name}", f"缺少 {path}"))
@@ -332,6 +384,7 @@ def audit_v2_artifacts(
             "created_utc": datetime.now(tz=UTC).isoformat(),
             "root": str(root.resolve()),
             "contract_ready": False,
+            "failed_symbol_gaps": failed_symbol_gaps,
             "issues": issues,
             "sampled_shards": [],
         }
@@ -352,9 +405,25 @@ def audit_v2_artifacts(
             "created_utc": datetime.now(tz=UTC).isoformat(),
             "root": str(root.resolve()),
             "contract_ready": False,
+            "failed_symbol_gaps": failed_symbol_gaps,
             "issues": issues,
             "sampled_shards": [],
         }
+
+    try:
+        validate_manifest_shard_paths(
+            manifest,
+            context="V2 artifact audit",
+            expected_tokens_root=root / "tokens",
+        )
+    except ValueError as exc:
+        issues.append(
+            _issue(
+                "critical",
+                "manifest_shard_path_invalid",
+                str(exc),
+            )
+        )
 
     if (
         manifest.schema_version != vocab.schema_version
@@ -416,6 +485,22 @@ def audit_v2_artifacts(
     split_dates = {
         split: set(manifest.dates(split)) for split in ("train", "val", "test")
     }
+    all_manifest_dates = sorted(set().union(*split_dates.values()))
+    coverage_summary: dict[str, Any] | None = None
+    try:
+        coverage_summary = verify_dataset_coverage(
+            root,
+            expected_dates=all_manifest_dates,
+            manifest=manifest,
+        )
+    except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        issues.append(
+            _issue(
+                "critical",
+                "universe_coverage_invalid",
+                str(exc),
+            )
+        )
     if (
         overlap := (split_dates["train"] & split_dates["val"])
         | (split_dates["train"] & split_dates["test"])
@@ -489,11 +574,14 @@ def audit_v2_artifacts(
             continue
         parquet = pq.ParquetFile(path)
         rows = int(parquet.metadata.num_rows)
+        parquet_sha256 = sha256_file(path)
         missing_columns = sorted(expected_columns - set(parquet.schema_arrow.names))
         item.update(
             {
                 "rows": rows,
                 "manifest_rows": shard.rows,
+                "sha256": parquet_sha256,
+                "manifest_sha256": shard.sha256,
                 "missing_columns": missing_columns,
             }
         )
@@ -505,6 +593,37 @@ def audit_v2_artifacts(
                     f"{path}: manifest={shard.rows}, parquet={rows}",
                 )
             )
+        if not shard.sha256 or parquet_sha256 != shard.sha256:
+            issues.append(
+                _issue(
+                    "critical",
+                    "token_shard_hash_mismatch",
+                    f"{path}: manifest={shard.sha256!r}, actual={parquet_sha256}",
+                )
+            )
+        sidecar = token_contract_path(path)
+        if not sidecar.is_file():
+            issues.append(_issue("critical", "token_sidecar_missing", f"{sidecar}"))
+        else:
+            sidecar_sha256 = sha256_file(sidecar)
+            item.update(
+                {
+                    "data_contract_sha256": sidecar_sha256,
+                    "manifest_data_contract_sha256": shard.data_contract_sha256,
+                }
+            )
+            if (
+                not shard.data_contract_sha256
+                or sidecar_sha256 != shard.data_contract_sha256
+            ):
+                issues.append(
+                    _issue(
+                        "critical",
+                        "token_sidecar_hash_mismatch",
+                        f"{sidecar}: manifest={shard.data_contract_sha256!r}, "
+                        f"actual={sidecar_sha256}",
+                    )
+                )
         if missing_columns:
             issues.append(
                 _issue(
@@ -555,13 +674,33 @@ def audit_v2_artifacts(
             )
         sampled.append(item)
 
+    manifest_sha256 = sha256_file(manifest_path)
+    vocab_file_sha256 = sha256_file(vocab_path)
+    coverage_sha256 = coverage_set_sha256(root)
+    audit_input_sha256 = hashlib.sha256(
+        json.dumps(
+            {
+                "coverage_sha256": coverage_sha256,
+                "manifest_sha256": manifest_sha256,
+                "vocab_file_sha256": vocab_file_sha256,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
     critical = [item for item in issues if item["severity"] == "critical"]
     return {
-        "audit_version": "1.0",
+        "audit_version": "2.0",
         "created_utc": datetime.now(tz=UTC).isoformat(),
         "root": str(root.resolve()),
         "contract_ready": not critical,
+        "audit_input_sha256": audit_input_sha256,
+        "coverage_sha256": coverage_sha256,
+        "coverage": coverage_summary,
+        "manifest_sha256": manifest_sha256,
+        "vocab_file_sha256": vocab_file_sha256,
         "content_coverage_required": True,
+        "failed_symbol_gaps": failed_symbol_gaps,
         "schema_version": manifest.schema_version,
         "vocab_version": vocab.VOCAB_VERSION,
         "event_ordering_version": vocab.event_ordering_version,

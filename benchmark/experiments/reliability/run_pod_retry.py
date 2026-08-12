@@ -5,16 +5,15 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 import time
+from collections.abc import Sequence
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from render_pod_retry import render
-
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 RESULTS_ROOT = REPO_ROOT / "benchmark" / "results" / "reliability"
@@ -30,8 +29,10 @@ class ExperimentError(RuntimeError):
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace(
-        "+00:00", "Z"
+    return (
+        datetime.now(timezone.utc)
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z")
     )
 
 
@@ -89,7 +90,9 @@ class Runner:
         try:
             value = json.loads(completed.stdout)
         except json.JSONDecodeError as exc:
-            raise ExperimentError(f"kubectl returned invalid JSON for {' '.join(args)}") from exc
+            raise ExperimentError(
+                f"kubectl returned invalid JSON for {' '.join(args)}"
+            ) from exc
         if not isinstance(value, dict):
             raise ExperimentError("kubectl JSON response is not an object")
         return value
@@ -135,10 +138,16 @@ class Runner:
                 resources = container.get("resources", {})
                 requests = resources.get("requests", {})
                 limits = resources.get("limits", {})
-                total += int(requests.get("nvidia.com/gpu", limits.get("nvidia.com/gpu", 0)))
+                total += int(
+                    requests.get("nvidia.com/gpu", limits.get("nvidia.com/gpu", 0))
+                )
             if total:
                 running_gpu.append(
-                    {"namespace": NAMESPACE, "pod": pod.get("metadata", {}).get("name"), "gpu": total}
+                    {
+                        "namespace": NAMESPACE,
+                        "pod": pod.get("metadata", {}).get("name"),
+                        "gpu": total,
+                    }
                 )
         self.write_json("running-gpu-requests-before.json", running_gpu)
         if running_gpu:
@@ -169,7 +178,9 @@ class Runner:
             ["-n", NAMESPACE, "create", "--dry-run=server", "-f", "-", "-o", "json"],
             input_text=manifest_text,
         )
-        (self.output / "server-dry-run.json").write_text(dryrun.stdout, encoding="utf-8")
+        (self.output / "server-dry-run.json").write_text(
+            dryrun.stdout, encoding="utf-8"
+        )
         self.record("preflight-complete")
 
     def list_owned_pods(self) -> list[dict[str, Any]]:
@@ -187,7 +198,9 @@ class Runner:
         for pod in pods.get("items", []):
             refs = pod.get("metadata", {}).get("ownerReferences", [])
             if self.job_uid and not any(ref.get("uid") == self.job_uid for ref in refs):
-                raise ExperimentError("run-token selected a Pod not owned by this Job UID")
+                raise ExperimentError(
+                    "run-token selected a Pod not owned by this Job UID"
+                )
             owned.append(pod)
         return owned
 
@@ -238,7 +251,9 @@ class Runner:
             )
             pod = sorted(
                 pods,
-                key=lambda item: str(item.get("metadata", {}).get("creationTimestamp") or ""),
+                key=lambda item: str(
+                    item.get("metadata", {}).get("creationTimestamp") or ""
+                ),
             )[0]
             name = str(pod.get("metadata", {}).get("name") or "")
             uid = str(pod.get("metadata", {}).get("uid") or "")
@@ -249,7 +264,11 @@ class Runner:
             )
             if phase in {"Failed", "Succeeded"}:
                 statuses = pod.get("status", {}).get("containerStatuses", [])
-                terminated = statuses[0].get("state", {}).get("terminated", {}) if statuses else {}
+                terminated = (
+                    statuses[0].get("state", {}).get("terminated", {})
+                    if statuses
+                    else {}
+                )
                 raise ExperimentError(
                     "first Pod terminated before the injection marker: "
                     f"phase={phase} reason={terminated.get('reason')} "
@@ -283,8 +302,8 @@ class Runner:
                 "-c",
                 "for p in /proc/[0-9]*/comm; do "
                 "pid=${p#/proc/}; pid=${pid%/comm}; "
-                "name=$(cat \"$p\" 2>/dev/null || true); "
-                "printf '%s\\t%s\\n' \"$pid\" \"$name\"; done",
+                'name=$(cat "$p" 2>/dev/null || true); '
+                'printf \'%s\\t%s\\n\' "$pid" "$name"; done',
             ],
             check=False,
             timeout=20,
@@ -306,9 +325,9 @@ class Runner:
                 "-c",
                 "for p in /proc/[0-9]*/comm; do "
                 "pid=${p#/proc/}; pid=${pid%/comm}; "
-                "name=$(cat \"$p\" 2>/dev/null || true); "
-                "if [ \"$pid\" != 1 ] && { [ \"$name\" = python ] || [ \"$name\" = python3 ]; }; then "
-                "kill -KILL \"$pid\"; exit 0; fi; "
+                'name=$(cat "$p" 2>/dev/null || true); '
+                'if [ "$pid" != 1 ] && { [ "$name" = python ] || [ "$name" = python3 ]; }; then '
+                'kill -KILL "$pid"; exit 0; fi; '
                 "done; exit 1",
             ],
             check=False,
@@ -347,7 +366,11 @@ class Runner:
                 )
                 if phase in {"Failed", "Succeeded"} and EVENT_PREFIX not in log:
                     statuses = pod.get("status", {}).get("containerStatuses", [])
-                    terminated = statuses[0].get("state", {}).get("terminated", {}) if statuses else {}
+                    terminated = (
+                        statuses[0].get("state", {}).get("terminated", {})
+                        if statuses
+                        else {}
+                    )
                     raise ExperimentError(
                         "retry Pod terminated before its attempt marker: "
                         f"phase={phase} reason={terminated.get('reason')} "
@@ -386,7 +409,9 @@ class Runner:
         job = self.json_get(["-n", NAMESPACE, "get", "job", self.job_name])
         pods = self.list_owned_pods()
         self.write_json("job-final.json", job)
-        self.write_json("pods-final.json", {"apiVersion": "v1", "kind": "List", "items": pods})
+        self.write_json(
+            "pods-final.json", {"apiVersion": "v1", "kind": "List", "items": pods}
+        )
         pod_uids = {str(pod.get("metadata", {}).get("uid") or "") for pod in pods}
         all_events = self.json_get(["-n", NAMESPACE, "get", "events"])
         target_uids = {self.job_uid, *pod_uids}
@@ -395,7 +420,9 @@ class Runner:
             for event in all_events.get("items", [])
             if event.get("involvedObject", {}).get("uid") in target_uids
         ]
-        self.write_json("events.json", {"apiVersion": "v1", "kind": "List", "items": events})
+        self.write_json(
+            "events.json", {"apiVersion": "v1", "kind": "List", "items": events}
+        )
 
         logs: dict[str, str] = {}
         for pod in pods:
@@ -405,19 +432,33 @@ class Runner:
             (self.output / f"container-{name}.txt").write_text(log, encoding="utf-8")
 
         if len(pods) != 2 or pod_uids != {first_uid, second_uid}:
-            raise ExperimentError(f"expected exactly two owned Pod UIDs, found {pod_uids}")
-        first = next(pod for pod in pods if pod.get("metadata", {}).get("uid") == first_uid)
-        second = next(pod for pod in pods if pod.get("metadata", {}).get("uid") == second_uid)
-        first_state = first.get("status", {}).get("containerStatuses", [{}])[0].get("state", {})
-        second_state = second.get("status", {}).get("containerStatuses", [{}])[0].get("state", {})
+            raise ExperimentError(
+                f"expected exactly two owned Pod UIDs, found {pod_uids}"
+            )
+        first = next(
+            pod for pod in pods if pod.get("metadata", {}).get("uid") == first_uid
+        )
+        second = next(
+            pod for pod in pods if pod.get("metadata", {}).get("uid") == second_uid
+        )
+        first_state = (
+            first.get("status", {}).get("containerStatuses", [{}])[0].get("state", {})
+        )
+        second_state = (
+            second.get("status", {}).get("containerStatuses", [{}])[0].get("state", {})
+        )
         first_exit = first_state.get("terminated", {}).get("exitCode")
         second_exit = second_state.get("terminated", {}).get("exitCode")
         if first_exit in (None, 0):
-            raise ExperimentError(f"first Pod did not record a non-zero exit: {first_exit}")
+            raise ExperimentError(
+                f"first Pod did not record a non-zero exit: {first_exit}"
+            )
         if second_exit != 0:
             raise ExperimentError(f"retry Pod did not exit successfully: {second_exit}")
         if RESULT_PREFIX in logs[first_name]:
-            raise ExperimentError("failed first Pod unexpectedly emitted a success result")
+            raise ExperimentError(
+                "failed first Pod unexpectedly emitted a success result"
+            )
         success_lines = [
             line
             for line in logs[second_name].splitlines()
@@ -441,8 +482,16 @@ class Runner:
             "run_token": self.run_token,
             "job_name": self.job_name,
             "job_uid": self.job_uid,
-            "first_pod": {"name": first_name, "uid": first_uid, "exit_code": first_exit},
-            "retry_pod": {"name": second_name, "uid": second_uid, "exit_code": second_exit},
+            "first_pod": {
+                "name": first_name,
+                "uid": first_uid,
+                "exit_code": first_exit,
+            },
+            "retry_pod": {
+                "name": second_name,
+                "uid": second_uid,
+                "exit_code": second_exit,
+            },
             "retry_training": payload,
             "owned_pod_count": len(pods),
             "captured_event_count": len(events),
@@ -490,7 +539,9 @@ class Runner:
         used = quota.get("status", {}).get("used", {})
         if str(used.get("requests.nvidia.com/gpu", "0")) != "0":
             raise ExperimentError("GPU quota did not return to zero")
-        self.record("cleanup-complete", "job_absent=true\tpods_absent=true\tgpu_requests=0")
+        self.record(
+            "cleanup-complete", "job_absent=true\tpods_absent=true\tgpu_requests=0"
+        )
 
     def run(self) -> dict[str, Any]:
         self.output.mkdir(parents=True, exist_ok=False)

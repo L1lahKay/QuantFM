@@ -10,4 +10,4 @@ echo "waiting for $WORKDIR/data/manifest.json ..."
 while [[ ! -f "$WORKDIR/data/manifest.json" ]]; do sleep 30; done
 echo "uploading..."
 python -m quant_fm.scripts.upload_to_minio \
-  --workdir "$WORKDIR" --tag "$TAG" --delete-local --verify
+  --workdir "$WORKDIR" --tag "$TAG" --verify

@@ -35,6 +35,9 @@ def _source(tmp_path: Path) -> Path:
         },
         "data": {
             "file": "scores.parquet",
+            "file_sha256": hashlib.sha256(
+                (source / "scores.parquet").read_bytes()
+            ).hexdigest(),
             "schema": {"date": "string", "symbol": "string", "score": "float64"},
             "primary_key": ["date", "symbol"],
             "rows": 3,
@@ -93,3 +96,16 @@ def test_package_rejects_manifest_mismatch_and_existing_destination(
     existing.mkdir()
     with pytest.raises(FileExistsError, match="overwrite"):
         package_signal_delivery(source_dir=source, out_dir=existing)
+
+
+def test_package_rejects_scores_replaced_after_manifest_creation(
+    tmp_path: Path,
+) -> None:
+    source = _source(tmp_path)
+    scores_path = source / "scores.parquet"
+    pl.read_parquet(scores_path).with_columns(
+        (pl.col("score") + 1.0).alias("score")
+    ).write_parquet(scores_path)
+
+    with pytest.raises(ValueError, match="does not match"):
+        package_signal_delivery(source_dir=source, out_dir=tmp_path / "tampered")

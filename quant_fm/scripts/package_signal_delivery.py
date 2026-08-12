@@ -77,6 +77,7 @@ def validate_signal_directory(source_dir: Path) -> tuple[pl.DataFrame, dict[str,
         raise TypeError(msg)
     expected_data = {
         "file": "scores.parquet",
+        "file_sha256": _sha256(scores_path),
         "schema": EXPECTED_SCHEMA,
         "primary_key": ["date", "symbol"],
         "rows": scores.height,

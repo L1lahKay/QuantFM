@@ -13,6 +13,7 @@ import numpy as np
 import pyarrow.parquet as pq
 
 from quant_fm.manifest.build_manifest import Manifest
+from quant_fm.manifest.validation import validate_manifest_shard_paths
 from quant_fm.tokenizer.artifact_contract import read_token_contract
 
 if TYPE_CHECKING:
@@ -200,6 +201,16 @@ def audit_manifest_token_ordering(
         raise ValueError(msg)
     manifest_path = Path(manifest_path)
     manifest = Manifest.load(manifest_path)
+    if manifest.schema_version == "cn_l2_v2":
+        validate_manifest_shard_paths(
+            manifest,
+            context="token ordering audit",
+            expected_tokens_root=(
+                manifest_path.parent.parent / "tokens"
+                if manifest_path.parent.name == "data"
+                else manifest_path.parent / "tokens"
+            ),
+        )
     selected = (
         manifest.shards if full else _sample_manifest_shards(manifest, sample_shards)
     )

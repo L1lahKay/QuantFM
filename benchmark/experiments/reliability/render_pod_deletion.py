@@ -12,8 +12,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from render_pod_retry import RenderError, render as render_retry
-
+from render_pod_retry import RenderError
+from render_pod_retry import render as render_retry
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 WORKLOAD = SCRIPT_DIR / "pod_deletion_workload.py"
@@ -51,7 +51,7 @@ def render(run_token: str) -> dict[str, Any]:
                 "umask 077",
                 'mkdir -p "$HOME" "$XDG_CACHE_HOME" "$TORCH_HOME" "$TMPDIR"',
                 f"printf '%s' '{encoded}' | base64 -d > /experiment/pod_deletion_workload.py",
-                "test \"$(sha256sum /experiment/pod_deletion_workload.py | cut -d' ' -f1)\" = \"$WORKLOAD_SHA256\"",
+                'test "$(sha256sum /experiment/pod_deletion_workload.py | cut -d\' \' -f1)" = "$WORKLOAD_SHA256"',
                 "python -u /experiment/pod_deletion_workload.py",
             )
         )

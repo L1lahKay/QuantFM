@@ -12,6 +12,7 @@ from quant_fm.pretrain.heads import (  # noqa: E402
     target_specs_from_config,
 )
 from quant_fm.pretrain.train import evaluate  # noqa: E402
+from quant_fm.pretrain.validation_sampler import FixedValidationSampler  # noqa: E402
 
 
 def _batch(target: list[int], *, event_type: list[int] | None = None):
@@ -61,6 +62,27 @@ def test_v2_omitted_session_target_is_disabled() -> None:
     }
 
 
+def test_v2_loss_rejects_unknown_target_name() -> None:
+    with pytest.raises(ValueError, match="not model targets"):
+        target_specs_from_config(
+            ("tok_evt_type", "tok_session"),
+            {"targets": {"tok_evt_typo": {"weight": 1.0}}},
+        )
+
+
+def test_v2_loss_requires_at_least_one_positive_target_weight() -> None:
+    with pytest.raises(ValueError, match=r"at least one.*positive weight"):
+        target_specs_from_config(
+            ("tok_evt_type", "tok_session"),
+            {
+                "targets": {
+                    "tok_evt_type": {"weight": 0.0},
+                    "tok_session": {"weight": 0.0},
+                }
+            },
+        )
+
+
 def test_ordinal_penalty_prefers_adjacent_bin() -> None:
     near = torch.full((1, 2, 7), -5.0)
     far = near.clone()
@@ -106,6 +128,13 @@ class _EvaluationModel(torch.nn.Module):
         return {"tok_target": logits}
 
 
+class _FixedPlanLoader(list):
+    def __init__(self, batches) -> None:
+        super().__init__(batches)
+        plan = type("Plan", (), {"indices": tuple(range(len(batches)))})()
+        self.sampler = FixedValidationSampler(plan)
+
+
 def test_validation_loss_is_token_weighted_across_batches() -> None:
     first = {
         **_batch([1, 2]),
@@ -133,3 +162,33 @@ def test_validation_loss_is_token_weighted_across_batches() -> None:
     )
 
     assert actual == pytest.approx((first_loss + 3 * second_loss) / 4)
+
+
+def test_fixed_validation_plan_is_never_truncated_by_legacy_batch_cap() -> None:
+    batches = [
+        {
+            **_batch([1, 2]),
+            "case": torch.tensor(0),
+        }
+        for _ in range(3)
+    ]
+    model = _EvaluationModel()
+    calls = 0
+    original_forward = model.forward
+
+    def counting_forward(batch):
+        nonlocal calls
+        calls += 1
+        return original_forward(batch)
+
+    model.forward = counting_forward
+    evaluate(
+        model,  # type: ignore[arg-type]
+        _FixedPlanLoader(batches),  # type: ignore[arg-type]
+        torch.device("cpu"),
+        ("tok_target",),
+        target_specs=(TargetSpec(name="tok_target"),),
+        max_batches=1,
+    )
+
+    assert calls == len(batches)

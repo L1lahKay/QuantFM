@@ -19,6 +19,7 @@ def _config(tmp_path: Path) -> Path:
                     "manifest": str(tmp_path / "manifest.json"),
                     "vocab": str(tmp_path / "vocab.json"),
                     "context": 2048,
+                    "validation_windows": 17,
                 },
                 "model": {},
                 "optim": {"micro_batch_size": 2},
@@ -76,6 +77,17 @@ def test_posttrain_plan_is_blocked_until_completion_markers_exist(
         "-m",
         "quant_fm.pretrain.eval",
     ]
+    assert "--unigram-windows" in ready["jobs"][0]["command"]
+    assert "--unigram-max-batches" not in ready["jobs"][0]["command"]
+    assert ready["validation_windows"] == 17
+    assert (
+        ready["jobs"][0]["command"][
+            ready["jobs"][0]["command"].index("--validation-windows") + 1
+        ]
+        == "17"
+    )
+    assert "--max-batches" not in ready["jobs"][0]["command"]
+    assert "--max-batches" in ready["jobs"][-1]["command"]
 
 
 def test_posttrain_execution_is_serial_and_persisted(

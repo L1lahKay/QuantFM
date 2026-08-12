@@ -1,7 +1,8 @@
-"""
+r"""
 传统因子基线：动量 / 反转 / 简易 OFI，供与 FM embedding 对比。
 
-因子列统一 ``factor_*`` 前缀，可直接传给 :func:`quant_fm.downstream.make_features.build_features`。
+因子列统一 ``factor_*`` 前缀，可直接传给
+:func:`quant_fm.downstream.make_features.build_features`。
 
 * ``factor_ret_oc``：当日 open-to-close 近似（``close/pre_close - 1``）
 * ``factor_mom_1``：相对面板上一交易日的收益（稀疏日历上的跨日动量）
@@ -196,7 +197,9 @@ def main() -> None:
             if sub.height < 100:
                 continue
             corr = sub.select(pl.corr(c, "fwd_ret")).item()
-            logger.info("corr(%s, fwd_ret)=%.4f (n=%d)", c, corr or float("nan"), sub.height)
+            logger.info(
+                "corr(%s, fwd_ret)=%.4f (n=%d)", c, corr or float("nan"), sub.height
+            )
 
 
 if __name__ == "__main__":

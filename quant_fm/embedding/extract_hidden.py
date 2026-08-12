@@ -849,7 +849,8 @@ def main() -> None:
         torch.backends.cudnn.allow_tf32 = True
     amp_dtype = DTYPE_MAP[args.dtype] if device.type == "cuda" else None
     effective_dtype = args.dtype if amp_dtype is not None else "fp32"
-    manifest = Manifest.load(args.manifest)
+    manifest_path = Path(args.manifest)
+    manifest = Manifest.load(manifest_path)
     vocab_path = args.vocab
     if vocab_path is None and manifest.vocab_path:
         vocab_path = Path(manifest.vocab_path)
@@ -893,6 +894,11 @@ def main() -> None:
         vocab,
         shards=shards,
         context="embedding extraction",
+        expected_tokens_root=(
+            manifest_path.parent.parent / "tokens"
+            if manifest_path.parent.name == "data"
+            else manifest_path.parent / "tokens"
+        ),
     )
     checkpoint_contract = load_checkpoint_contract(
         args.checkpoint,

@@ -7,17 +7,19 @@ import json
 import os
 import subprocess
 import time
+from collections.abc import Mapping
 from datetime import datetime, timezone
-from typing import Any, Mapping
-
+from typing import Any
 
 EVENT_PREFIX = "POD_DELETE_EVENT_JSON="
 RESULT_PREFIX = "POD_DELETE_RESULT_JSON="
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace(
-        "+00:00", "Z"
+    return (
+        datetime.now(timezone.utc)
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z")
     )
 
 

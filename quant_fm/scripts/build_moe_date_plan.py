@@ -94,9 +94,7 @@ def build_training_plan(
         raise ValueError(msg)
     adaptation_final_train = eligible[-adaptation_train_days:]
     core_days = (
-        adaptation_train_days
-        - adaptation_validation_days
-        - adaptation_purge_days
+        adaptation_train_days - adaptation_validation_days - adaptation_purge_days
     )
     if core_days < 252:
         msg = (
@@ -233,7 +231,9 @@ def write_training_plan(
     for name, values in files.items():
         destination = out_dir / f"{name}.txt"
         temporary = destination.with_suffix(".txt.tmp")
-        temporary.write_text("".join(f"{value}\n" for value in values), encoding="utf-8")
+        temporary.write_text(
+            "".join(f"{value}\n" for value in values), encoding="utf-8"
+        )
         temporary.replace(destination)
     contract = out_dir / "training_plan.json"
     temporary = contract.with_suffix(".json.tmp")

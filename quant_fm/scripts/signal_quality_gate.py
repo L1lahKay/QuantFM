@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 from dataclasses import asdict
@@ -226,6 +227,14 @@ def _load_expected_dates(path: Path) -> list[str]:
     return sorted(set(dates))
 
 
+def _sha256_file(path: Path, *, chunk_size: int = 1 << 20) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(chunk_size), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
 def _manifest_checks(
     report: dict[str, Any],
     *,
@@ -248,6 +257,7 @@ def _manifest_checks(
     data = manifest.get("data", {}) if isinstance(manifest, dict) else {}
     expected_data = {
         "file": scores_path.name,
+        "file_sha256": _sha256_file(scores_path),
         "schema": {"date": "string", "symbol": "string", "score": "float64"},
         "primary_key": ["date", "symbol"],
         "rows": rows,

@@ -11,7 +11,6 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-
 ROOT = Path(__file__).resolve().parents[2]
 RAW = ROOT / "docs/assets/gpu-scheduler-evaluation/raw"
 CURRENT = RAW / "current"
@@ -76,8 +75,12 @@ def analyze() -> tuple[dict[str, object], dict[str, object]]:
     kubernetes_version = inventory_match.group(2)
 
     jobs_by_name = {item["metadata"]["name"]: item for item in jobs}
-    holder = next(item for item in pods if item["metadata"]["labels"]["role"] == "holder")
-    waiter = next(item for item in pods if item["metadata"]["labels"]["role"] == "waiter")
+    holder = next(
+        item for item in pods if item["metadata"]["labels"]["role"] == "holder"
+    )
+    waiter = next(
+        item for item in pods if item["metadata"]["labels"]["role"] == "waiter"
+    )
     holder_gpu_request = int(
         holder["spec"]["containers"][0]["resources"]["requests"]["nvidia.com/gpu"]
     )
@@ -93,7 +96,11 @@ def analyze() -> tuple[dict[str, object], dict[str, object]]:
     waiter_finished = waiter_state["finishedAt"]
     waiter_complete = waiter_job["status"]["completionTime"]
 
-    high = next(item for item in preemption if item["metadata"]["name"] == "bare-preempt-high-5gpu")
+    high = next(
+        item
+        for item in preemption
+        if item["metadata"]["name"] == "bare-preempt-high-5gpu"
+    )
     high_state = high["status"]["containerStatuses"][0]["state"]["terminated"]
     high_submit = log_stamp(log, "HIGH_SUBMITTED")
     high_created = high["metadata"]["creationTimestamp"]
@@ -115,8 +122,9 @@ def analyze() -> tuple[dict[str, object], dict[str, object]]:
         raise ValueError("preemption victim/preemptor evidence missing")
 
     quota_job_gpu_request = int(
-        quota_job["spec"]["template"]["spec"]["containers"][0]["resources"]
-        ["requests"]["nvidia.com/gpu"]
+        quota_job["spec"]["template"]["spec"]["containers"][0]["resources"]["requests"][
+            "nvidia.com/gpu"
+        ]
     )
 
     result: dict[str, object] = {
@@ -179,7 +187,9 @@ def analyze() -> tuple[dict[str, object], dict[str, object]]:
             "api_pod_creation_to_start_seconds": seconds(
                 high_created, high_state["startedAt"]
             ),
-            "container_runtime_seconds": seconds(high_state["startedAt"], high_state["finishedAt"]),
+            "container_runtime_seconds": seconds(
+                high_state["startedAt"], high_state["finishedAt"]
+            ),
             "api_pod_wall_clock_seconds": seconds(
                 high_created, high_state["finishedAt"]
             ),
@@ -201,7 +211,9 @@ def analyze() -> tuple[dict[str, object], dict[str, object]]:
     )
     client_submit = log_stamp(kueue_log, "JOB_SUBMIT_CLIENT")
     client_end = log_stamp(kueue_log, "PROBE_CLIENT_END")
-    workload_created = workload_event.get("eventTime") or workload_event.get("lastTimestamp")
+    workload_created = workload_event.get("eventTime") or workload_event.get(
+        "lastTimestamp"
+    )
     kueue_result: dict[str, object] = {
         "captured_at_utc": client_end,
         "cluster": {
@@ -316,7 +328,10 @@ def render_terminal(title: str, body: str, destination: Path) -> None:
         elif line.startswith("METRIC"):
             color = "#d2a8ff"
             selected_font = bold
-        elif any(marker in line for marker in ("Suspended", "CreatedWorkload", " NONE", "CAN_I")):
+        elif any(
+            marker in line
+            for marker in ("Suspended", "CreatedWorkload", " NONE", "CAN_I")
+        ):
             color = "#e3b341"
             selected_font = font
         else:
@@ -335,9 +350,7 @@ def render_terminal(title: str, body: str, destination: Path) -> None:
     image.save(destination, optimize=True)
 
 
-def render(
-    result: dict[str, object], kueue_result: dict[str, object]
-) -> None:
+def render(result: dict[str, object], kueue_result: dict[str, object]) -> None:
     log = clean_transcript((RAW / "bare-k8s-benchmark.txt").read_text())
     historical_inventory = clean_transcript((RAW / "cluster-inventory.txt").read_text())
     current_inventory = clean_transcript((CURRENT / "cluster-access.txt").read_text())
@@ -355,23 +368,28 @@ def render(
         + str(c["api_job_creation_to_container_start_seconds"])
         + " api_pod_to_start_seconds="
         + str(c["api_pod_creation_to_container_start_seconds"])
-        + " runtime_seconds=" + str(c["container_runtime_seconds"])
-        + " api_job_wall_seconds=" + str(c["api_job_wall_clock_seconds"])
+        + " runtime_seconds="
+        + str(c["container_runtime_seconds"])
+        + " api_job_wall_seconds="
+        + str(c["api_job_wall_clock_seconds"])
         + " client_apply_return_to_complete_seconds="
         + str(c["client_observed_apply_return_to_complete_seconds"])
     )
     preemption += (
         "\nMETRIC api_high_pod_to_start_seconds="
         + str(p["api_pod_creation_to_start_seconds"])
-        + " api_high_pod_wall_seconds=" + str(p["api_pod_wall_clock_seconds"])
-        + " runtime_seconds=" + str(p["container_runtime_seconds"])
+        + " api_high_pod_wall_seconds="
+        + str(p["api_pod_wall_clock_seconds"])
+        + " runtime_seconds="
+        + str(p["container_runtime_seconds"])
     )
     kueue_probe += (
         "\nMETRIC observation_wall_seconds="
         + str(k["observation_wall_clock_seconds"])
         + " client_submit_to_workload_event_seconds="
         + str(k["client_submit_to_workload_event_seconds"])
-        + " pods_at_snapshot=" + str(k["pods_created_at_snapshot"])
+        + " pods_at_snapshot="
+        + str(k["pods_created_at_snapshot"])
         + " runtime_seconds=N/A end_to_end_wall_seconds=N/A"
     )
 

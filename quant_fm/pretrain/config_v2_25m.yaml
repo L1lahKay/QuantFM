@@ -16,6 +16,9 @@ data:
   validation_plan: quant_fm/runs/v2_shared/validation_windows.json
   validation_seed: 42
   validation_windows: 800
+  # pilot 仅有 5 个交易日（3 train / 1 val / 1 test）。正式数据配置应保留更高门槛。
+  min_validation_dates: 1
+  min_test_dates: 1
 
 model:
   d_model: 384
@@ -67,6 +70,6 @@ runtime:
   val_max_batches: 100
   ckpt_every: 1000
   save_best: true
-  fsdp: false
+  fsdp: true
   fsdp_no_sync: true
   device: auto

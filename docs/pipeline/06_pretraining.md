@@ -2,8 +2,9 @@
 
 > 当前状态（2026-07）：v1 训练路径继续可用；v2 数据集、字段融合、连续双通道、
 > entropy-normalized/ordinal/masked loss、固定分层验证清单、诊断指标和严格 checkpoint
-> metadata 已实现；micro/update/token 计数、shard-aware sampler、RoPE cache、causal
-> fast path、显式 `ffn_hidden` 和推理/续训 checkpoint 分流也已落地。Temporal Regime-MoE
+> metadata 已实现；micro/update/token 计数、shard-aware sampler、逐 rank RNG/数据消费状态
+> 恢复、RoPE cache、causal fast path、显式 `ffn_hidden` 和推理/续训 checkpoint 分流也已
+> 落地。Temporal Regime-MoE
 > 与顶部 Backbone-MoE 有代码和单测，但仍是待运行的研究组件。尚未完成真实 v2 token
 > 训练、MoE 稳定性/吞吐测试、模型选择或 untouched OOS 验收。
 
@@ -154,9 +155,10 @@ Backbone 路由，并已有低 capacity 下的 batch-size independence 回归。
 date × exchange × board × liquidity_bucket × activity_bucket
 ```
 
-liquidity metadata 可选；缺失时进入显式 `unknown` bucket。计划保存 manifest
-fingerprint、window 参数、shard hash 和选择的 dataset index，换 manifest 或窗口设置时
-fail fast。
+liquidity metadata 可选；缺失时进入显式 `unknown` bucket。计划的 canonical SHA-256
+覆盖 seed、context/stride/min_len、精确选择上限与分层参数、manifest/分层输入指纹、shard
+hash 及完整有序窗口记录；加载时会重算 SHA 和选择结果，任一输入或窗口被改写都会 fail
+fast。
 
 可先独立创建计划：
 
@@ -168,7 +170,9 @@ uv run python -m quant_fm.pretrain.validation_sampler \
   --out quant_fm/runs/v2_shared/validation_windows.json
 ```
 
-若配置中的计划不存在，`train.py` 也会由 rank 0 创建；后续架构应复用同一文件。
+若配置中的计划不存在，`train.py` 也会由 rank 0 创建；`data.validation_windows=N` 是精确
+数量契约，新建候选不足时不会保存计划，加载已有计划数量不等时也会拒绝。后续架构应复用
+同一文件。
 
 评估入口：
 
@@ -176,15 +180,33 @@ uv run python -m quant_fm.pretrain.validation_sampler \
 uv run python -m quant_fm.pretrain.eval \
   --checkpoint quant_fm/runs/v2_25m/run/best.pt \
   --config quant_fm/pretrain/config_v2_25m.yaml \
-  --split val --max-batches 100 \
+  --split val \
   --validation-plan quant_fm/runs/v2_shared/validation_windows.json \
+  --validation-windows 800 \
+  --train-unigram-plan quant_fm/runs/v2_shared/train_unigram_windows.json \
+  --unigram-windows 800 \
   --out quant_fm/runs/v2_25m/run/eval_val.json \
   --device cpu
 ```
 
-输出包含 per-field CE/perplexity/top-1/balanced accuracy、训练 unigram entropy、
-CE/entropy、copy-previous baseline、gradient norm 和 total normalized CE。它们是模型
-诊断，不替代冻结 embedding 后的 RankIC/组合回测。
+CE 诊断始终完整消费冻结 validation plan；`--max-batches` 不再截断已有计划，只作为新建
+validation plan 时的旧式窗口上限；显式 `--validation-windows N` 要求计划恰有 N 个窗口，
+候选不足或分层上限使选中数不足时直接拒绝。训练 unigram 分母使用独立的精确窗口计划，
+`--unigram-windows` 不随 CPU/GPU batch size 改变；旧 `--unigram-max-batches` 仅作为等值
+窗口数别名；计划不足 N 时创建和加载都会拒绝。报告绑定 validation/train-unigram plan SHA、
+两份计划的实际消费窗口数、逐字段预测数、checkpoint SHA 与 checkpoint 的有序 target fields。
+`train_unigram_normalization_v3` 还持久化 canonical 非负整数 counts 原像、counts SHA 和由其
+计算的 entropy。acceptance v8 要求 candidate/baseline 完整消费同一计划、字段/计数完全一致，
+实时重算 counts SHA、entropy、CE/entropy 和逐字段/总计；但 counts 尚不能由 acceptance
+独立证明来自 live train-plan 数据，因此 PASS 唯一使用 raw `total_ce`，归一化 CE 只作诊断，
+不能参与加权或晋级。旧 v7/v6/v2 artifact 均 fail closed。它们仍不替代冻结 embedding 后的
+RankIC/组合回测。
+
+严格 validator 的非劣 policy 是独立输入，默认 `expected tolerance=0.01`；artifact 内记录的
+tolerance 只能与该 policy 精确一致，不能自行放宽门槛。非默认政策必须在生成时用
+`compare_pretrain_evaluations --tolerance X`，并在每个验证入口显式传同一个
+`validate_pretrain_acceptance --expected-tolerance X` / `validate_pretrain_lineage
+--expected-tolerance X`。仅修改 artifact 的 tolerance/decision 会 fail closed。
 
 ## v2 配置与运行
 
@@ -236,7 +258,7 @@ field_fusion / scalar_fields / continuous_normalizers
 target_specs
 book_state_timing / context_horizon / pooling_version/method/outputs/stride
 event_ordering_version / feature_transform_version
-pretrain_data_contract（manifest/vocab 指纹与 train/validation/vocab-fit 日期边界）
+pretrain_data_contract_v3（manifest/core/coverage/vocab 身份与日期边界）
 model / train_state
 ```
 
@@ -260,7 +282,11 @@ model = load_checkpoint(
 ```
 
 每个新 checkpoint 还必须有同名 `.contract.json`，将 checkpoint 实际 SHA-256 绑定到
-`pretrain_data_contract_v2`。其中 `effective_training_end` 保守取训练、vocab 拟合和用于
+`pretrain_data_contract_v3`。v3 同时记录原始 `manifest_sha256`、跨路径且保留 shard 顺序的
+`manifest_semantic_sha256`、跨路径的 `core_generation_id`，以及 v2 数据的
+`coverage_sha256`；安全存储 rebase 可改变绝对路径和原始 manifest 字节，但不能改变 shard
+顺序、内容/split、coverage、vocab 或日期语义。旧 v2 contract 因缺少这些身份，在严格
+resume 路径 fail closed。其中 `effective_training_end` 保守取训练、vocab 拟合和用于
 checkpoint 选择的 validation 日期三者最晚值。loader 会校验 artifact version、schema、
 vocab SHA-256、FieldSpec、input/target 顺序及 sidecar 与 checkpoint payload；
 v2 resume 还逐项核对 field sizes、模型宽深/head/FFN/dropout/RoPE、fusion/scalar、
@@ -269,8 +295,11 @@ normalizer、book/context/pooling 和 Backbone-MoE 配置及 target specs。
 
 训练入口会直接拒绝用 `best.pt/final.pt` resume。当前 `--resume auto` 只在编号最大的
 `step*.pt` 和 `final_resume.pt` 中选择，并优先定期点；继续已正常结束的训练应显式传
-`--resume <out_dir>/final_resume.pt`。checkpoint 仍不保存 DataLoader 精确游标和全部 RNG
-状态，因此即便完整续训点也不保证逐字节复现。
+`--resume <out_dir>/final_resume.pt`。可续训 checkpoint 保存每个 rank 的 Python、NumPy、
+Torch CPU/CUDA RNG，以及 sampler 类型、epoch、epoch 内已消费 batch、训练配置 SHA、
+validation plan SHA、stop budget、seed/rank/world-size；恢复时重建同一 sampler 顺序并跳过
+已消费 batch。v2 缺少这些状态会拒绝 resume，且已有带 dropout、跨最终 validation 中断的
+单 rank CPU bitwise 等价回归；真实多 rank/FSDP 故障恢复仍需独立演练。
 
 ## 输出与监控
 
@@ -295,15 +324,17 @@ fraction、router entropy/top-1 或 overflow；需要调用 `summarize_moe()` �
 结果仍需固定 seed、固定 Ranker 和同日 paired IC 做下游裁判。
 
 `tests/test_train_smoke.py` 还会在 CPU 上真实执行一个 optimizer update，并核对
-`micro_step/update_step/non_pad_tokens_seen` 以及 `final_resume.pt` 与 `final.pt` 的状态差异；
-它验证训练循环可执行，不代表真实数据收敛或吞吐达标。
+`micro_step/update_step/non_pad_tokens_seen`、逐 rank runtime state 以及 `final_resume.pt` 与
+`final.pt` 的状态差异；同文件还验证带 dropout 的连续训练与分段 resume 权重 bitwise
+一致。它验证训练循环和单 rank 恢复语义，不代表真实数据收敛、多 rank 故障恢复或吞吐达标。
 
 ## 当前限制
 
 - v2/MoE 基础设施通过全仓回归：`243 passed, 2 skipped, 1 xfailed`；尚未运行真实
   25M/100M/230M 或 MoE 训练，因此不能声称困惑度、IC、吞吐或收益已改善；
 - raw replay 仍需显式 capture 盘口 transition，旧数据流水线不会自动产出 v2；
-- checkpoint 未保存 DataLoader 精确游标和全部 RNG 状态，续训不是字节级复现；
+- 单 rank CPU 已有 bitwise resume 回归，但真实多 rank/FSDP 中断、CUDA 拓扑变化和作业抢占
+  后恢复仍需演练；
 - shard-aware sampler 还没有 token/长度均衡；token budget 最多越过一个成功的全局
   update，且需要调用方选择合理的 `lr_schedule_steps`；
 - `IntradayAggregator` 与 `LinearCrossAssetModel` 已有独立实现和测试，但尚未接入该

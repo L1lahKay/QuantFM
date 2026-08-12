@@ -10,7 +10,7 @@
 #   SKIP_TRAIN=1 bash ...          # 只做数据
 #   SKIP_DATA=1 bash ...           # 本地已有 tokens，直接训练
 #   SKIP_UPLOAD=1 bash ...         # 不上传 model-cache
-#   CLEAN_WORKERS=32 CANON_WORKERS=16 bash ...  # 并行洗股 / 规范化进程数
+#   NGROUPS=2 CLEAN_WORKERS=30 CANON_WORKERS=8 bash ...  # 2 个日期组，共 60 个 replay workers
 #
 # 默认启用断点续跑：按日期记录 clean/canonicalize 完成状态，并跳过已生成
 # 的 events/tokens；数据完成后训练会从 runtime.resume 指定的 checkpoint 恢复。
@@ -69,19 +69,17 @@ if [[ "$SKIP_DATA" == "1" ]]; then
   echo "==> SKIP_DATA=1，复用本地 tokens"
 else
   echo "==> MinIO raw → clean → events → tokens → manifest"
-  UPLOAD_FLAGS=()
-  if [[ "$SKIP_UPLOAD" != "1" ]]; then
-    UPLOAD_FLAGS=(--upload-minio --upload-tag "$TAG")
-  fi
-  uv run python -m quant_fm.scripts.run_medium \
-    --data-version v2 \
+  uv run python -m quant_fm.scripts.run_v2_parallel_data \
     --dates-file "$DATES" \
     --workdir "$WORKDIR" \
-    --drop-clean \
-    --drop-events \
-    --resume \
-    --v2-full-audit \
-    "${UPLOAD_FLAGS[@]}"
+    --groups "${NGROUPS:-2}" \
+    --clean-workers "${CLEAN_WORKERS:-30}" \
+    --canon-workers "${CANON_WORKERS:-8}" \
+    --tokenize-workers "${TOKENIZE_WORKERS:-16}"
+  if [[ "$SKIP_UPLOAD" != "1" ]]; then
+    uv run python -m quant_fm.scripts.upload_to_minio \
+      --workdir "$WORKDIR" --tag "$TAG"
+  fi
 fi
 
 if ! local_ready; then

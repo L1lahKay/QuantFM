@@ -1,4 +1,5 @@
-"""Download MinIO parquet and export cleaned PyLOB artifacts.
+"""
+Download MinIO parquet and export cleaned PyLOB artifacts.
 
 Minimal usage (same credentials as your Polars script)::
 
@@ -22,7 +23,6 @@ import sys
 from pathlib import Path
 
 import polars as pl
-
 from pylob.pipeline import MinioConfig, PipelineConfig, build_clean_dataset
 from pylob.pipeline.paths import (
     archive_object_key,
@@ -193,6 +193,7 @@ def _pipeline_config_for_keys(accessible: list[str]) -> PipelineConfig:
 
 
 def main() -> int:
+    """Probe configured objects and optionally run the cleaning pipeline."""
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(message)s",

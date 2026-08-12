@@ -143,16 +143,18 @@ v2 不把“列看起来一样”视为兼容。下列内容必须作为一套�
 |-------------|----------------|
 | `vocab_v2.json` | `vocab_version=2.0`；六个特殊 token id 固定；含完整有序 FieldSpec、fit dates、occupancy、normalizer 与采样参数 |
 | token shards + manifest | token/scalar 列与 FieldSpec 一致；manifest shard SHA-256、日期 split 不变 |
-| `validation_windows.json` | 记录 context/stride/min_len、seed、manifest fingerprint 和确定的 dataset indices |
-| v2 checkpoint | `fm_artifact_version=2.0`；记录 schema/vocab 版本、vocab SHA-256、有序字段、loss targets、盘口时序、context 与 pooling 版本 |
+| `validation_windows.json` | canonical SHA-256 覆盖 context/stride/min_len、seed、精确窗口上限、分层输入与完整有序窗口记录 |
+| v2 checkpoint | `fm_artifact_version=2.0`；记录 schema/vocab 版本、有序字段、loss targets、盘口时序、context/pooling，以及 `pretrain_data_contract_v3` |
 
 `load_checkpoint()` 加载 v2 权重时必须传入原始 vocab 路径。当前推理加载会严格核对
 artifact 版本、schema、vocab SHA-256、完整有序 FieldSpec，并确认 checkpoint 中选择的
 输入/目标字段是 vocab 字段的合法保序子序列；续训还会把 schema、vocab hash、
-FieldSpec、输入/目标字段及 loss targets 与当前配置逐项比较。checkpoint 虽然同时记录
-continuous normalizer、盘口状态时序、context 与 pooling 版本，但当前加载器不会把这些
-记录全部与外部 manifest/运行配置逐项比较；它们仍须通过冻结 vocab、配置快照、固定验证
-计划和实验登记进行审计。不得通过修改 checkpoint 字典或放宽现有检查来“修复”不兼容。
+FieldSpec、输入/目标字段、loss targets、模型/fusion/scalar/book/context/pooling/MoE 配置与
+当前配置逐项比较。`pretrain_data_contract_v3` 保留原始 manifest 字节 SHA 作为来源证据，
+并以跨路径的 `core_generation_id`、保留 shard 顺序的 `manifest_semantic_sha256` 和 v2
+`coverage_sha256` 约束安全存储 rebase；绝对路径可变，但 shard 顺序、内容/split、coverage、
+vocab 和日期语义不可变。旧 v2 data contract 在严格 resume 路径 fail closed。不得通过修改
+checkpoint 字典或放宽现有检查来“修复”不兼容。
 
 v1 继续使用原有 `PAD=0, N_SPECIAL=1` 与 `legacy_sum`。v2 的 `PAD/UNK/NA/BOS/EOS/SESSION_BREAK` 是独立 id 空间，禁止把 v2 常量回写到 v1 artifact。
 
@@ -168,7 +170,7 @@ uv run python -m quant_fm.pretrain.validation_sampler \
   --out quant_fm/runs/v2_shared/validation_windows.json
 ```
 
-25M 与 100M 实验必须使用同一份计划。计划按日期、交易所、板块、流动性和活跃度尽可能平衡；没有 PIT 流动性输入时使用显式 `unknown` bucket。加载时会重新核对 manifest fingerprint 与窗口参数，防止修改数据后继续沿用旧计划。
+25M 与 100M 实验必须使用同一份计划。计划按日期、交易所、板块、流动性和活跃度尽可能平衡；没有 PIT 流动性输入时使用显式 `unknown` bucket。加载时会重算 canonical SHA、manifest/分层输入指纹和确定性选择结果。训练配置的 `data.validation_windows=N` 是精确数量契约：新建候选不足时不落盘，已有计划数量不等也会被拒绝。
 
 v2 训练与诊断入口：
 
@@ -180,6 +182,9 @@ uv run python -m quant_fm.pretrain.eval \
   --checkpoint quant_fm/runs/v2_25m/run/best.pt \
   --config quant_fm/pretrain/config_v2_25m.yaml \
   --validation-plan quant_fm/runs/v2_shared/validation_windows.json \
+  --validation-windows 800 \
+  --train-unigram-plan quant_fm/runs/v2_shared/train_unigram_windows.json \
+  --unigram-windows 800 \
   --device cpu --out quant_fm/runs/v2_25m/run/val_diagnostics.json
 ```
 
@@ -187,7 +192,23 @@ uv run python -m quant_fm.pretrain.eval \
 sparse 对照候选。配置文件存在不代表相应模型已经训练，也不应跳过 25M/100M 闸门直接
 宣称放大或 MoE 有效。
 
-诊断至少比较 per-field CE、train-unigram CE、copy baseline、训练熵归一化 CE、top-k、预测熵和字段梯度范数；不能只看总 loss。
+诊断始终完整消费冻结 validation plan，并记录实际窗口数和逐字段预测数；显式
+`--validation-windows N` 与 `--unigram-windows N` 都要求恰好选中 N 个窗口，候选不足时
+fail closed，旧 `--max-batches` 只保留为新建 validation plan 的 cap。训练 unigram 使用
+独立且不依赖 device batch size 的窗口计划。`train_unigram_normalization_v3` 保存 canonical
+counts 原像、counts SHA、实际消费窗口数、逐字段 prediction counts 与重算所得 entropy；
+checkpoint 的有序 target fields 是唯一评估字段真值。acceptance v8 要求 candidate 与
+baseline 的 validation/train-unigram plan canonical SHA、完整消费计数、counts/entropy
+原像和字段集合一致，重算所有 normalization 数学关系并实时核对 checkpoint/plan。由于
+counts 目前不能由 acceptance 独立证明来自 live train-plan 数据，PASS 只允许使用 raw
+`total_ce`；归一化 CE 仅作诊断、不得参与加权或晋级。旧 v7/v6/v2 artifact 在严格路径
+fail closed。诊断至少比较 per-field CE、
+train-unigram CE、copy baseline、训练熵归一化 CE、top-k、预测熵和字段梯度范数；不能只看
+总 loss。
+
+验收门槛由 validator 独立提供，默认 `expected tolerance=0.01`。artifact 中的 tolerance
+必须与它精确相等，不能通过改 artifact 自行授权更宽门槛；非默认值必须在生成、独立验收和
+lineage 复核三个入口分别显式传入同一 `--tolerance` / `--expected-tolerance`。
 
 ### 研究有效性
 
@@ -213,9 +234,13 @@ sparse 对照候选。配置文件存在不代表相应模型已经训练，也�
   `TrainState`，用于续训；`best.pt` / `final.pt` 不含 optimizer/scaler，面向评估和推理。
   后两者显式传给 `--resume` 会直接报错；`--resume auto` 优先选择编号最大的
   `step*.pt`，仅在不存在定期 checkpoint 时尝试 `final_resume.pt`，二者都不存在则从头
-  训练。所有类型都尚未持久化 sampler 精确位置与全部 RNG 状态；
+  训练。可续训 checkpoint 还保存并恢复逐 rank Python/NumPy/Torch CPU/CUDA RNG、sampler
+  epoch 与 epoch 内消费位置，以及 config/validation-plan/stop-budget/拓扑身份；已有带
+  dropout 的单 rank CPU 连续训练与分段 resume bitwise 等价测试，真实多 rank/FSDP 故障
+  恢复仍需演练；
 - 数据阶段支持日期级 / 标的级断点续跑（`.done`、`.clean_done`、`skip_existing`）、`CLEAN_WORKERS` 多进程清洗与 `CANON_WORKERS` 并行规范化；可用 `check_pipeline_progress` 查询进度；
-- manifest 中包含绝对路径，跨机器迁移时应重建或改写；
+- manifest 中仍包含绝对路径，跨机器迁移时需要受控改写；v3 data contract 用跨路径的
+  core/semantic/coverage 身份判断安全 rebase，不再以原始 manifest 字节 SHA 单独决定兼容；
 - 合成 smoke 的回测指标没有经济含义；
 - MinIO/Pilot/Medium 一键脚本现默认生成带真实逐事件盘口的 V2 events、`vocab_v2.json`、Q16 token/scalar、manifest 与审计报告；V1 只允许通过 `--data-version v1` 显式复现；
 - v2 实现已经通过单元/集成回归，但尚未生成正式 25M/100M checkpoint，未做新 untouched OOS，也未证明 score 或交易成本后收益改善；

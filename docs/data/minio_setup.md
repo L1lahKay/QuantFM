@@ -242,8 +242,7 @@ python -m quant_fm.scripts.run_medium \
   --workdir quant_fm/runs/medium_try \
   --drop-clean --drop-events \
   --upload-minio \
-  --upload-tag medium_try \
-  --delete-local-after-upload
+  --upload-tag medium_try
 ```
 
 **手动上传已有本地产物：**
@@ -252,9 +251,12 @@ python -m quant_fm.scripts.run_medium \
 python -m quant_fm.scripts.upload_to_minio \
   --workdir quant_fm/runs/medium_try \
   --tag medium_try \
-  --delete-local \
   --verify
 ```
+
+自动递归删除已禁用：上传过程中无法为任意并发生产者形成原子的“核对后删除”边界。
+如需释放空间，请先停止所有生产者，独立运行 `--verify-only` 验收远端，再在离线维护步骤中明确清理目标。
+严格上传围栏仅接受本地 ext4/xfs/btrfs/overlay/tmpfs 文件系统且产物树不得跨设备；NFS、CIFS、Ceph、FUSE、9p 及未知文件系统会在联系 MinIO 前拒绝。
 
 **mc 手动写：**
 
@@ -335,7 +337,6 @@ from quant_fm.scripts.upload_to_minio import upload_workdir, remote_uri, verify_
 uri = upload_workdir(
     Path("quant_fm/runs/medium_try"),
     tag="medium_try",
-    delete_local=True,
 )
 print(uri)  # s3://model-cache/fm-pretrain/<user>/medium_try/
 
@@ -357,7 +358,7 @@ A：不会。读是只读；写只在 `model-cache` 下你的 prefix 里。
 A：不冲突。凭据可复用；代码按读写分别指定 endpoint，无需改 mc 别名 URL。
 
 **Q：本地还要占磁盘吗？**  
-A：处理时仍需 transient 空间；上传后可用 `--delete-local-after-upload` 删本地 tokens。
+A：需要。自动删除已禁用；应先停写并独立验收远端，再在离线维护步骤中明确清理本地产物。
 
 **Q：训练怎么读 MinIO 上的 tokens？**  
 A：训练读**本地** `tokens/` + `manifest.json`（路径是构建机绝对路径）。完整流水线会先写 MinIO 备份并**保留本地**再训。若本地已删：`make download-medium && make train-medium-8gpu`。直接从 S3 URI 训练尚未做。

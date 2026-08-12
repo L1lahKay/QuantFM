@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Mapping
 from datetime import date as calendar_date
@@ -17,13 +18,17 @@ from quant_fm.tokenizer.artifact_contract import stable_vocab_sha256
 if TYPE_CHECKING:
     from quant_fm.manifest.build_manifest import Manifest
 
-PRETRAIN_DATA_CONTRACT_VERSION = "pretrain_data_contract_v2"
+PRETRAIN_DATA_CONTRACT_VERSION = "pretrain_data_contract_v3"
+LEGACY_PRETRAIN_DATA_CONTRACT_VERSION = "pretrain_data_contract_v2"
 PRETRAIN_CHECKPOINT_CONTRACT_VERSION = "pretrain_checkpoint_contract_v1"
 
 _PRETRAIN_DATA_CONTRACT_FIELDS = frozenset(
     {
         "format_version",
         "manifest_sha256",
+        "manifest_semantic_sha256",
+        "core_generation_id",
+        "coverage_sha256",
         "vocab_artifact_sha256",
         "vocab_sha256",
         "schema_version",
@@ -38,6 +43,11 @@ _PRETRAIN_DATA_CONTRACT_FIELDS = frozenset(
         "effective_training_end",
     }
 )
+_LEGACY_PRETRAIN_DATA_CONTRACT_FIELDS = _PRETRAIN_DATA_CONTRACT_FIELDS - {
+    "manifest_semantic_sha256",
+    "core_generation_id",
+    "coverage_sha256",
+}
 
 
 class PretrainVocab(Protocol):
@@ -85,19 +95,33 @@ def validate_pretrain_data_contract(
     payload: Mapping[str, object],
 ) -> dict[str, object]:
     """Validate the exact, versioned FM data horizon and artifact identities."""
-    missing = sorted(_PRETRAIN_DATA_CONTRACT_FIELDS - set(payload))
+    version = payload.get("format_version")
+    if version == PRETRAIN_DATA_CONTRACT_VERSION:
+        required_fields = _PRETRAIN_DATA_CONTRACT_FIELDS
+    elif version == LEGACY_PRETRAIN_DATA_CONTRACT_VERSION:
+        required_fields = _LEGACY_PRETRAIN_DATA_CONTRACT_FIELDS
+    else:
+        msg = f"unsupported nested FM pretrain_data_contract version: {version!r}"
+        raise ValueError(msg)
+    missing = sorted(required_fields - set(payload))
     if missing:
         msg = f"FM pretrain data contract is missing fields: {missing}"
         raise ValueError(msg)
-    unknown = sorted(set(payload) - _PRETRAIN_DATA_CONTRACT_FIELDS)
+    unknown = sorted(set(payload) - required_fields)
     if unknown:
         msg = f"FM pretrain data contract contains unknown fields: {unknown}"
         raise ValueError(msg)
-    if payload.get("format_version") != PRETRAIN_DATA_CONTRACT_VERSION:
-        msg = "unsupported nested FM pretrain_data_contract version"
-        raise ValueError(msg)
     for field in ("manifest_sha256", "vocab_artifact_sha256", "vocab_sha256"):
         _validate_sha256(payload[field], field=field)
+    if version == PRETRAIN_DATA_CONTRACT_VERSION:
+        _validate_sha256(
+            payload["manifest_semantic_sha256"],
+            field="manifest_semantic_sha256",
+        )
+        _validate_sha256(payload["core_generation_id"], field="core_generation_id")
+        coverage_sha256 = payload["coverage_sha256"]
+        if coverage_sha256 is not None:
+            _validate_sha256(coverage_sha256, field="coverage_sha256")
     for field in (
         "schema_version",
         "event_ordering_version",
@@ -146,6 +170,105 @@ def validate_pretrain_data_contract(
     return dict(payload)
 
 
+def _coverage_generation_identity(
+    manifest_path: Path,
+    *,
+    include_coverage: bool,
+) -> tuple[list[dict[str, str]], str | None]:
+    """Return the path-independent inventory and V2 coverage-set identity."""
+    if not include_coverage:
+        return [], None
+    coverage_dir = Path(manifest_path).parent / "coverage"
+    if not coverage_dir.is_dir():
+        return [], None
+
+    inventory: list[dict[str, str]] = []
+    for path in sorted(coverage_dir.rglob("*")):
+        if path.is_symlink():
+            msg = f"pretrain coverage generation contains a symlink: {path}"
+            raise ValueError(msg)
+        if path.is_file():
+            inventory.append(
+                {
+                    "path": path.relative_to(coverage_dir).as_posix(),
+                    "sha256": sha256_file(path),
+                }
+            )
+
+    # Match data_coverage.coverage_set_sha256 for the valid flat-JSON V2 layout.
+    coverage_digest = hashlib.sha256()
+    for path in sorted(coverage_dir.glob("*.json")):
+        coverage_digest.update(path.name.encode("utf-8"))
+        coverage_digest.update(b"\0")
+        with path.open("rb") as stream:
+            for block in iter(lambda: stream.read(1 << 20), b""):
+                coverage_digest.update(block)
+        coverage_digest.update(b"\n")
+    return inventory, coverage_digest.hexdigest()
+
+
+def _payload_sha256(payload: Mapping[str, object]) -> str:
+    """Hash one JSON payload with a stable, path-independent serialization."""
+    encoded = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _generation_identities(
+    manifest: Manifest,
+    *,
+    manifest_path: Path,
+    vocab: PretrainVocab,
+) -> tuple[str, str, str | None]:
+    """Return order-aware manifest, MinIO core, and coverage identities."""
+    coverage_inventory, coverage_sha256 = _coverage_generation_identity(
+        manifest_path,
+        include_coverage=manifest.schema_version == "cn_l2_v2",
+    )
+    ordered_shards = [
+        {
+            "market": shard.market,
+            "symbol": shard.symbol,
+            "date": shard.date,
+            "rows": shard.rows,
+            "sha256": shard.sha256,
+            "split": shard.split,
+            "data_contract_sha256": shard.data_contract_sha256,
+        }
+        for shard in manifest.shards
+    ]
+    core_shards = sorted(
+        ordered_shards,
+        key=lambda item: (
+            str(item["market"]),
+            str(item["symbol"]),
+            str(item["date"]),
+            str(item["split"]),
+        ),
+    )
+    common_payload = {
+        "schema_version": manifest.schema_version,
+        "train_end": manifest.train_end,
+        "val_end": manifest.val_end,
+        "purge_days": manifest.purge_days,
+        "embargo_days": manifest.embargo_days,
+        "vocab_sha256": stable_vocab_sha256(vocab),
+        "event_ordering_version": manifest.event_ordering_version,
+        "feature_transform_version": manifest.feature_transform_version,
+        "coverage": coverage_inventory,
+        "events": [],
+    }
+    manifest_semantic_sha256 = _payload_sha256(
+        {**common_payload, "shards": ordered_shards}
+    )
+    core_generation_id = _payload_sha256({**common_payload, "shards": core_shards})
+    return manifest_semantic_sha256, core_generation_id, coverage_sha256
+
+
 def build_pretrain_data_contract(
     *,
     manifest_path: Path,
@@ -173,9 +296,21 @@ def build_pretrain_data_contract(
         for value in (manifest_train_end, vocab_fit_end, manifest_validation_end)
         if value is not None
     ]
+    (
+        manifest_semantic_sha256,
+        core_generation_id,
+        coverage_sha256,
+    ) = _generation_identities(
+        manifest,
+        manifest_path=manifest_path,
+        vocab=vocab,
+    )
     payload = {
         "format_version": PRETRAIN_DATA_CONTRACT_VERSION,
         "manifest_sha256": sha256_file(Path(manifest_path)),
+        "manifest_semantic_sha256": manifest_semantic_sha256,
+        "core_generation_id": core_generation_id,
+        "coverage_sha256": coverage_sha256,
         "vocab_artifact_sha256": sha256_file(Path(vocab_path)),
         "vocab_sha256": stable_vocab_sha256(vocab),
         "schema_version": vocab.schema_version,
@@ -374,16 +509,48 @@ def validate_checkpoint_data_contract(
         if payload_pretrain != sidecar_pretrain:
             msg = "FM checkpoint payload pretrain data contract disagrees with sidecar"
             raise ValueError(msg)
-    if expected_pretrain_data_contract is not None and checkpoint_contract.get(
-        "pretrain_data_contract"
-    ) != dict(expected_pretrain_data_contract):
-        msg = (
-            "FM checkpoint pretrain_data_contract does not match current manifest/vocab"
+    if expected_pretrain_data_contract is not None:
+        current_pretrain = validate_pretrain_data_contract(
+            expected_pretrain_data_contract
         )
-        raise ValueError(msg)
+        saved_version = sidecar_pretrain.get("format_version")
+        current_version = current_pretrain.get("format_version")
+        if saved_version == LEGACY_PRETRAIN_DATA_CONTRACT_VERSION:
+            msg = (
+                "legacy pretrain_data_contract_v2 is path-bound and does not bind "
+                "coverage/core generation identity; strict resume against current "
+                "data is refused"
+            )
+            raise ValueError(msg)
+        if (
+            saved_version != PRETRAIN_DATA_CONTRACT_VERSION
+            or current_version != PRETRAIN_DATA_CONTRACT_VERSION
+        ):
+            msg = "strict resume requires current pretrain_data_contract_v3 identities"
+            raise ValueError(msg)
+
+        # manifest_sha256 remains useful evidence for the machine that created the
+        # checkpoint, but absolute shard/vocab paths make those JSON bytes change
+        # after a safe MinIO rebase.  Every semantic field, content hash, split,
+        # boundary, coverage receipt, and vocab identity is instead covered by the
+        # shared path-independent core_generation_id, order-aware manifest semantic
+        # identity, and the remaining exact fields.
+        comparable_fields = _PRETRAIN_DATA_CONTRACT_FIELDS - {"manifest_sha256"}
+        mismatches = {
+            field: (sidecar_pretrain.get(field), current_pretrain.get(field))
+            for field in sorted(comparable_fields)
+            if sidecar_pretrain.get(field) != current_pretrain.get(field)
+        }
+        if mismatches:
+            msg = (
+                "FM checkpoint pretrain_data_contract does not match current "
+                f"manifest/vocab generation: {mismatches}"
+            )
+            raise ValueError(msg)
 
 
 __all__ = [
+    "LEGACY_PRETRAIN_DATA_CONTRACT_VERSION",
     "PRETRAIN_CHECKPOINT_CONTRACT_VERSION",
     "PRETRAIN_DATA_CONTRACT_VERSION",
     "build_pretrain_data_contract",
