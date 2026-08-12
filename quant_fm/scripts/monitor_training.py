@@ -14,18 +14,12 @@ from pathlib import Path
 
 import yaml
 
+from quant_fm._io import atomic_write_text
 from quant_fm.monitoring.training import (
     build_run_metadata,
     collect_training_status,
     render_training_report,
 )
-
-
-def _atomic_text(path: Path, value: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(value, encoding="utf-8")
-    temporary.replace(path)
 
 
 def _paths(config_path: Path) -> tuple[Path, Path, Path, Path]:
@@ -61,17 +55,17 @@ def _write_observation(
     )
     if refresh_metadata or not metadata_path.is_file():
         metadata = build_run_metadata(config, world_size=world_size)
-        _atomic_text(
+        atomic_write_text(
             metadata_path,
             json.dumps(metadata, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         )
     else:
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-    _atomic_text(
+    atomic_write_text(
         status_path,
         json.dumps(status, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
     )
-    _atomic_text(report_path, render_training_report(status, metadata))
+    atomic_write_text(report_path, render_training_report(status, metadata))
     latest = status["progress"].get("latest_update")  # type: ignore[index]
     summary = {
         "state": status["state"],

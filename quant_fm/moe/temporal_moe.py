@@ -56,6 +56,8 @@ class TemporalRegimeMoE(nn.Module):
             msg = "TemporalRegimeMoE requires an enabled config"
             raise ValueError(msg)
         self.config = config
+        self.hidden_dim = hidden_dim
+        self.regime_feature_dim = regime_feature_dim
         self.router = TopKRouter(
             regime_feature_dim,
             config.n_experts,

@@ -571,7 +571,9 @@ output = hidden + shared + routed
 必须保留 residual 和 shared expert，避免行情边界硬切换。
 
 `RegimeIntradayModel` 已能把 `IntradayAggregator.full_day_summary` 接到
-`TemporalRegimeMoE`，但没有标准 dataset、训练 loop、embedding CLI 或 score 入口。
+`TemporalRegimeMoE`。研究训练链现通过 `run_judge --regime-config --regime-features`
+把冻结的股日 embedding、PIT Regime 特征、Temporal Regime-MoE 与 Ranker 串联；严格
+生产 `build_oos_delivery` 和独立生产 score 入口仍未启用该组件。
 训练模式按 capacity 裁剪 assignment，可能出现 batch 容量竞争；评估/推理模式不裁剪，
 已有低 capacity 下的 batch-size independence 测试。
 
@@ -593,10 +595,12 @@ mean_top1_probability
 overflow_rate
 ```
 
-by-date/by-regime、expert output cosine 和 expert RankIC 仍需在训练/评估编排中实现。当前
-FM train loop 也不会自动调用此 telemetry。`save_regime_moe_artifact()` 已保存 model state、
-config、normalizer、data cutoff 和 base-model hash，但 loader 只验证版本并返回 payload，
-尚不能独立重建 aggregator/模型维度。
+研究 Ranker 训练报告已记录逐 epoch expert fraction、normalized entropy、mean Top-1
+probability、overflow 和 Router auxiliary loss。by-date/by-regime、expert output cosine 和
+expert RankIC 仍需补齐；逐事件 FM train loop 不调用 Temporal telemetry。
+`save_regime_moe_artifact()` 保存 model state、config、normalizer、维度、data cutoff 和
+base-model hash，`load_regime_moe_artifact()` 可严格重建 Temporal 模块；artifact 不包含
+Ranker 或完整生产评分编排。
 
 单专家长期超过 80%、专家输出高度相同、router 只学习 board/symbol、收益仅来自单月，均视为失败。负载均衡只防塌缩，不强制每个日期绝对均匀。
 

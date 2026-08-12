@@ -15,6 +15,8 @@ from typing import TYPE_CHECKING
 
 import yaml
 
+from quant_fm._io import atomic_write_json
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Any
@@ -53,16 +55,6 @@ def _utc_iso(timestamp: float | None = None) -> str:
         else datetime.fromtimestamp(timestamp, tz=UTC)
     )
     return value.isoformat()
-
-
-def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
-    temporary.replace(path)
 
 
 def _tail_text(path: Path, *, max_bytes: int = 2 << 20) -> str:
@@ -193,7 +185,7 @@ class CheckpointRegistry:
             "stability_rule": "same size and mtime in two consecutive observations",
             "checkpoints": checkpoints,
         }
-        _atomic_json(self.path, payload)
+        atomic_write_json(self.path, payload)
         return payload
 
 

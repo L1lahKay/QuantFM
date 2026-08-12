@@ -40,10 +40,14 @@ from quant_fm.downstream.evaluate import (
 from quant_fm.downstream.make_features import build_features
 from quant_fm.downstream.train_ranker import (
     RankerObjectiveConfig,
+    TemporalRegimeRanker,
     fit_ranker,
     predict,
     train_ranker,
 )
+from quant_fm.moe.artifact import save_regime_moe_artifact
+from quant_fm.moe.config import TemporalRegimeTrainingConfig
+from quant_fm.moe.regime_features import attach_regime_features
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +61,7 @@ def _run_cpcv(
     seed: int,
     top_k: int | None,
     objective: RankerObjectiveConfig,
+    regime_config: TemporalRegimeTrainingConfig | None,
 ) -> dict:
     """
     组合式 purged CV。
@@ -99,6 +104,10 @@ def _run_cpcv(
             device=device,
             seed=seed + i,
             objective=objective,
+            regime_moe=(regime_config.moe if regime_config is not None else None),
+            regime_feature_specs=(
+                regime_config.feature_specs if regime_config is not None else ()
+            ),
         )
         preds = predict(model, test_f, device=device)
         pan = panel.filter(pl.col("date").is_in(test_f["date"].unique().to_list()))
@@ -153,13 +162,15 @@ def _file_meta(path: Path) -> dict:
     with path.open("rb") as f:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
+    digest = h.hexdigest()
     return {
         "path": str(path.resolve()),
         "name": path.name,
         "stem": path.stem,
         "size_bytes": st.st_size,
         "mtime_utc": datetime.fromtimestamp(st.st_mtime, tz=UTC).isoformat(),
-        "sha256": h.hexdigest()[:16],
+        "sha256": digest[:16],
+        "sha256_full": digest,
         "kind": (
             "best"
             if path.stem == "best"
@@ -240,6 +251,8 @@ def run_judge(
     seed: int = 42,
     dev_only: bool = False,
     objective: RankerObjectiveConfig | None = None,
+    regime_config_path: Path | None = None,
+    regime_features_path: Path | None = None,
 ) -> Path:
     """跑下游裁判并把完整报告写入 ``workdir/downstream/``，返回报告路径。"""
     workdir = Path(workdir)
@@ -253,6 +266,19 @@ def run_judge(
     runs_dir.mkdir(parents=True, exist_ok=True)
     objective_cfg = objective or RankerObjectiveConfig()
     objective_cfg.validate()
+    if (regime_config_path is None) != (regime_features_path is None):
+        msg = "--regime-config and --regime-features must be provided together"
+        raise ValueError(msg)
+    regime_config = (
+        TemporalRegimeTrainingConfig.from_yaml(regime_config_path)
+        if regime_config_path is not None
+        else None
+    )
+    regime_features = (
+        pl.read_parquet(regime_features_path)
+        if regime_features_path is not None
+        else None
+    )
 
     ckpt_meta = _file_meta(checkpoint)
     panel = pl.read_parquet(panel_path).filter(pl.col("fwd_ret").is_not_null())
@@ -276,6 +302,23 @@ def run_judge(
             min_names_per_day=min_names_per_day,
         )
     )
+    if regime_config is not None and regime_features is not None:
+        train_feat = attach_regime_features(
+            train_feat,
+            regime_features,
+            regime_config.feature_specs,
+        )
+        val_feat = attach_regime_features(
+            val_feat,
+            regime_features,
+            regime_config.feature_specs,
+        )
+        if not test_feat.is_empty():
+            test_feat = attach_regime_features(
+                test_feat,
+                regime_features,
+                regime_config.feature_specs,
+            )
 
     training = fit_ranker(
         train_feat,
@@ -284,6 +327,10 @@ def run_judge(
         device=device,
         seed=seed,
         objective=objective_cfg,
+        regime_moe=(regime_config.moe if regime_config is not None else None),
+        regime_feature_specs=(
+            regime_config.feature_specs if regime_config is not None else ()
+        ),
     )
     model = training.model
     history = [float(row["train_ic"] or 0.0) for row in training.history]
@@ -312,9 +359,29 @@ def run_judge(
         seed=seed,
         top_k=top_k,
         objective=objective_cfg,
+        regime_config=regime_config,
     )
 
     ts = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%SZ")
+    regime_artifact: dict[str, object] | None = None
+    if regime_config is not None:
+        if not isinstance(model, TemporalRegimeRanker):  # pragma: no cover - invariant
+            msg = "Temporal Regime-MoE training returned an incompatible model"
+            raise RuntimeError(msg)
+        artifact_path = runs_dir / f"{ts}_{ckpt_meta['stem']}_regime_moe.pt"
+        save_regime_moe_artifact(
+            artifact_path,
+            model.temporal_moe,
+            regime_config.moe,
+            model.normalizer,
+            data_cutoff=model.normalizer.fit_end,
+            base_model_sha256=str(ckpt_meta["sha256_full"]),
+        )
+        regime_artifact = {
+            "path": str(artifact_path.resolve()),
+            "config": regime_config.to_dict(),
+            "feature_normalizer": model.normalizer.to_dict(),
+        }
     report = {
         "created_utc": ts,
         "evaluation_scope": "development_only" if dev_only else "full_with_test",
@@ -322,6 +389,7 @@ def run_judge(
         "panel": _file_meta(panel_path),
         "embeddings_dir": str(emb_dir.resolve()),
         "workdir": str(workdir.resolve()),
+        "temporal_regime_moe": regime_artifact,
         "ranker": {
             "epochs": epochs,
             "device": device,
@@ -422,6 +490,19 @@ def main() -> None:
     parser.add_argument("--top-k", type=int, default=None)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
+        "--regime-config",
+        type=Path,
+        help="Temporal Regime-MoE YAML；必须与 --regime-features 同时提供",
+    )
+    parser.add_argument(
+        "--regime-features",
+        type=Path,
+        help=(
+            "PIT Regime parquet，含 date/symbol、配置声明的特征以及 "
+            "asof_date 或逐特征 __asof_date"
+        ),
+    )
+    parser.add_argument(
         "--dev-only",
         action="store_true",
         help="只使用 train/val 做候选筛选，不读取 test embedding",
@@ -439,6 +520,8 @@ def main() -> None:
         top_k=args.top_k,
         seed=args.seed,
         dev_only=args.dev_only,
+        regime_config_path=args.regime_config,
+        regime_features_path=args.regime_features,
     )
     print(path)
 

@@ -14,7 +14,7 @@ import polars as pl
 
 from quant_fm.downstream.make_features import build_scoring_features
 from quant_fm.downstream.representation import validate_strict_topk_representation
-from quant_fm.downstream.train_ranker import predict
+from quant_fm.downstream.train_ranker import TemporalRegimeRanker, predict
 from quant_fm.downstream.universe import (
     cross_section_stats,
     validate_pit_universe,
@@ -26,6 +26,7 @@ from quant_fm.embedding.contract import (
     load_embedding_contract,
     validate_embedding_columns,
 )
+from quant_fm.moe.regime_features import attach_regime_features
 from quant_fm.signal.artifact import load_ranker_artifact
 from quant_fm.signal.schema import validate_scores
 
@@ -69,6 +70,7 @@ def generate_scores(
     allow_legacy_embedding_contract: bool = False,
     allow_legacy_training_contract: bool = False,
     require_causal_representation: bool = True,
+    regime_features_path: Path | None = None,
 ) -> Path:
     """生成无标签 score，并原子写入 parquet 和 manifest。"""
     embeddings = pl.read_parquet(embeddings_path)
@@ -152,6 +154,18 @@ def generate_scores(
         min_names_per_day=required_names if strict_universe else 1,
     )
     scoring_feature_stats = cross_section_stats(features)
+    if isinstance(model, TemporalRegimeRanker):
+        if regime_features_path is None:
+            msg = "Temporal Regime ranker scoring requires --regime-features"
+            raise ValueError(msg)
+        features = attach_regime_features(
+            features,
+            pl.read_parquet(regime_features_path),
+            model.regime_feature_specs,
+        )
+    elif regime_features_path is not None:
+        msg = "--regime-features was provided for a non-Temporal ranker"
+        raise ValueError(msg)
     universe_alignment: dict[str, float | str] | None = None
     if strict_universe:
         stored_contract = training_universe.get("contract")
@@ -233,6 +247,7 @@ def generate_scores(
         },
         "data": {
             "file": "scores.parquet",
+            "file_sha256": _sha256(scores_path),
             "schema": {"date": "string", "symbol": "string", "score": "float64"},
             "primary_key": ["date", "symbol"],
             "rows": scores.height,
@@ -241,9 +256,12 @@ def generate_scores(
             "date_max": scores["date"].max(),
         },
         "artifacts": {
+            "embedding_file_sha256": _sha256(embeddings_path),
             "fm_checkpoint_sha256": _sha256(fm_checkpoint_path),
             "vocab_sha256": _sha256(vocab_path),
             "ranker_checkpoint_sha256": _sha256(ranker_path),
+            "ranker_metadata_sha256": _sha256(ranker_metadata_path),
+            "regime_features_sha256": _sha256(regime_features_path),
         },
         "ranker": {
             "artifact_version": metadata.get("artifact_version"),
@@ -251,6 +269,7 @@ def generate_scores(
             "label_end_date": label_end,
             "objective": metadata.get("objective"),
             "training_contract": metadata.get("training_contract"),
+            "temporal_regime": metadata.get("temporal_regime"),
         },
         "scoring_universe": {
             "file_sha256": _sha256(universe_path),
@@ -291,6 +310,11 @@ def main() -> None:
     parser.add_argument("--fm-checkpoint", type=Path)
     parser.add_argument("--vocab", type=Path)
     parser.add_argument("--universe", type=Path)
+    parser.add_argument(
+        "--regime-features",
+        type=Path,
+        help="Temporal Ranker 推理日期对应的 PIT regime parquet",
+    )
     parser.add_argument("--allow-in-sample", action="store_true")
     parser.add_argument(
         "--allow-legacy-embedding-contract",
@@ -322,6 +346,7 @@ def main() -> None:
         allow_legacy_embedding_contract=args.allow_legacy_embedding_contract,
         allow_legacy_training_contract=args.allow_legacy_training_contract,
         require_causal_representation=args.require_causal_representation,
+        regime_features_path=args.regime_features,
     )
 
 

@@ -245,11 +245,14 @@ h'=h+E_{shared}(h)+\sum_{e\in TopK}w_eE_e(h)
 model_state
 moe_config
 feature_normalizer
+hidden_dim
+regime_feature_dim
 data_cutoff
 base_model_sha256
 ```
 
-它尚未保存完整 aggregator 配置、hidden/feature 维度和一键重建所需的全部对象，因此目前是研究 artifact，不是生产 loader。
+`load_regime_moe_artifact()` 可由这些字段严格重建 Temporal 模块和 normalizer；artifact
+仍未包含完整 aggregator、Ranker 和生产评分编排，因此不是一键生产 loader。
 
 ## 6. 训练目标与监控
 
@@ -266,7 +269,9 @@ base_model_sha256
 | 性能 | non-pad tokens/s、dispatch/combine 时间、峰值显存 |
 | 稳定性 | 按月份、波动桶、流动性桶的专家占比 |
 
-当前 `summarize_moe()` 已能计算 expert fraction、entropy、top-1 probability 和 overflow，但训练 loop 尚未自动接入完整 telemetry。
+当前 `run_judge` 研究训练 loop 已按 epoch 记录 expert fraction、entropy、top-1
+probability、overflow 和 Router auxiliary loss；by-date/by-regime、专家输出相似度与梯度范数
+仍未自动落盘。
 
 ### 6.2 告警建议
 

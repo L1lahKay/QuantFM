@@ -3,7 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+import yaml
+
+from quant_fm.moe.regime_features import RegimeFeatureSpec
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,6 +56,88 @@ class RegimeMoEConfig:
     def to_dict(self) -> dict[str, Any]:
         """返回可写入 artifact 的普通字典。"""
         return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
+class TemporalRegimeTrainingConfig:
+    """Temporal Regime-MoE 训练入口的完整、可审计配置。"""
+
+    moe_router_version: str
+    placement: str
+    moe: RegimeMoEConfig
+    feature_specs: tuple[RegimeFeatureSpec, ...]
+
+    def __post_init__(self) -> None:
+        if self.moe_router_version != "1.0":
+            msg = "unsupported moe_router_version"
+            raise ValueError(msg)
+        if self.placement != "temporal_aggregator":
+            msg = "Temporal Regime-MoE placement must be temporal_aggregator"
+            raise ValueError(msg)
+        if not self.moe.enabled:
+            msg = "Temporal Regime-MoE training config must be enabled"
+            raise ValueError(msg)
+        if not self.feature_specs:
+            msg = "Temporal Regime-MoE requires at least one regime feature"
+            raise ValueError(msg)
+        names = [spec.name for spec in self.feature_specs]
+        if len(set(names)) != len(names):
+            msg = "regime feature names must be unique"
+            raise ValueError(msg)
+
+    @classmethod
+    def from_dict(cls, value: dict[str, Any]) -> TemporalRegimeTrainingConfig:
+        """从 YAML 映射加载，并拒绝未知或缺失字段。"""
+        if not isinstance(value, dict):
+            msg = "Temporal Regime-MoE config must be a mapping"
+            raise TypeError(msg)
+        required = {
+            "moe_router_version",
+            "placement",
+            "enabled",
+            "regime_features",
+        }
+        missing = required - set(value)
+        if missing:
+            msg = f"Temporal Regime-MoE config is missing fields: {sorted(missing)}"
+            raise ValueError(msg)
+        moe_fields = set(RegimeMoEConfig.__dataclass_fields__)
+        allowed = {"moe_router_version", "placement", "regime_features", *moe_fields}
+        unknown = set(value) - allowed
+        if unknown:
+            msg = f"unknown Temporal Regime-MoE config fields: {sorted(unknown)}"
+            raise ValueError(msg)
+        raw_features = value["regime_features"]
+        if not isinstance(raw_features, list):
+            msg = "regime_features must be a list"
+            raise TypeError(msg)
+        try:
+            feature_specs = tuple(RegimeFeatureSpec(**item) for item in raw_features)
+        except (TypeError, ValueError) as exc:
+            msg = "invalid regime_features declaration"
+            raise ValueError(msg) from exc
+        moe_payload = {field: value[field] for field in moe_fields if field in value}
+        return cls(
+            moe_router_version=str(value["moe_router_version"]),
+            placement=str(value["placement"]),
+            moe=RegimeMoEConfig.from_dict(moe_payload),
+            feature_specs=feature_specs,
+        )
+
+    @classmethod
+    def from_yaml(cls, path: Path) -> TemporalRegimeTrainingConfig:
+        """从磁盘加载标准 Temporal Regime-MoE YAML。"""
+        payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+        return cls.from_dict(payload)
+
+    def to_dict(self) -> dict[str, Any]:
+        """返回可稳定写入训练报告的普通字典。"""
+        return {
+            "moe_router_version": self.moe_router_version,
+            "placement": self.placement,
+            **self.moe.to_dict(),
+            "regime_features": [asdict(spec) for spec in self.feature_specs],
+        }
 
 
 @dataclass(frozen=True, slots=True)

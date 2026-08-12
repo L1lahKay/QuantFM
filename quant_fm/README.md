@@ -34,7 +34,7 @@ make check-minio
 make minio-full-pipeline           # 试跑：5日×30股/市场
 make minio-full-pipeline-full      # 60日×全市场（≈总量 1/10）+ 训练
 
-# 只要数据（上传后删本地 tokens，不训练）
+# 只要数据（上传后保留本地 tokens；离线验收后再显式清理）
 make minio-pipeline                # 试跑
 make minio-pipeline-full           # 60日×全市场
 
@@ -205,7 +205,7 @@ checkpoint 分两类：定期 `step*.pt` 与 `final_resume.pt` 含 optimizer/sca
 
 ## 当前边界
 
-- 代码与回归测试已完成（当前 `243 passed, 2 skipped, 1 xfailed`），但尚未生成正式全市场 v2 artifact，也未完成 25M/100M/230M 重训、MoE 消融或新的 untouched OOS；因此不能由本次改造直接推导收益提升。
+- 代码与回归测试已完成（2026-08-12 提交快照为 `702 passed, 2 skipped, 1 xpassed`），但尚未生成正式全市场 v2 artifact，也未完成 25M/100M/230M 重训、MoE 消融或新的 untouched OOS；因此不能由本次改造直接推导收益提升。
 - `make pilot`、`make medium`、`make minio-pipeline*` 与 `make minio-full-pipeline*` 默认走 V2：清洗回放同步捕获真实 pre/post 盘口，生成 `vocab_v2.json`、Q16 token/scalar、manifest，并在上传或训练前写出 PASS 的 `artifact_audit.json`。V1 仅保留为 `run_pilot.py` / `run_medium.py --data-version v1` 的显式兼容路径。
 - `pooling.method: multi_scale` 是配置/产物契约；实际抽取需在 `extract_hidden` 明确传 `--pooling multi_scale --vocab <vocab_v2.json>`。
 - `cross_asset` 与 `IntradayAggregator` 已具备因果单测，但尚未纳入默认预训练或 score 交付链路。

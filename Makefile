@@ -4,7 +4,12 @@ PY ?= python
 WORKDIR ?= quant_fm/runs/v2_pilot
 MEDIUM_WORKDIR ?= quant_fm/runs/v2_shared
 SIGNAL_EMBEDDINGS ?= quant_fm/runs/oos2026/embeddings/all.parquet
-SIGNAL_ARTIFACT ?= quant_fm/runs/medium_300m/signal_artifact
+SIGNAL_TRAIN_WORKDIR ?= quant_fm/runs/medium_300m
+SIGNAL_ARTIFACT ?= $(SIGNAL_TRAIN_WORKDIR)/signal_artifact
+SIGNAL_FM_CHECKPOINT ?= $(SIGNAL_TRAIN_WORKDIR)/run/best.pt
+SIGNAL_VOCAB ?= $(SIGNAL_TRAIN_WORKDIR)/data/vocab_v2.json
+SIGNAL_UNIVERSE ?=
+SIGNAL_REGIME_FEATURES ?=
 SIGNAL_OUT ?= quant_fm/runs/oos2026/delivery
 
 help:
@@ -47,11 +52,21 @@ smoke:
 signal-smoke: smoke
 
 signal:
+	@test -f "$(SIGNAL_EMBEDDINGS)" || { echo "missing SIGNAL_EMBEDDINGS=$(SIGNAL_EMBEDDINGS)" >&2; exit 2; }
+	@test -f "$(SIGNAL_ARTIFACT)/ranker.pt" || { echo "missing ranker artifact under $(SIGNAL_ARTIFACT)" >&2; exit 2; }
+	@test -f "$(SIGNAL_ARTIFACT)/ranker_metadata.json" || { echo "missing ranker metadata under $(SIGNAL_ARTIFACT)" >&2; exit 2; }
+	@test -f "$(SIGNAL_FM_CHECKPOINT)" || { echo "missing SIGNAL_FM_CHECKPOINT=$(SIGNAL_FM_CHECKPOINT)" >&2; exit 2; }
+	@test -f "$(SIGNAL_VOCAB)" || { echo "missing SIGNAL_VOCAB=$(SIGNAL_VOCAB)" >&2; exit 2; }
+	@test -n "$(SIGNAL_UNIVERSE)" || { echo "SIGNAL_UNIVERSE must point to the daily PIT scoring universe" >&2; exit 2; }
+	@test -f "$(SIGNAL_UNIVERSE)" || { echo "missing SIGNAL_UNIVERSE=$(SIGNAL_UNIVERSE)" >&2; exit 2; }
 	$(PY) -m quant_fm.signal.generate \
-		--embeddings $(SIGNAL_EMBEDDINGS) \
-		--ranker $(SIGNAL_ARTIFACT)/ranker.pt \
-		--ranker-metadata $(SIGNAL_ARTIFACT)/ranker_metadata.json \
-		--out-dir $(SIGNAL_OUT)
+		--embeddings "$(SIGNAL_EMBEDDINGS)" \
+		--ranker "$(SIGNAL_ARTIFACT)/ranker.pt" \
+		--ranker-metadata "$(SIGNAL_ARTIFACT)/ranker_metadata.json" \
+		--fm-checkpoint "$(SIGNAL_FM_CHECKPOINT)" \
+		--vocab "$(SIGNAL_VOCAB)" \
+		--universe "$(SIGNAL_UNIVERSE)" \
+		$(if $(strip $(SIGNAL_REGIME_FEATURES)),--regime-features "$(SIGNAL_REGIME_FEATURES)" ,)--out-dir "$(SIGNAL_OUT)"
 
 backtest-contract-fixture:
 	$(PY) -m quant_fm.scripts.build_backtest_contract_fixture \
@@ -75,16 +90,19 @@ medium-estimate:
 	$(PY) -m quant_fm.scripts.run_medium --estimate-only --workdir $(MEDIUM_WORKDIR)
 
 medium:
-	$(PY) -m quant_fm.scripts.run_medium \
+	$(PY) -m quant_fm.scripts.run_v2_parallel_data \
 		--workdir $(MEDIUM_WORKDIR) \
-		--data-version v2 \
-		--drop-clean --drop-events --resume --v2-full-audit
+		--groups $${NGROUPS:-2} \
+		--clean-workers $${CLEAN_WORKERS:-30} \
+		--canon-workers $${CANON_WORKERS:-8} \
+		--tokenize-workers $${TOKENIZE_WORKERS:-16}
 
 # 试跑：每市场 50 只股票 × 60 天（验证流水线，磁盘约数 GB）
 medium-smoke:
 	$(PY) -m quant_fm.scripts.run_medium \
 		--workdir $(MEDIUM_WORKDIR)_smoke \
 		--data-version v2 \
+		--fast-clean \
 		--max-symbols-per-market 50 \
 		--drop-clean --drop-events
 

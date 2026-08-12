@@ -11,12 +11,23 @@ from __future__ import annotations
 import logging
 import zlib
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
 import polars as pl
 import torch
 from torch import nn
 from torch.nn import functional as F
+
+from quant_fm.moe.regime_features import RegimeFeatureNormalizer
+from quant_fm.moe.telemetry import summarize_moe
+from quant_fm.moe.temporal_moe import TemporalRegimeMoE
+
+if TYPE_CHECKING:
+    from quant_fm.moe.config import RegimeMoEConfig
+    from quant_fm.moe.regime_features import RegimeFeatureSpec
+    from quant_fm.moe.telemetry import MoETelemetry
+    from quant_fm.moe.temporal_moe import MoEOutput
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +96,7 @@ class RankerObjectiveConfig:
 class RankerTrainingResult:
     """包含最佳验证模型与逐 epoch 轨迹的训练结果。"""
 
-    model: CrossSectionalRanker
+    model: CrossSectionalRanker | TemporalRegimeRanker
     history: list[dict[str, float | int | None]]
     best_epoch: int
     best_val_ic: float | None
@@ -162,6 +173,95 @@ class CrossSectionalRanker(nn.Module):
         """返回排序分数和仅用于训练的超额收益辅助预测。"""
         hidden = self._encode(x)
         return self.out(hidden).squeeze(-1), self.aux_out(hidden).squeeze(-1)
+
+
+class TemporalRegimeRanker(nn.Module):
+    """在冻结 FM 股日 embedding 与横截面 Ranker 之间接入 Regime-MoE。"""
+
+    def __init__(
+        self,
+        *,
+        ranker_config: RankerConfig,
+        embedding_columns: tuple[str, ...],
+        factor_columns: tuple[str, ...],
+        feature_specs: tuple[RegimeFeatureSpec, ...],
+        normalizer: RegimeFeatureNormalizer,
+        moe_config: RegimeMoEConfig,
+    ) -> None:
+        super().__init__()
+        if not embedding_columns:
+            msg = "Temporal Regime-MoE requires at least one embedding column"
+            raise ValueError(msg)
+        if tuple(spec.name for spec in feature_specs) != tuple(
+            spec.name for spec in normalizer.specs
+        ):
+            msg = "regime feature specs do not match the frozen normalizer"
+            raise ValueError(msg)
+        expected_ranker_dim = len(embedding_columns) + len(factor_columns)
+        if ranker_config.in_dim != expected_ranker_dim:
+            msg = "ranker input width does not match embedding + factor columns"
+            raise ValueError(msg)
+        self.embedding_columns = embedding_columns
+        self.factor_columns = factor_columns
+        self.regime_feature_specs = feature_specs
+        self.input_columns = (
+            *embedding_columns,
+            *factor_columns,
+            *(spec.name for spec in feature_specs),
+        )
+        self.normalizer = normalizer
+        self.moe_config = moe_config
+        self.temporal_moe = TemporalRegimeMoE(
+            len(embedding_columns),
+            len(feature_specs),
+            moe_config,
+        )
+        self.ranker = CrossSectionalRanker(ranker_config)
+        self._last_moe_output: MoEOutput | None = None
+
+    def _adapt(self, inputs: torch.Tensor) -> torch.Tensor:
+        if inputs.ndim != 2 or inputs.size(-1) != len(self.input_columns):
+            msg = (
+                "TemporalRegimeRanker inputs must have shape "
+                f"[names, {len(self.input_columns)}]"
+            )
+            raise ValueError(msg)
+        embedding_end = len(self.embedding_columns)
+        factor_end = embedding_end + len(self.factor_columns)
+        embedding = inputs[:, :embedding_end]
+        factors = inputs[:, embedding_end:factor_end]
+        raw_regime = inputs[:, factor_end:]
+        normalized_regime = self.normalizer.transform(raw_regime)
+        output = self.temporal_moe(embedding, normalized_regime)
+        self._last_moe_output = output
+        return torch.cat((output.hidden, factors), dim=-1)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        """对带显式 Regime 特征的单日横截面打分。"""
+        return self.ranker(self._adapt(inputs))
+
+    def forward_with_aux(
+        self, inputs: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """返回排序分数和辅助收益预测。"""
+        return self.ranker.forward_with_aux(self._adapt(inputs))
+
+    def moe_auxiliary_loss(self) -> torch.Tensor:
+        """返回最近一次前向计算的已加权 Router 正则。"""
+        if self._last_moe_output is None:
+            return next(self.parameters()).new_zeros(())
+        return self._last_moe_output.auxiliary_loss
+
+    def moe_telemetry(self) -> MoETelemetry | None:
+        """返回最近一次前向的专家负载、熵和容量指标。"""
+        if self._last_moe_output is None:
+            return None
+        output = self._last_moe_output
+        return summarize_moe(
+            output.router.probabilities,
+            output.router.topk_indices,
+            overflow_rate=output.overflow_rate,
+        )
 
 
 def _pearson(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -523,11 +623,16 @@ def _days_from_frame(
     features: pl.DataFrame,
     *,
     objective: RankerObjectiveConfig,
+    columns: list[str] | None = None,
 ) -> list[_RankerDay]:
     """将特征表按日拆分；旧数据仅兼容派生 ``head_gain``。"""
-    feat_cols = [c for c in features.columns if c.startswith(("emb_", "factor_"))]
+    feat_cols = columns or feature_columns(features)
     if not feat_cols:
         msg = "no emb_* or factor_* columns available for ranker training"
+        raise ValueError(msg)
+    missing_columns = [name for name in feat_cols if name not in features.columns]
+    if missing_columns:
+        msg = f"ranker training features are missing columns: {missing_columns}"
         raise ValueError(msg)
     if "label" not in features.columns:
         msg = "ranker training features must contain label"
@@ -583,20 +688,40 @@ def feature_columns(features: pl.DataFrame) -> list[str]:
     return [c for c in features.columns if c.startswith(("emb_", "factor_"))]
 
 
+def temporal_regime_feature_columns(
+    features: pl.DataFrame,
+    specs: tuple[RegimeFeatureSpec, ...],
+) -> list[str]:
+    """返回 Temporal Regime-MoE wrapper 的固定输入列顺序。"""
+    base = feature_columns(features)
+    embedding = [name for name in base if name.startswith("emb_")]
+    factors = [name for name in base if name.startswith("factor_")]
+    regime = [spec.name for spec in specs]
+    collisions = sorted(set(regime) & set(base))
+    if collisions:
+        msg = f"regime feature names collide with ranker columns: {collisions}"
+        raise ValueError(msg)
+    missing = [name for name in regime if name not in features.columns]
+    if missing:
+        msg = f"ranker features are missing regime columns: {missing}"
+        raise ValueError(msg)
+    if not embedding:
+        msg = "Temporal Regime-MoE requires emb_* columns"
+        raise ValueError(msg)
+    return [*embedding, *factors, *regime]
+
+
 def _scoring_days(
     features: pl.DataFrame,
-    expected_columns: list[str] | None = None,
+    columns: list[str],
 ) -> list[tuple[str, pl.DataFrame, np.ndarray]]:
     """将无标签推理表按日拆为日期、主键和特征矩阵。"""
-    columns = feature_columns(features)
-    if expected_columns is not None and columns != expected_columns:
-        msg = (
-            "ranker feature columns mismatch: "
-            f"expected={expected_columns}, actual={columns}"
-        )
-        raise ValueError(msg)
     if not columns:
         msg = "no emb_* or factor_* columns available for scoring"
+        raise ValueError(msg)
+    missing = [name for name in columns if name not in features.columns]
+    if missing:
+        msg = f"ranker scoring features are missing columns: {missing}"
         raise ValueError(msg)
     days: list[tuple[str, pl.DataFrame, np.ndarray]] = []
     for (date,), sub in features.group_by(["date"], maintain_order=True):
@@ -619,7 +744,9 @@ def train_ranker(
     device: str = "cpu",
     seed: int = 0,
     objective: RankerObjectiveConfig | None = None,
-) -> tuple[CrossSectionalRanker, list[float]]:
+    regime_moe: RegimeMoEConfig | None = None,
+    regime_feature_specs: tuple[RegimeFeatureSpec, ...] = (),
+) -> tuple[CrossSectionalRanker | TemporalRegimeRanker, list[float]]:
     """兼容训练入口；无验证集时返回各 epoch 训练 RankIC。"""
     result = fit_ranker(
         features,
@@ -633,13 +760,15 @@ def train_ranker(
         device=device,
         seed=seed,
         objective=objective,
+        regime_moe=regime_moe,
+        regime_feature_specs=regime_feature_specs,
     )
     history = [float(row["train_ic"] or 0.0) for row in result.history]
     return result.model, history
 
 
 def _evaluate_days(
-    model: CrossSectionalRanker,
+    model: CrossSectionalRanker | TemporalRegimeRanker,
     days: list[_RankerDay],
     device: torch.device,
 ) -> float:
@@ -672,7 +801,7 @@ def _exact_ndcg(pred: np.ndarray, gain: np.ndarray, cutoff: int) -> float:
 
 
 def _evaluate_ndcg(
-    model: CrossSectionalRanker,
+    model: CrossSectionalRanker | TemporalRegimeRanker,
     days: list[_RankerDay],
     device: torch.device,
     *,
@@ -703,7 +832,7 @@ def _evaluate_ndcg(
 
 
 def _evaluate_top_spread(
-    model: CrossSectionalRanker,
+    model: CrossSectionalRanker | TemporalRegimeRanker,
     features: pl.DataFrame | None,
     device: torch.device,
     *,
@@ -712,7 +841,11 @@ def _evaluate_top_spread(
     """计算预测最高尾部相对当日横截面均值的真实超额收益。"""
     if features is None or features.is_empty() or "target_return" not in features:
         return float("nan")
-    columns = feature_columns(features)
+    columns = (
+        list(model.input_columns)
+        if isinstance(model, TemporalRegimeRanker)
+        else feature_columns(features)
+    )
     was_training = model.training
     model.eval()
     spreads: list[float] = []
@@ -744,14 +877,54 @@ def fit_ranker(
     seed: int = 0,
     shuffle_days: bool = True,
     objective: RankerObjectiveConfig | None = None,
+    regime_moe: RegimeMoEConfig | None = None,
+    regime_feature_specs: tuple[RegimeFeatureSpec, ...] = (),
 ) -> RankerTrainingResult:
-    """训练并按 exact multi-K NDCG + IC early-stop。"""
+    """训练并按 exact multi-K NDCG + IC early-stop，可选 Temporal Regime-MoE。"""
     torch.manual_seed(seed)
     objective_cfg = objective or RankerObjectiveConfig()
     objective_cfg.validate()
-    train_days = _days_from_frame(train_features, objective=objective_cfg)
+    regime_enabled = regime_moe is not None
+    if regime_enabled and not regime_moe.enabled:
+        msg = "fit_ranker regime_moe must be enabled when provided"
+        raise ValueError(msg)
+    if regime_enabled != bool(regime_feature_specs):
+        msg = "enabled regime_moe and regime_feature_specs must be provided together"
+        raise ValueError(msg)
+
+    normalizer: RegimeFeatureNormalizer | None = None
+    if regime_enabled:
+        model_columns = temporal_regime_feature_columns(
+            train_features,
+            regime_feature_specs,
+        )
+        regime_names = [spec.name for spec in regime_feature_specs]
+        regime_values = torch.from_numpy(
+            train_features.select(regime_names).to_numpy().astype(np.float32)
+        )
+        training_dates = sorted(str(value) for value in train_features["date"].unique())
+        if not training_dates:
+            msg = "cannot fit Regime normalizer without training dates"
+            raise ValueError(msg)
+        normalizer = RegimeFeatureNormalizer.fit(
+            regime_values,
+            regime_feature_specs,
+            fit_end=training_dates[-1],
+        )
+    else:
+        model_columns = feature_columns(train_features)
+
+    train_days = _days_from_frame(
+        train_features,
+        objective=objective_cfg,
+        columns=model_columns,
+    )
     val_days = (
-        _days_from_frame(val_features, objective=objective_cfg)
+        _days_from_frame(
+            val_features,
+            objective=objective_cfg,
+            columns=model_columns,
+        )
         if val_features is not None
         else []
     )
@@ -761,17 +934,34 @@ def fit_ranker(
     if val_days and val_days[0].x.shape[1] != train_days[0].x.shape[1]:
         msg = "train and validation feature dimensions differ"
         raise ValueError(msg)
-    in_dim = train_days[0].x.shape[1]
     dev = torch.device(device)
-    model = CrossSectionalRanker(
-        RankerConfig(
-            in_dim=in_dim,
-            hidden=hidden,
-            depth=depth,
-            dropout=dropout,
-            use_attention=use_attention,
-        )
-    ).to(dev)
+    base_columns = feature_columns(train_features)
+    ranker_config = RankerConfig(
+        in_dim=len(base_columns),
+        hidden=hidden,
+        depth=depth,
+        dropout=dropout,
+        use_attention=use_attention,
+    )
+    model: CrossSectionalRanker | TemporalRegimeRanker
+    if regime_enabled:
+        if normalizer is None or regime_moe is None:  # pragma: no cover - invariant
+            msg = "Temporal Regime-MoE initialization invariant failed"
+            raise RuntimeError(msg)
+        model = TemporalRegimeRanker(
+            ranker_config=ranker_config,
+            embedding_columns=tuple(
+                name for name in base_columns if name.startswith("emb_")
+            ),
+            factor_columns=tuple(
+                name for name in base_columns if name.startswith("factor_")
+            ),
+            feature_specs=regime_feature_specs,
+            normalizer=normalizer,
+            moe_config=regime_moe,
+        ).to(dev)
+    else:
+        model = CrossSectionalRanker(ranker_config).to(dev)
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
 
     history: list[dict[str, float | int | None]] = []
@@ -790,6 +980,8 @@ def fit_ranker(
         epoch_head_losses: list[float] = []
         epoch_ic_losses: list[float] = []
         epoch_aux_losses: list[float] = []
+        epoch_moe_losses: list[float] = []
+        epoch_moe_telemetry: list[MoETelemetry] = []
         order = (
             rng.permutation(len(train_days))
             if shuffle_days
@@ -816,13 +1008,24 @@ def fit_ranker(
                 seed=pair_seed,
                 return_components=True,
             )
-            loss, components = loss_result
+            task_loss, components = loss_result
+            moe_loss = (
+                model.moe_auxiliary_loss()
+                if isinstance(model, TemporalRegimeRanker)
+                else task_loss.new_zeros(())
+            )
+            loss = task_loss + moe_loss
             loss.backward()
             optimizer.step()
             epoch_total_losses.append(float(loss.detach().item()))
             epoch_head_losses.append(float(components["lambda_ndcg"].detach().item()))
             epoch_ic_losses.append(float(components["global_ic"].detach().item()))
             epoch_aux_losses.append(float(components["aux_huber"].detach().item()))
+            epoch_moe_losses.append(float(moe_loss.detach().item()))
+            if isinstance(model, TemporalRegimeRanker):
+                snapshot = model.moe_telemetry()
+                if snapshot is not None:
+                    epoch_moe_telemetry.append(snapshot)
         train_ic = _evaluate_days(model, train_days, dev)
         val_ic = _evaluate_days(model, val_days, dev) if val_days else None
         train_ndcg, train_ndcg_by_k = _evaluate_ndcg(
@@ -859,6 +1062,7 @@ def fit_ranker(
             "train_lambda_ndcg_loss": float(np.mean(epoch_head_losses)),
             "train_global_ic_loss": float(np.mean(epoch_ic_losses)),
             "train_aux_huber_loss": float(np.mean(epoch_aux_losses)),
+            "train_moe_aux_loss": float(np.mean(epoch_moe_losses)),
             "train_ic": train_ic,
             "val_ic": val_ic,
             "train_ndcg": train_ndcg,
@@ -866,17 +1070,43 @@ def fit_ranker(
             "train_top_spread": train_top_spread,
             "val_top_spread": val_top_spread,
         }
+        if epoch_moe_telemetry:
+            history_row.update(
+                {
+                    "train_moe_entropy": float(
+                        np.mean([row.normalized_entropy for row in epoch_moe_telemetry])
+                    ),
+                    "train_moe_top1_probability": float(
+                        np.mean(
+                            [row.mean_top1_probability for row in epoch_moe_telemetry]
+                        )
+                    ),
+                    "train_moe_overflow_rate": float(
+                        np.mean([row.overflow_rate for row in epoch_moe_telemetry])
+                    ),
+                }
+            )
+            for expert_index in range(len(epoch_moe_telemetry[0].expert_fraction)):
+                history_row[f"train_moe_expert_{expert_index}_fraction"] = float(
+                    np.mean(
+                        [
+                            row.expert_fraction[expert_index]
+                            for row in epoch_moe_telemetry
+                        ]
+                    )
+                )
         for cutoff in objective_cfg.ndcg_ks:
             history_row[f"train_ndcg_{cutoff}"] = train_ndcg_by_k[cutoff]
             history_row[f"val_ndcg_{cutoff}"] = val_ndcg_by_k[cutoff]
         history.append(history_row)
         logger.info(
-            "epoch %d train RankIC %.4f NDCG %.4f val RankIC %s NDCG %s",
+            "epoch %d train RankIC %.4f NDCG %.4f val RankIC %s NDCG %s moe_aux %.5f",
             epoch,
             train_ic,
             train_ndcg,
             f"{val_ic:.4f}" if val_ic is not None else "n/a",
             f"{val_ndcg:.4f}" if val_ndcg is not None else "n/a",
+            float(np.mean(epoch_moe_losses)),
         )
         selection_ic = val_ic if val_ic is not None else train_ic
         selection_ndcg = val_ndcg if val_ndcg is not None else train_ndcg
@@ -922,7 +1152,7 @@ def fit_ranker(
 
 @torch.inference_mode()
 def predict(
-    model: CrossSectionalRanker,
+    model: CrossSectionalRanker | TemporalRegimeRanker,
     features: pl.DataFrame,
     *,
     device: str = "cpu",
@@ -931,8 +1161,19 @@ def predict(
     """对无标签特征打分；返回严格的 ``date, symbol, score``。"""
     model.eval()
     dev = torch.device(device)
+    model_columns = (
+        list(model.input_columns)
+        if isinstance(model, TemporalRegimeRanker)
+        else feature_columns(features)
+    )
+    if expected_columns is not None and model_columns != expected_columns:
+        msg = (
+            "ranker feature columns mismatch: "
+            f"expected={expected_columns}, actual={model_columns}"
+        )
+        raise ValueError(msg)
     out_rows: list[pl.DataFrame] = []
-    for _date, keys, x in _scoring_days(features, expected_columns):
+    for _date, keys, x in _scoring_days(features, model_columns):
         pred = model(torch.from_numpy(x).to(dev)).cpu().numpy()
         out_rows.append(keys.with_columns(pl.Series("score", pred)))
     if not out_rows:

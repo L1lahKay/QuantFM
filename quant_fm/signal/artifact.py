@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 from dataclasses import asdict
@@ -26,6 +27,7 @@ from quant_fm.downstream.train_ranker import (
     CrossSectionalRanker,
     RankerConfig,
     RankerObjectiveConfig,
+    TemporalRegimeRanker,
 )
 from quant_fm.downstream.universe import PIT_UNIVERSE_CONTRACT_VERSION
 from quant_fm.embedding.contract import (
@@ -35,14 +37,75 @@ from quant_fm.embedding.contract import (
     STRICT_FEATURE_TRANSFORM_VERSION,
     EmbeddingContract,
 )
+from quant_fm.moe.config import TemporalRegimeTrainingConfig
+from quant_fm.moe.regime_features import RegimeFeatureNormalizer
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-ARTIFACT_VERSION = "2.0"
+ARTIFACT_VERSION = "3.0"
+TEMPORAL_RANKER_ARTIFACT_VERSION = "temporal_regime_ranker_v2"
+_UNBOUND_ARTIFACT_VERSION = "2.0"
+_UNBOUND_TEMPORAL_RANKER_ARTIFACT_VERSION = "temporal_regime_ranker_v1"
 _LEGACY_ARTIFACT_VERSION = "1.0"
 SIGNAL_FEATURE_TARGET_SPEC_VERSION = "strict_exec_percentile_mad_head_gain_v1"
 PRODUCTION_RETURN_SPEC = "vwap_t1_vwap_t2"
+
+_BOUND_ARTIFACT_VERSIONS = {
+    ARTIFACT_VERSION,
+    TEMPORAL_RANKER_ARTIFACT_VERSION,
+}
+_UNBOUND_ARTIFACT_VERSIONS = {
+    _UNBOUND_ARTIFACT_VERSION,
+    _UNBOUND_TEMPORAL_RANKER_ARTIFACT_VERSION,
+}
+_MODERN_ARTIFACT_VERSIONS = _BOUND_ARTIFACT_VERSIONS | _UNBOUND_ARTIFACT_VERSIONS
+_TEMPORAL_ARTIFACT_VERSIONS = {
+    TEMPORAL_RANKER_ARTIFACT_VERSION,
+    _UNBOUND_TEMPORAL_RANKER_ARTIFACT_VERSION,
+}
+_METADATA_IDENTITY_FIELD = "metadata_identity_sha256"
+_CHECKPOINT_IDENTITY_FIELD = "checkpoint_sha256"
+
+
+def _sha256_file(path: Path, *, chunk_size: int = 8 << 20) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(chunk_size), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _is_sha256(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(char in "0123456789abcdef" for char in value.lower())
+    )
+
+
+def _canonical_json_sha256(payload: dict[str, Any], *, context: str) -> str:
+    try:
+        raw = json.dumps(
+            payload,
+            allow_nan=True,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+    except (TypeError, ValueError) as exc:
+        msg = f"{context} must be JSON-serializable"
+        raise ValueError(msg) from exc
+    return hashlib.sha256(raw).hexdigest()
+
+
+def _metadata_identity_payload(metadata: dict[str, Any]) -> dict[str, Any]:
+    """Return metadata fields covered by the checkpoint-side identity digest."""
+    return {
+        key: value
+        for key, value in metadata.items()
+        if key not in {_CHECKPOINT_IDENTITY_FIELD, _METADATA_IDENTITY_FIELD}
+    }
 
 
 def _json_mapping(value: object, *, context: str) -> dict[str, Any]:
@@ -362,7 +425,11 @@ def validate_ranker_training_contract(
     return contract
 
 
-def _model_config(model: CrossSectionalRanker) -> RankerConfig:
+def _model_config(
+    model: CrossSectionalRanker | TemporalRegimeRanker,
+) -> RankerConfig:
+    if isinstance(model, TemporalRegimeRanker):
+        model = model.ranker
     row_layers = [layer for layer in model.layers if hasattr(layer, "net")]
     attention_layers = [layer for layer in model.layers if hasattr(layer, "attn")]
     return RankerConfig(
@@ -376,7 +443,7 @@ def _model_config(model: CrossSectionalRanker) -> RankerConfig:
 
 
 def save_ranker_artifact(
-    model: CrossSectionalRanker,
+    model: CrossSectionalRanker | TemporalRegimeRanker,
     checkpoint_path: Path,
     metadata_path: Path,
     *,
@@ -425,27 +492,34 @@ def save_ranker_artifact(
             embedding_contract=embedding_payload,
         )
     )
-    if len(feature_columns) != cfg.in_dim:
+    temporal_payload: dict[str, Any] | None = None
+    artifact_version = ARTIFACT_VERSION
+    if isinstance(model, TemporalRegimeRanker):
+        artifact_version = TEMPORAL_RANKER_ARTIFACT_VERSION
+        temporal_config = TemporalRegimeTrainingConfig(
+            moe_router_version="1.0",
+            placement="temporal_aggregator",
+            moe=model.moe_config,
+            feature_specs=model.regime_feature_specs,
+        )
+        temporal_payload = {
+            "config": temporal_config.to_dict(),
+            "embedding_columns": list(model.embedding_columns),
+            "factor_columns": list(model.factor_columns),
+            "normalizer": model.normalizer.to_dict(),
+        }
+        if feature_columns != list(model.input_columns):
+            msg = "Temporal ranker feature columns do not match model.input_columns"
+            raise ValueError(msg)
+    elif len(feature_columns) != cfg.in_dim:
         msg = (
             f"feature column count {len(feature_columns)} does not match "
             f"ranker in_dim {cfg.in_dim}"
         )
         raise ValueError(msg)
-    payload = {
-        "artifact_version": ARTIFACT_VERSION,
-        "config": asdict(cfg),
-        "objective": objective_payload,
-        "embedding_contract": embedding_payload,
-        "training_contract": contract_payload,
-        "feature_columns": feature_columns,
-        "state_dict": model.state_dict(),
-    }
-    checkpoint_tmp = checkpoint_path.with_suffix(checkpoint_path.suffix + ".tmp")
-    torch.save(payload, checkpoint_tmp)
-    checkpoint_tmp.replace(checkpoint_path)
 
-    metadata = {
-        "artifact_version": ARTIFACT_VERSION,
+    metadata_core = {
+        "artifact_version": artifact_version,
         "created_utc": datetime.now(tz=UTC).isoformat(),
         "training_end_date": training_end_date,
         "label_end_date": label_end_date,
@@ -457,6 +531,36 @@ def save_ranker_artifact(
         "training_contract": contract_payload,
         "training_history": history or [],
         "provenance": provenance or {},
+    }
+    if temporal_payload is not None:
+        metadata_core["temporal_regime"] = temporal_payload
+    metadata_identity = _canonical_json_sha256(
+        metadata_core,
+        context="ranker metadata identity",
+    )
+
+    payload = {
+        "artifact_version": artifact_version,
+        "config": asdict(cfg),
+        "objective": objective_payload,
+        "embedding_contract": embedding_payload,
+        "training_contract": contract_payload,
+        "feature_columns": feature_columns,
+        "training_end_date": training_end_date,
+        "label_end_date": label_end_date,
+        _METADATA_IDENTITY_FIELD: metadata_identity,
+        "state_dict": model.state_dict(),
+    }
+    if temporal_payload is not None:
+        payload["temporal_regime"] = temporal_payload
+    checkpoint_tmp = checkpoint_path.with_suffix(checkpoint_path.suffix + ".tmp")
+    torch.save(payload, checkpoint_tmp)
+    checkpoint_tmp.replace(checkpoint_path)
+
+    metadata = {
+        **metadata_core,
+        _METADATA_IDENTITY_FIELD: metadata_identity,
+        _CHECKPOINT_IDENTITY_FIELD: _sha256_file(checkpoint_path),
     }
     metadata_tmp = metadata_path.with_suffix(metadata_path.suffix + ".tmp")
     metadata_tmp.write_text(
@@ -473,10 +577,13 @@ def load_ranker_artifact(
     allow_legacy_v1_inference: bool = False,
     allow_legacy_embedding_contract: bool = False,
     allow_legacy_training_contract: bool = False,
-) -> tuple[CrossSectionalRanker, dict[str, Any]]:
+) -> tuple[CrossSectionalRanker | TemporalRegimeRanker, dict[str, Any]]:
     """加载 Ranker，并交叉校验权重与 sidecar 元数据。"""
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     payload = torch.load(checkpoint_path, map_location=device, weights_only=True)
+    if not isinstance(metadata, dict) or not isinstance(payload, dict):
+        msg = "ranker checkpoint and metadata must both be mappings"
+        raise TypeError(msg)
     versions = {metadata.get("artifact_version"), payload.get("artifact_version")}
     if len(versions) != 1:
         msg = "ranker checkpoint and metadata artifact versions differ"
@@ -485,9 +592,19 @@ def load_ranker_artifact(
     if version == _LEGACY_ARTIFACT_VERSION and not allow_legacy_v1_inference:
         msg = "v1 ranker artifact requires explicit inference-only migration"
         raise ValueError(msg)
-    if version not in {ARTIFACT_VERSION, _LEGACY_ARTIFACT_VERSION}:
+    if version not in _MODERN_ARTIFACT_VERSIONS | {_LEGACY_ARTIFACT_VERSION}:
         msg = f"unsupported ranker artifact version: {version}"
         raise ValueError(msg)
+    if version in _UNBOUND_ARTIFACT_VERSIONS:
+        if not allow_legacy_training_contract:
+            msg = (
+                "ranker artifact predates checkpoint/metadata identity binding; "
+                "strict production loading requires a regenerated artifact"
+            )
+            raise ValueError(msg)
+        metadata = {**metadata, "legacy_identity_unbound": True}
+    is_modern = version in _MODERN_ARTIFACT_VERSIONS
+    is_temporal = version in _TEMPORAL_ARTIFACT_VERSIONS
     required = {"config", "feature_columns"}
     if not required <= metadata.keys() or not required <= payload.keys():
         msg = "ranker artifact is missing config or feature_columns"
@@ -502,17 +619,13 @@ def load_ranker_artifact(
         msg = "ranker metadata is missing training_end_date"
         raise ValueError(msg)
     _required_iso_date(metadata, "training_end_date", context="ranker metadata")
-    if len(payload["feature_columns"]) != payload["config"]["in_dim"]:
+    if (
+        not is_temporal
+        and len(payload["feature_columns"]) != payload["config"]["in_dim"]
+    ):
         msg = "ranker feature column count does not match configured in_dim"
         raise ValueError(msg)
-    if version == ARTIFACT_VERSION:
-        for field in ("objective", "training_contract"):
-            if field not in metadata or field not in payload:
-                msg = f"v2 ranker artifact is missing {field}"
-                raise ValueError(msg)
-            if metadata[field] != payload[field]:
-                msg = f"ranker checkpoint {field} does not match metadata"
-                raise ValueError(msg)
+    if is_modern:
         if "label_end_date" not in metadata:
             msg = "v2 ranker metadata is missing label_end_date"
             raise ValueError(msg)
@@ -520,6 +633,53 @@ def load_ranker_artifact(
             metadata["training_end_date"],
             metadata["label_end_date"],
         )
+        if version in _BOUND_ARTIFACT_VERSIONS:
+            binding_fields = {
+                "checkpoint": {
+                    "training_end_date",
+                    "label_end_date",
+                    _METADATA_IDENTITY_FIELD,
+                },
+                "metadata": {
+                    _METADATA_IDENTITY_FIELD,
+                    _CHECKPOINT_IDENTITY_FIELD,
+                },
+            }
+            for context, fields in binding_fields.items():
+                source = payload if context == "checkpoint" else metadata
+                missing = sorted(fields - set(source))
+                if missing:
+                    msg = f"ranker {context} is missing identity fields: {missing}"
+                    raise ValueError(msg)
+            for field in ("training_end_date", "label_end_date"):
+                if payload[field] != metadata[field]:
+                    msg = f"ranker checkpoint {field} does not match metadata"
+                    raise ValueError(msg)
+            checkpoint_hash = metadata[_CHECKPOINT_IDENTITY_FIELD]
+            metadata_hash = metadata[_METADATA_IDENTITY_FIELD]
+            if not _is_sha256(checkpoint_hash) or not _is_sha256(metadata_hash):
+                msg = "ranker artifact identity fields must be full SHA-256 values"
+                raise ValueError(msg)
+            if _sha256_file(checkpoint_path) != checkpoint_hash:
+                msg = "ranker checkpoint SHA-256 does not match metadata"
+                raise ValueError(msg)
+            if payload[_METADATA_IDENTITY_FIELD] != metadata_hash:
+                msg = "ranker checkpoint metadata identity does not match sidecar"
+                raise ValueError(msg)
+            recomputed_metadata_hash = _canonical_json_sha256(
+                _metadata_identity_payload(metadata),
+                context="ranker metadata identity",
+            )
+            if recomputed_metadata_hash != metadata_hash:
+                msg = "ranker metadata identity SHA-256 is invalid"
+                raise ValueError(msg)
+        for field in ("objective", "training_contract"):
+            if field not in metadata or field not in payload:
+                msg = f"v2 ranker artifact is missing {field}"
+                raise ValueError(msg)
+            if metadata[field] != payload[field]:
+                msg = f"ranker checkpoint {field} does not match metadata"
+                raise ValueError(msg)
         RankerObjectiveConfig(**payload["objective"]).validate()
         if allow_legacy_training_contract:
             metadata = {**metadata, "legacy_training_contract": True}
@@ -555,10 +715,60 @@ def load_ranker_artifact(
             require_vocab=True,
         )
 
-    model = CrossSectionalRanker(RankerConfig(**payload["config"])).to(
-        torch.device(device)
-    )
-    if version == ARTIFACT_VERSION:
+    if is_temporal:
+        temporal_values = {
+            "metadata": metadata.get("temporal_regime"),
+            "checkpoint": payload.get("temporal_regime"),
+        }
+        if temporal_values["metadata"] != temporal_values["checkpoint"]:
+            msg = "Temporal ranker checkpoint config does not match metadata"
+            raise ValueError(msg)
+        temporal = _json_mapping(
+            temporal_values["checkpoint"], context="temporal ranker artifact"
+        )
+        temporal_config = TemporalRegimeTrainingConfig.from_dict(
+            _required_mapping(temporal, "config", context="temporal ranker artifact")
+        )
+        normalizer = RegimeFeatureNormalizer.from_dict(
+            _required_mapping(
+                temporal,
+                "normalizer",
+                context="temporal ranker artifact",
+            )
+        )
+        embedding_columns = temporal.get("embedding_columns")
+        factor_columns = temporal.get("factor_columns")
+        if not isinstance(embedding_columns, list) or not all(
+            isinstance(value, str) for value in embedding_columns
+        ):
+            msg = "temporal ranker artifact.embedding_columns must be strings"
+            raise ValueError(msg)
+        if not isinstance(factor_columns, list) or not all(
+            isinstance(value, str) for value in factor_columns
+        ):
+            msg = "temporal ranker artifact.factor_columns must be strings"
+            raise ValueError(msg)
+        expected_columns = [
+            *embedding_columns,
+            *factor_columns,
+            *(spec.name for spec in temporal_config.feature_specs),
+        ]
+        if payload["feature_columns"] != expected_columns:
+            msg = "Temporal ranker artifact feature columns are inconsistent"
+            raise ValueError(msg)
+        model: CrossSectionalRanker | TemporalRegimeRanker = TemporalRegimeRanker(
+            ranker_config=RankerConfig(**payload["config"]),
+            embedding_columns=tuple(embedding_columns),
+            factor_columns=tuple(factor_columns),
+            feature_specs=temporal_config.feature_specs,
+            normalizer=normalizer,
+            moe_config=temporal_config.moe,
+        ).to(torch.device(device))
+    else:
+        model = CrossSectionalRanker(RankerConfig(**payload["config"])).to(
+            torch.device(device)
+        )
+    if is_modern:
         model.load_state_dict(payload["state_dict"], strict=True)
     else:
         incompatible = model.load_state_dict(payload["state_dict"], strict=False)

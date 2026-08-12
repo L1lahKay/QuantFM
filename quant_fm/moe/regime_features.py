@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
+import polars as pl
 import torch
 
 
@@ -103,3 +104,149 @@ class RegimeFeatureNormalizer:
             torch.tensor(payload["scale"], dtype=torch.float32),
             fit_end=str(payload["fit_end"]),
         )
+
+
+_FORBIDDEN_REGIME_COLUMNS = {
+    "label",
+    "fwd_ret",
+    "xs_ret",
+    "target_return",
+    "aux_target",
+    "head_gain",
+}
+
+
+def validate_regime_feature_frame(
+    frame: pl.DataFrame,
+    specs: tuple[RegimeFeatureSpec, ...],
+) -> pl.DataFrame:
+    """
+    校验 PIT Regime 特征表并返回唯一的 ``date/symbol/features``。
+
+    每个特征必须提供 ``<name>__asof_date``，或共享的 ``asof_date``。lag=0
+    允许 as-of 等于信号日；lag>0 至少要求严格早于信号日。交易日级精确 lag
+    仍由生成该表的上游日历流程负责。
+    """
+    if not specs:
+        msg = "at least one regime feature spec is required"
+        raise ValueError(msg)
+    required = {"date", "symbol", *(spec.name for spec in specs)}
+    missing = required - set(frame.columns)
+    if missing:
+        msg = f"regime feature frame is missing columns: {sorted(missing)}"
+        raise ValueError(msg)
+    forbidden = sorted(_FORBIDDEN_REGIME_COLUMNS & set(frame.columns))
+    if forbidden:
+        msg = f"regime feature frame contains future target columns: {forbidden}"
+        raise ValueError(msg)
+
+    frame = frame.with_columns(
+        pl.col("date").cast(pl.Utf8),
+        pl.col("symbol").cast(pl.Utf8).str.zfill(6),
+    )
+    if frame.filter(pl.col("date").is_null() | pl.col("symbol").is_null()).height:
+        msg = "regime feature frame contains null keys"
+        raise ValueError(msg)
+    duplicates = frame.filter(pl.struct(["date", "symbol"]).is_duplicated())
+    if not duplicates.is_empty():
+        msg = "regime feature frame contains duplicate (date, symbol) keys"
+        raise ValueError(msg)
+
+    signal_date_expr = pl.col("date").str.strptime(pl.Date, "%Y-%m-%d", strict=False)
+    invalid_signal_dates = frame.select(
+        (
+            signal_date_expr.is_null()
+            | (signal_date_expr.dt.strftime("%Y-%m-%d") != pl.col("date"))
+        )
+        .any()
+        .alias("invalid")
+    ).item()
+    if invalid_signal_dates:
+        msg = "regime date must contain canonical YYYY-MM-DD dates"
+        raise ValueError(msg)
+    for spec in specs:
+        try:
+            values = frame.select(
+                pl.col(spec.name).cast(pl.Float32, strict=False).alias(spec.name)
+            )[spec.name]
+        except (TypeError, ValueError, pl.exceptions.PolarsError) as exc:
+            msg = f"regime feature {spec.name!r} must be numeric"
+            raise ValueError(msg) from exc
+        if values.null_count() or not bool(values.is_finite().all()):
+            msg = f"regime feature {spec.name!r} contains null/NaN/Inf"
+            raise ValueError(msg)
+        frame = frame.with_columns(values)
+
+        feature_asof = f"{spec.name}__asof_date"
+        asof_column = feature_asof if feature_asof in frame.columns else "asof_date"
+        if asof_column not in frame.columns:
+            msg = (
+                f"regime feature {spec.name!r} requires {feature_asof!r} "
+                "or shared 'asof_date'"
+            )
+            raise ValueError(msg)
+        asof_expr = (
+            pl.col(asof_column)
+            .cast(pl.Utf8)
+            .str.strptime(pl.Date, "%Y-%m-%d", strict=False)
+        )
+        temporal = frame.select(
+            signal_date_expr.alias("_signal_date"),
+            asof_expr.alias("_asof_date"),
+            pl.col(asof_column).cast(pl.Utf8).alias("_asof_text"),
+        )
+        invalid_asof = temporal.select(
+            (
+                pl.col("_asof_date").is_null()
+                | (pl.col("_asof_date").dt.strftime("%Y-%m-%d") != pl.col("_asof_text"))
+            )
+            .any()
+            .alias("invalid")
+        ).item()
+        if invalid_asof:
+            msg = f"{asof_column} must contain canonical YYYY-MM-DD dates"
+            raise ValueError(msg)
+        violates_lag = temporal.select(
+            (
+                (pl.col("_asof_date") > pl.col("_signal_date"))
+                if spec.availability_lag == 0
+                else (pl.col("_asof_date") >= pl.col("_signal_date"))
+            )
+            .any()
+            .alias("invalid")
+        ).item()
+        if violates_lag:
+            relation = "<=" if spec.availability_lag == 0 else "<"
+            msg = (
+                f"regime feature {spec.name!r} violates availability_lag="
+                f"{spec.availability_lag}: asof_date must be {relation} signal date"
+            )
+            raise ValueError(msg)
+    return frame.select("date", "symbol", *(spec.name for spec in specs)).sort(
+        ["date", "symbol"]
+    )
+
+
+def attach_regime_features(
+    features: pl.DataFrame,
+    regime_features: pl.DataFrame,
+    specs: tuple[RegimeFeatureSpec, ...],
+) -> pl.DataFrame:
+    """按唯一主键附加已校验 Regime 特征，缺失匹配时失败。"""
+    names = [spec.name for spec in specs]
+    overlap = sorted(set(names) & set(features.columns))
+    if overlap:
+        msg = f"ranker features already contain regime columns: {overlap}"
+        raise ValueError(msg)
+    keyed = features.with_columns(
+        pl.col("date").cast(pl.Utf8),
+        pl.col("symbol").cast(pl.Utf8).str.zfill(6),
+    )
+    validated = validate_regime_feature_frame(regime_features, specs)
+    joined = keyed.join(validated, on=["date", "symbol"], how="left")
+    missing = joined.filter(pl.any_horizontal(pl.col(name).is_null() for name in names))
+    if not missing.is_empty():
+        examples = missing.select(["date", "symbol"]).head(5).rows()
+        msg = f"regime features are missing ranker keys: {examples}"
+        raise ValueError(msg)
+    return joined

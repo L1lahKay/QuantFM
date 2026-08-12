@@ -1,6 +1,7 @@
 import torch
 
 from quant_fm.moe.artifact import (
+    load_regime_moe_artifact,
     load_regime_moe_metadata,
     save_regime_moe_artifact,
 )
@@ -101,3 +102,12 @@ def test_regime_normalizer_and_inference_artifact_round_trip(tmp_path) -> None:
     assert "optimizer_state" not in payload
     restored = RegimeFeatureNormalizer.from_dict(payload["feature_normalizer"])
     assert restored.fit_end == "2025-12-31"
+    loaded_model, loaded_normalizer, loaded_payload = load_regime_moe_artifact(path)
+    hidden = torch.randn(4, 3)
+    regime = torch.randn(4, 2)
+    model.eval()
+    expected = model(hidden, normalizer.transform(regime)).hidden
+    actual = loaded_model(hidden, loaded_normalizer.transform(regime)).hidden
+    assert torch.equal(actual, expected)
+    assert loaded_payload["hidden_dim"] == 3
+    assert loaded_payload["regime_feature_dim"] == 2

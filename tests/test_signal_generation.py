@@ -16,6 +16,7 @@ from quant_fm.downstream.make_features import (
 )
 from quant_fm.downstream.train_ranker import (
     RankerObjectiveConfig,
+    TemporalRegimeRanker,
     feature_columns,
     train_ranker,
 )
@@ -32,12 +33,15 @@ from quant_fm.embedding.contract import (
 )
 from quant_fm.embedding.pooling_spec import DEFAULT_V2_MULTI_SCALE_OUTPUTS
 from quant_fm.signal.artifact import (
+    ARTIFACT_VERSION,
     SIGNAL_FEATURE_TARGET_SPEC_VERSION,
+    TEMPORAL_RANKER_ARTIFACT_VERSION,
     load_ranker_artifact,
     save_ranker_artifact,
     validate_ranker_training_contract,
 )
 from quant_fm.signal.generate import generate_scores
+from quant_fm.signal.train import train_signal_ranker
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -307,9 +311,36 @@ def test_ranker_artifact_round_trip(tmp_path: Path) -> None:
     )
     assert model.proj.in_features == 2
     assert metadata["feature_columns"] == ["emb_0", "emb_1"]
-    assert metadata["artifact_version"] == "2.0"
+    assert metadata["artifact_version"] == ARTIFACT_VERSION
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    assert payload["training_end_date"] == metadata["training_end_date"]
+    assert payload["label_end_date"] == metadata["label_end_date"]
+    assert payload["metadata_identity_sha256"] == metadata["metadata_identity_sha256"]
+    assert metadata["checkpoint_sha256"] == sha256(checkpoint.read_bytes()).hexdigest()
     assert metadata["objective"]["ndcg_ks"] == [50, 300, 350]
     assert metadata["legacy_training_contract"]
+
+
+def test_unbound_v2_ranker_is_diagnostic_only(tmp_path: Path) -> None:
+    checkpoint, metadata_path = _artifact(tmp_path)
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    payload["artifact_version"] = "2.0"
+    payload.pop("metadata_identity_sha256")
+    torch.save(payload, checkpoint)
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["artifact_version"] = "2.0"
+    metadata.pop("metadata_identity_sha256")
+    metadata.pop("checkpoint_sha256")
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+
+    with pytest.raises(ValueError, match=r"predates.*identity binding"):
+        load_ranker_artifact(checkpoint, metadata_path)
+    _model, migrated = load_ranker_artifact(
+        checkpoint,
+        metadata_path,
+        allow_legacy_training_contract=True,
+    )
+    assert migrated["legacy_identity_unbound"] is True
 
 
 def test_save_rejects_empty_training_contract_by_default(tmp_path: Path) -> None:
@@ -399,13 +430,13 @@ def test_strict_artifact_rejects_custom_objective(tmp_path: Path) -> None:
         )
 
 
-def test_v2_artifact_rejects_missing_aux_head(tmp_path: Path) -> None:
+def test_ranker_artifact_rejects_checkpoint_byte_tampering(tmp_path: Path) -> None:
     checkpoint, metadata_path = _artifact(tmp_path)
     payload = torch.load(checkpoint, map_location="cpu", weights_only=True)
     del payload["state_dict"]["aux_out.weight"]
     torch.save(payload, checkpoint)
 
-    with pytest.raises(RuntimeError, match=r"aux_out\.weight"):
+    with pytest.raises(ValueError, match="checkpoint SHA-256 does not match"):
         load_ranker_artifact(
             checkpoint,
             metadata_path,
@@ -420,7 +451,7 @@ def test_v2_artifact_cross_checks_objective(tmp_path: Path) -> None:
     metadata["objective"]["global_ic_weight"] = 0.31
     metadata_path.write_text(json.dumps(metadata))
 
-    with pytest.raises(ValueError, match="objective does not match"):
+    with pytest.raises(ValueError, match="metadata identity SHA-256 is invalid"):
         load_ranker_artifact(
             checkpoint,
             metadata_path,
@@ -486,6 +517,20 @@ def test_v1_artifact_requires_explicit_inference_migration(tmp_path: Path) -> No
     assert migrated["legacy_inference_only"]
 
 
+def test_ranker_artifact_rejects_same_shape_checkpoint_sidecar_swap(
+    tmp_path: Path,
+) -> None:
+    first_checkpoint, _first_metadata = _artifact(tmp_path / "first")
+    _second_checkpoint, second_metadata = _artifact(tmp_path / "second")
+
+    with pytest.raises(ValueError, match="checkpoint SHA-256 does not match"):
+        load_ranker_artifact(
+            first_checkpoint,
+            second_metadata,
+            allow_legacy_training_contract=True,
+        )
+
+
 def test_generate_scores_without_test_panel(tmp_path: Path) -> None:
     checkpoint, metadata = _artifact(tmp_path)
     embeddings_path = tmp_path / "latest_embeddings.parquet"
@@ -526,6 +571,121 @@ def test_generate_scores_without_test_panel(tmp_path: Path) -> None:
     manifest = json.loads((output / "signal_manifest.json").read_text())
     assert manifest["data"]["rows"] == 3
     assert manifest["data"]["date_max"] == "2026-01-05"
+    assert manifest["data"]["file_sha256"] == sha256(first.read_bytes()).hexdigest()
+    assert (
+        manifest["artifacts"]["embedding_file_sha256"]
+        == sha256(embeddings_path.read_bytes()).hexdigest()
+    )
+    assert (
+        manifest["artifacts"]["ranker_metadata_sha256"]
+        == sha256(metadata.read_bytes()).hexdigest()
+    )
+
+
+def test_temporal_regime_ranker_train_artifact_and_inference(tmp_path: Path) -> None:
+    train_dates = ["2025-01-02", "2025-01-03", "2025-01-06", "2025-01-07"]
+    embeddings_path = tmp_path / "training_embeddings.parquet"
+    _embeddings(train_dates).write_parquet(embeddings_path)
+    panel_path = tmp_path / "panel.parquet"
+    _embeddings(train_dates).select(["date", "symbol"]).with_columns(
+        pl.int_range(pl.len()).mod(3).cast(pl.Float64).alias("fwd_ret")
+    ).write_parquet(panel_path)
+    regime_path = tmp_path / "training_regime.parquet"
+    pl.DataFrame(
+        [
+            {
+                "date": date,
+                "symbol": f"{index + 1:06d}",
+                "asof_date": date,
+                "market_vol_20d": float(day + 1),
+                "market_turnover_z": float(index - 1),
+                "stock_realized_vol_20d": float(day + index + 1),
+                "stock_ofi_5d": float(index),
+            }
+            for day, date in enumerate(train_dates)
+            for index in range(3)
+        ]
+    ).write_parquet(regime_path)
+    config_path = tmp_path / "regime.yaml"
+    config_path.write_text(
+        """
+moe_router_version: "1.0"
+placement: temporal_aggregator
+enabled: true
+n_experts: 2
+top_k: 1
+expert_hidden: 8
+router_hidden: 4
+dropout: 0.0
+capacity_factor: 2.0
+regime_features:
+  - {name: market_vol_20d, availability_lag: 0}
+  - {name: market_turnover_z, availability_lag: 0}
+  - {name: stock_realized_vol_20d, availability_lag: 0}
+  - {name: stock_ofi_5d, availability_lag: 0}
+""".strip(),
+        encoding="utf-8",
+    )
+
+    checkpoint, metadata_path = train_signal_ranker(
+        embeddings_path=embeddings_path,
+        panel_path=panel_path,
+        universe_path=None,
+        calendar_path=None,
+        out_dir=tmp_path / "artifact",
+        epochs=1,
+        patience=1,
+        val_days=1,
+        purge_days=0,
+        require_validation=False,
+        min_names_per_day=2,
+        allow_legacy_panel=True,
+        allow_legacy_embedding_contract=True,
+        allow_legacy_training_contract=True,
+        require_causal_representation=False,
+        regime_config_path=config_path,
+        regime_features_path=regime_path,
+    )
+    model, metadata = load_ranker_artifact(
+        checkpoint,
+        metadata_path,
+        allow_legacy_embedding_contract=True,
+        allow_legacy_training_contract=True,
+    )
+    assert isinstance(model, TemporalRegimeRanker)
+    assert metadata["artifact_version"] == TEMPORAL_RANKER_ARTIFACT_VERSION
+
+    signal_date = "2025-01-08"
+    scoring_embeddings = tmp_path / "scoring_embeddings.parquet"
+    _embeddings([signal_date]).write_parquet(scoring_embeddings)
+    scoring_regime = tmp_path / "scoring_regime.parquet"
+    pl.DataFrame(
+        [
+            {
+                "date": signal_date,
+                "symbol": f"{index + 1:06d}",
+                "asof_date": signal_date,
+                "market_vol_20d": 5.0,
+                "market_turnover_z": float(index - 1),
+                "stock_realized_vol_20d": float(index + 5),
+                "stock_ofi_5d": float(index),
+            }
+            for index in range(3)
+        ]
+    ).write_parquet(scoring_regime)
+    scores_path = generate_scores(
+        embeddings_path=scoring_embeddings,
+        ranker_path=checkpoint,
+        ranker_metadata_path=metadata_path,
+        out_dir=tmp_path / "delivery",
+        allow_legacy_embedding_contract=True,
+        allow_legacy_training_contract=True,
+        require_causal_representation=False,
+        regime_features_path=scoring_regime,
+    )
+    scores = pl.read_parquet(scores_path)
+    assert scores.columns == ["date", "symbol", "score"]
+    assert scores.height == 3
 
 
 def test_generate_scores_rejects_in_sample_date(tmp_path: Path) -> None:

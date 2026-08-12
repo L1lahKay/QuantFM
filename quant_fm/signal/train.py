@@ -18,6 +18,7 @@ from quant_fm.downstream.return_spec import (
 )
 from quant_fm.downstream.train_ranker import (
     RankerObjectiveConfig,
+    TemporalRegimeRanker,
     chronological_ranker_split,
     feature_columns,
     fit_ranker,
@@ -30,6 +31,8 @@ from quant_fm.embedding.contract import (
     load_embedding_contract,
     validate_embedding_columns,
 )
+from quant_fm.moe.config import TemporalRegimeTrainingConfig
+from quant_fm.moe.regime_features import attach_regime_features
 from quant_fm.signal.artifact import (
     SIGNAL_FEATURE_TARGET_SPEC_VERSION,
     save_ranker_artifact,
@@ -66,8 +69,23 @@ def train_signal_ranker(
     allow_legacy_training_contract: bool = False,
     require_causal_representation: bool = True,
     objective: RankerObjectiveConfig | None = None,
+    regime_config_path: Path | None = None,
+    regime_features_path: Path | None = None,
 ) -> tuple[Path, Path]:
     """从历史标签训练 Ranker；该函数是唯一允许读取 ``fwd_ret`` 的信号步骤。"""
+    if (regime_config_path is None) != (regime_features_path is None):
+        msg = "regime_config_path and regime_features_path must be provided together"
+        raise ValueError(msg)
+    regime_config = (
+        TemporalRegimeTrainingConfig.from_yaml(regime_config_path)
+        if regime_config_path is not None
+        else None
+    )
+    regime_features = (
+        pl.read_parquet(regime_features_path)
+        if regime_features_path is not None
+        else None
+    )
     embeddings = pl.read_parquet(embeddings_path)
     embedding_contract = load_embedding_contract(
         embeddings_path,
@@ -140,6 +158,12 @@ def train_signal_ranker(
     if features.is_empty():
         msg = "training features are empty"
         raise RuntimeError(msg)
+    if regime_config is not None and regime_features is not None:
+        features = attach_regime_features(
+            features,
+            regime_features,
+            regime_config.feature_specs,
+        )
     daily_min = int(features.group_by("date").len()["len"].min())
     retained_universe_stats = cross_section_stats(features)
     required_daily_names = max(max(objective_cfg.ndcg_ks), min_names_per_day)
@@ -163,6 +187,10 @@ def train_signal_ranker(
         seed=seed,
         device=device,
         objective=objective_cfg,
+        regime_moe=(regime_config.moe if regime_config is not None else None),
+        regime_feature_specs=(
+            regime_config.feature_specs if regime_config is not None else ()
+        ),
     )
     model = training.model
     checkpoint = out_dir / "ranker.pt"
@@ -181,7 +209,11 @@ def train_signal_ranker(
         model,
         checkpoint,
         metadata,
-        feature_columns=feature_columns(features),
+        feature_columns=(
+            list(model.input_columns)
+            if isinstance(model, TemporalRegimeRanker)
+            else feature_columns(features)
+        ),
         training_end_date=max(features["date"].to_list()),
         label_end_date=label_end_date,
         seed=seed,
@@ -218,6 +250,14 @@ def train_signal_ranker(
         provenance={
             "training_embeddings_sha256": _sha256(embeddings_path),
             "training_panel_sha256": _sha256(panel_path),
+            "regime_config_sha256": (
+                _sha256(regime_config_path) if regime_config_path is not None else None
+            ),
+            "regime_features_sha256": (
+                _sha256(regime_features_path)
+                if regime_features_path is not None
+                else None
+            ),
         },
     )
     logger.info("frozen ranker → %s", checkpoint)
@@ -240,6 +280,16 @@ def main() -> None:
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", default="cpu")
+    parser.add_argument(
+        "--regime-config",
+        type=Path,
+        help="Temporal Regime-MoE 配置；必须与 --regime-features 同时提供",
+    )
+    parser.add_argument(
+        "--regime-features",
+        type=Path,
+        help="训练期 PIT regime parquet",
+    )
     parser.add_argument("--min-names-per-day", type=int, default=20)
     parser.add_argument("--val-days", type=int, default=10)
     parser.add_argument("--purge-days", type=int, default=2)
@@ -293,6 +343,8 @@ def main() -> None:
         allow_legacy_embedding_contract=args.allow_legacy_embedding_contract,
         allow_legacy_training_contract=args.allow_legacy_training_contract,
         require_causal_representation=args.require_causal_representation,
+        regime_config_path=args.regime_config,
+        regime_features_path=args.regime_features,
     )
 
 
