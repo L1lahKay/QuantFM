@@ -324,9 +324,6 @@ class TestMarketOrderMatching:
         # 验证：订单完全成交，不挂单
         assert 201 not in self.orderbook.orders
 
-    @pytest.mark.xfail(
-        reason="已知局限：_query_market_order_type 在单一非零成交价+撤单时无法区分市转限和市转撤，返回0而非-2"
-    )
     def test_tc_market_003_cancel_mode(self):
         """TC-MARKET-003: 市转撤模式 - 部分成交后撤单."""
         # 前置条件：多档卖单

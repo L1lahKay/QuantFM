@@ -1,9 +1,8 @@
 # 阶段 2：订单簿重建、撤单一致性与因果盘口状态
 
-> 当前状态（2026-07）：撤单一致性修复和因果 `BookState` 基础设施已实现并通过测试；
-> 现有 `build_clean_dataset` / `run_medium` 仍按原有事件导出流程运行。要生成
-> `cn_l2_v2`，调用方必须在逐事件 raw replay 时显式捕获 pre/post 状态，生产清洗
-> 编排尚未自动接入这一步。
+> 当前状态（2026-08）：撤单一致性、因果 `BookState` 和 V2 生产清洗已接入并通过
+> 回归测试。正式数据入口默认使用 fast-clean，并按“跨日期并行生成 canonical
+> events → 单进程拟合全局词表和分词”的两阶段流程执行。
 
 ## 目标
 
@@ -68,11 +67,15 @@ trade/order parquet
 
 ```text
 按交易所时间 + exchange sequence 稳定排序
-  → snapshot pre_event_state(t)
+  → 第一个事件前 snapshot pre_event_state(0)
   → 只处理 event(t)
   → snapshot post_event_state(t)
+  → 下一事件直接复用 post_event_state(t) 作为 pre_event_state(t+1)
   → 将 transition 与 event(t) 行对齐保存
 ```
+
+盘口快照因此由每事件两次降为整段回放 `N+1` 次，同时保留严格的
+`post(t) == pre(t+1)` 因果契约。
 
 禁止先完成整日回放，再从最终订单簿反推历史状态。`local_time` 可能包含接收延迟，
 不能作为同时间戳事件的首要排序键。
@@ -116,6 +119,12 @@ make pilot
 uv run python -m quant_fm.scripts.run_medium ...
 # 300M 正式流水线（含并行清洗）
 CLEAN_WORKERS=32 CANON_WORKERS=16 bash quant_fm/scripts/run_minio_300m_pipeline.sh
+
+# 单独构建正式 V2 数据：2 个日期组并行，组内 30 个 replay worker
+uv run python -m quant_fm.scripts.run_v2_parallel_data \
+  --dates-file quant_fm/data/medium_60_dates.txt \
+  --workdir quant_fm/runs/medium_300m \
+  --groups 2 --clean-workers 30
 ```
 
 ## 加速与断点续跑
@@ -127,6 +136,7 @@ CLEAN_WORKERS=32 CANON_WORKERS=16 bash quant_fm/scripts/run_minio_300m_pipeline.
 | `skip_existing` | 若 `<market>/<symbol>/events.parquet` 已存在则跳过该标的 |
 | `n_workers` / `CLEAN_WORKERS` | 按标的切分后多进程并行撮合（默认 `min(32, CPU/2)`） |
 | `write_debug_artifacts=False` | medium/300M 流水线只写 `events.parquet`，不写 `market_rows`/`tokens`（PyLOB 内置 token 不被 quant_fm 使用） |
+| 阶段计时 | 日志统一输出 `stage timing stage=... date=... elapsed_s=...`，可直接定位下载、回放、canonicalize、词表或 tokenize 瓶颈 |
 
 并行路径：父进程一次性读入并标准化当日全市场 trade/order → `partition_by(symbol)` → `ProcessPoolExecutor(spawn)` 并行回放。重启任务时配合 `--resume`，已洗标的不会重做。
 
@@ -167,8 +177,9 @@ uv run python -m quant_fm.scripts.run_medium \
   --fast-clean --drop-clean --drop-events --resume
 ```
 
-> **兼容性**：`--fast-clean` 为 opt-in；不带该标志时行为与旧路径完全一致。
-> 等价性回归见 `git log` 中 `clean_day_fast` 提交（临时脚本 `_validate_fast_clean.py` 已删除，逻辑为 old vs new 逐 symbol `events.parquet` 逐字节比对）。
+> **兼容性**：`run_medium` 仍保留旧路径用于显式诊断，但 Makefile 和三个正式 MinIO
+> 入口现在默认传入 `--fast-clean`；正式 V2 全量入口使用
+> `run_v2_parallel_data`，防止各日期组错误地产生私有词表。
 
 ## 输入与输出
 
@@ -202,16 +213,15 @@ clean/<date>/<market>/<symbol>/events.parquet
 
 3. 结果比对：调用 `compare_df()` 检查回放成交/撤单与输入记录的一致性。
 
-截至本次底层 v2 改造，全仓测试结果为 `243 passed, 2 skipped, 1 xfailed`。该结果
-证明当前代码回归与因果性测试通过，不代表 v2 已完成真实数据重放、模型重训或 OOS
-收益验收。
+当前回归基线以 CI 和提交说明记录的实际结果为准；订单簿相关测试覆盖撤单一致性、
+逐事件因果状态和相邻 transition 复用。测试通过不代表 v2 已完成真实数据重放、
+模型重训或 OOS 收益验收。
 
 ## 设计边界
 
 PyLOB 是研究与离线验证引擎，不是生产级低延迟撮合服务。当前集合竞价实现覆盖核心
 最大成交量规则，但不宣称完整实现交易所全部 tie-break 细则。
 
-当前最重要的集成边界是：`book_state.py` 只提供状态读取与 capture helper，现有
-`workflow.py`、`clean_day_fast.py` 和 canonicalize 编排不会自动记录每个 raw event 的
-transition。运行 v2 数据生产前，必须显式接入 capture、校验事件数严格一一对应，并
-落出 `book_features`；否则不得把产物标记为 `cn_l2_v2`。
+V2 生产边界是：每个 raw event 必须恰好对应一行 transition 和一行
+`book_features`；两阶段驱动会在所有日期的 canonical events 都存在后才拟合唯一的
+全局词表，最终还要求 `contract_ready=true` 且完成全路径审计，才把断点视为完成。

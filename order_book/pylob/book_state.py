@@ -176,12 +176,16 @@ def iter_book_state_transitions[EventT](
     This generator never reads ahead. Callers must first order equal timestamps by
     the exchange sequence number, rather than by feed reception ``local_time``.
     """
+    # The post-event state of event t is exactly the pre-event state of event
+    # t+1.  Snapshot the initial book once, then carry the immutable compact
+    # state forward.  This preserves the causal contract while avoiding a
+    # second top-10 book scan for every event.
+    pre = snapshot_book_state(book, tick_size=tick_size)
     for event in events:
-        yield capture_book_transition(
-            book,
-            lambda event=event: apply_event(event),
-            tick_size=tick_size,
-        )
+        apply_event(event)
+        post = snapshot_book_state(book, tick_size=tick_size)
+        yield BookStateTransition(pre_event_state=pre, post_event_state=post)
+        pre = post
 
 
 def _live_levels(

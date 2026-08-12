@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import polars as pl
+import pylob.book_state as book_state_module
 import pytest
 from pylob.book_state import (
     iter_book_state_transitions,
@@ -173,6 +174,29 @@ def test_full_replay_equals_every_online_prefix_and_future_is_irrelevant() -> No
     assert full[1].pre == full[0].post
     assert full[1].post.valid
     assert full[2].pre == full[1].post
+
+
+def test_transition_iterator_reuses_adjacent_snapshot(monkeypatch) -> None:
+    events = [
+        _Add(1, Side.BUY, 10_000, 100),
+        _Add(2, Side.SELL, 10_200, 300),
+        _Add(3, Side.BUY, 10_100, 50),
+    ]
+    calls = 0
+    original = book_state_module.snapshot_book_state
+
+    def counting_snapshot(book, *, tick_size=100, eps=1e-12):
+        nonlocal calls
+        calls += 1
+        return original(book, tick_size=tick_size, eps=eps)
+
+    monkeypatch.setattr(book_state_module, "snapshot_book_state", counting_snapshot)
+
+    transitions = _replay(events)
+
+    assert calls == len(events) + 1
+    assert transitions[1].pre is transitions[0].post
+    assert transitions[2].pre is transitions[1].post
 
 
 def test_pre_feature_uses_pre_state_while_post_feature_includes_current_event() -> None:

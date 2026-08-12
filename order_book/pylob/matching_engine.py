@@ -176,6 +176,7 @@ class MatchingEngine(ABC):
         self.reset_market_state()
         self.process_num = 0
         transitions = [] if capture_book_state else None
+        previous_post_state = snapshot_book_state(self) if capture_book_state else None
 
         total_rows = len(order_df)
         order_array = order_df.to_numpy()
@@ -184,16 +185,20 @@ class MatchingEngine(ABC):
             row_data = order_array[row]
             self.row_data = row_data
             self.row_data_time = row_data[self.column_indices["int_time"]]
-            if capture_book_state:
-                pre_event_state = snapshot_book_state(self)
             self.process_single_market_record(row_data)
             if capture_book_state:
+                # Adjacent replay events are contiguous: post(t-1) == pre(t).
+                # Reuse that immutable compact snapshot and scan the top ten
+                # levels only once for the new post-event state.
+                assert previous_post_state is not None
+                post_event_state = snapshot_book_state(self)
                 transitions.append(
                     BookStateTransition(
-                        pre_event_state=pre_event_state,
-                        post_event_state=snapshot_book_state(self),
+                        pre_event_state=previous_post_state,
+                        post_event_state=post_event_state,
                     )
                 )
+                previous_post_state = post_event_state
             self.process_num += 1
 
             self.process_percent = self.process_num / total_rows * 100

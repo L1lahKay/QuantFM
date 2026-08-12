@@ -223,7 +223,9 @@ class OrderBookSZ(ResultMixin, MatchingEngine):
             return indexed.get(oid, empty)
         return self.trade_df_with_c[self.trade_df_with_c["sell_id"] == oid]
 
-    def _query_market_order_type(self, order_id: int, side: Side) -> int:
+    def _query_market_order_type(
+        self, order_id: int, side: Side
+    ) -> tuple[int, int | None]:
         """
         查询市价单类型.
 
@@ -280,6 +282,24 @@ class OrderBookSZ(ResultMixin, MatchingEngine):
                     f"{len(cancel_trades)} 条撤单记录"
                 )
 
+            cancel_trades = (
+                order_trades[order_trades["trade_type"] == "C"]
+                if "trade_type" in order_trades.columns
+                else order_trades.iloc[0:0]
+            )
+            if not cancel_trades.empty:
+                # ``trade_type=C`` is the exchange's explicit cancellation
+                # signal.  Price cardinality cannot distinguish a market-to-
+                # limit order from a market-to-cancel order when the latter
+                # trades at exactly one non-zero price before cancelling.
+                left_quantity = int(cancel_trades["trade_volume"].iloc[-1])
+                self.logger.debug(
+                    "订单 %s 包含显式撤单记录，判定为市转撤模式，撤单量=%s",
+                    order_id,
+                    left_quantity,
+                )
+                return -2, left_quantity
+
             unique_prices = order_trades["trade_price"].nunique()
 
             self.logger.debug(
@@ -287,7 +307,7 @@ class OrderBookSZ(ResultMixin, MatchingEngine):
             )
 
             # 判断市价单类型
-            if int(order_trades["trade_price"].min()) == 0:  # 市转撤
+            if int(order_trades["trade_price"].min()) == 0:  # 兼容缺少 C 标记的旧数据
                 unique_prices = order_trades[order_trades["trade_price"] != 0][
                     "trade_price"
                 ].nunique()
