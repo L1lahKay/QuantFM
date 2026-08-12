@@ -66,6 +66,7 @@ class PipelineConfig:
     skip_existing: bool = False
     write_debug_artifacts: bool = True
     capture_book_state: bool = False
+    capture_regime_atomic: bool = False
     n_workers: int = 1
     event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION
 
@@ -81,6 +82,9 @@ class PipelineConfig:
         object.__setattr__(self, "market", market)
         object.__setattr__(self, "layout", layout)
         object.__setattr__(self, "output_dir", Path(self.output_dir))
+        if self.capture_regime_atomic and not self.capture_book_state:
+            msg = "capture_regime_atomic requires capture_book_state"
+            raise ValueError(msg)
         object.__setattr__(
             self,
             "event_ordering_version",

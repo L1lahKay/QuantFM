@@ -96,6 +96,8 @@ def _clean_one_symbol(
     cut_serial: int | None,
     write_debug_artifacts: bool,
     capture_book_state: bool = False,
+    capture_regime_atomic: bool = False,
+    date: str | None = None,
     timeout_s: float | None = None,
     event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION,
 ) -> str:
@@ -111,6 +113,12 @@ def _clean_one_symbol(
 
     if timeout_s is None:
         timeout_s = float(os.environ.get("CLEAN_SYMBOL_TIMEOUT", "300"))
+    if capture_regime_atomic and not capture_book_state:
+        msg = "capture_regime_atomic requires capture_book_state"
+        raise ValueError(msg)
+    if capture_regime_atomic and not date:
+        msg = "capture_regime_atomic requires an explicit ISO date"
+        raise ValueError(msg)
 
     orderbook = OrderBookSH() if market == "SH" else OrderBookSZ()
     order_data = orderbook.prepare_market_data(
@@ -173,6 +181,26 @@ def _clean_one_symbol(
             statistics=True,
         )
         temporary_features.replace(book_features_out)
+        if capture_regime_atomic:
+            from quant_fm.regime.atomic import build_stock_day_atomic
+
+            atomic = build_stock_day_atomic(
+                transitions,
+                events["int_time"].tolist(),
+                date=str(date),
+                symbol=symbol,
+                market=market,
+                event_ordering_version=event_ordering_version,
+            )
+            atomic_out = symbol_dir / "regime_atomic.parquet"
+            temporary_atomic = atomic_out.with_suffix(".parquet.tmp")
+            atomic.write_parquet(
+                temporary_atomic,
+                compression="zstd",
+                compression_level=3,
+                statistics=True,
+            )
+            temporary_atomic.replace(atomic_out)
     if write_debug_artifacts:
         tokens = build_field_tokens(events)
         pl.from_pandas(order_data).write_parquet(symbol_dir / "market_rows.parquet")
@@ -193,6 +221,10 @@ def _worker_clean_symbol(payload: dict[str, Any]) -> tuple[str, str, str | None]
             cut_serial=payload["cut_serial"],
             write_debug_artifacts=payload["write_debug_artifacts"],
             capture_book_state=bool(payload.get("capture_book_state", False)),
+            capture_regime_atomic=bool(
+                payload.get("capture_regime_atomic", False)
+            ),
+            date=payload.get("date"),
             timeout_s=payload.get("timeout_s"),
             event_ordering_version=payload.get(
                 "event_ordering_version", DEFAULT_EVENT_ORDERING_VERSION
@@ -264,12 +296,16 @@ def build_clean_dataset(minio_config: MinioConfig, config: PipelineConfig) -> No
                 not config.capture_book_state
                 or (events_out.parent / "book_features.parquet").is_file()
             )
-            if event_compatible and book_features_ready:
+            regime_atomic_ready = (
+                not config.capture_regime_atomic
+                or (events_out.parent / "regime_atomic.parquet").is_file()
+            )
+            if event_compatible and book_features_ready and regime_atomic_ready:
                 skipped += 1
                 continue
-            if event_compatible and not book_features_ready:
+            if event_compatible and (not book_features_ready or not regime_atomic_ready):
                 logger.info(
-                    "resume: regenerating missing V2 book features for %s",
+                    "resume: regenerating missing V2 book/regime features for %s",
                     events_out,
                 )
                 pending.append(symbol)
@@ -319,6 +355,10 @@ def build_clean_dataset(minio_config: MinioConfig, config: PipelineConfig) -> No
                     cut_serial=config.cut_serial,
                     write_debug_artifacts=config.write_debug_artifacts,
                     capture_book_state=config.capture_book_state,
+                    capture_regime_atomic=config.capture_regime_atomic,
+                    date=(
+                        str(config.date).replace(".", "-") if config.date else None
+                    ),
                     event_ordering_version=config.event_ordering_version,
                 )
                 if status == "written":
@@ -359,6 +399,8 @@ def build_clean_dataset(minio_config: MinioConfig, config: PipelineConfig) -> No
             "cut_serial": config.cut_serial,
             "write_debug_artifacts": config.write_debug_artifacts,
             "capture_book_state": config.capture_book_state,
+            "capture_regime_atomic": config.capture_regime_atomic,
+            "date": str(config.date).replace(".", "-") if config.date else None,
             "event_ordering_version": config.event_ordering_version,
         }
         for symbol in pending

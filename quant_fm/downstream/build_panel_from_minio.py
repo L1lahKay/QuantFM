@@ -7,6 +7,7 @@
 * 日终价 ``close``：当日最后一条 snapshot 的 ``last_px``
 * 日 VWAP ``vwap``：末笔 ``total_notional / total_vol``（累计成交金额/量）
 * ``fwd_ret``：下一交易日 VWAP / 当日 VWAP - 1（无下一交易日则为 null）
+* ``total_vol`` / ``total_notional``：保留日终累计量额，供 Regime 市场活跃度使用
 * ``limit_locked``：成交后观测价格全天锁在涨停或跌停附近
 * ``is_halt``：全日 ``total_vol==0``
 * ``is_st`` / ``is_new``：L2 快照无法可靠判断 → 默认 ``False``
@@ -131,6 +132,8 @@ def eod_from_snapshots(
         ).alias("vwap"),
         (pl.col("upper_limit_px").cast(pl.Float64) / PRICE_SCALE).alias("upper"),
         (pl.col("lower_limit_px").cast(pl.Float64) / PRICE_SCALE).alias("lower"),
+        pl.col("total_vol").cast(pl.Float64).alias("total_vol"),
+        pl.col("total_notional").cast(pl.Float64).alias("total_notional"),
         (pl.col("total_vol").cast(pl.Int64) <= 0).alias("is_halt"),
     ).with_columns(
         (
@@ -159,6 +162,8 @@ def eod_from_snapshots(
             "vwap",
             "upper",
             "lower",
+            "total_vol",
+            "total_notional",
             "is_st",
             "is_halt",
             "is_new",

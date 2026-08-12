@@ -86,6 +86,8 @@ def test_clean_replay_persists_real_aligned_book_features(
         cut_serial=None,
         write_debug_artifacts=False,
         capture_book_state=True,
+        capture_regime_atomic=True,
+        date="2025-01-02",
         timeout_s=0,
     )
 
@@ -96,6 +98,9 @@ def test_clean_replay_persists_real_aligned_book_features(
     assert features["spread_ticks_post"].to_list() == [None, 2]
     assert features["imbalance_l1_post"][1] == pytest.approx(-0.5)
     assert snapshot_calls == orders.height + 1
+    atomic = pl.read_parquet(tmp_path / "SZ" / "000001" / "regime_atomic.parquet")
+    assert atomic["date"].item() == "2025-01-02"
+    assert atomic["symbol"].item() == "000001"
 
 
 def _clean_events(date_index: int) -> pl.DataFrame:
@@ -178,6 +183,61 @@ def test_medium_events_only_defers_global_vocab_and_tokens(
     for date in dates:
         marker = tmp_path / "data" / ".done" / date
         assert marker.read_text(encoding="utf-8") == "canonicalized:cn_l2_v2\n"
+
+
+def test_medium_archives_regime_before_dropping_clean_tree(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import quant_fm.scripts.run_medium as run_medium_module
+
+    dates = ["2025-01-02", "2025-01-03", "2025-01-06"]
+    for index, date in enumerate(dates):
+        _write_clean_day(tmp_path, date, index)
+    monkeypatch.setenv("CANON_WORKERS", "1")
+
+    archived: list[str] = []
+
+    def fake_archive(
+        clean_dir: Path,
+        output_path: Path,
+        *,
+        date: str,
+        coverage_receipt: Path,
+        skip_existing: bool,
+    ) -> Path:
+        assert clean_dir.is_dir()
+        assert coverage_receipt.is_file()
+        assert skip_existing is False
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.touch()
+        output_path.with_suffix(".manifest.json").write_text(
+            "{}\n", encoding="utf-8"
+        )
+        archived.append(date)
+        return output_path
+
+    monkeypatch.setattr(run_medium_module, "archive_atomic_day", fake_archive)
+    run_medium_module.run(
+        dates=dates,
+        symbols_sz=("000001",),
+        symbols_sh=(),
+        workdir=tmp_path,
+        train_end=dates[0],
+        val_end=dates[1],
+        n_bins=8,
+        skip_clean=True,
+        drop_clean=True,
+        drop_events=False,
+        fit_sample_days=None,
+        resume=False,
+        estimate_only=False,
+        events_only=True,
+        build_regime_data=True,
+    )
+
+    assert archived == dates
+    assert all(not (tmp_path / "clean" / date).exists() for date in dates)
 
 
 def test_pilot_builds_audited_v2_artifacts_from_captured_book_state(

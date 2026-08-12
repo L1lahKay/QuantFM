@@ -42,6 +42,7 @@ def test_prepare_command_is_fast_events_only_without_vocab() -> None:
         symbols_sh_file=Path("sh.txt"),
         train_end="2026-01-07",
         val_end="2026-01-08",
+        build_regime_data=True,
     )
 
     assert "--fast-clean" in command
@@ -49,6 +50,7 @@ def test_prepare_command_is_fast_events_only_without_vocab() -> None:
     assert "--resume" in command
     assert "--reuse-vocab" not in command
     assert "--drop-events" not in command
+    assert "--build-regime-data" in command
 
 
 def test_finalize_command_is_the_only_global_vocab_stage() -> None:
@@ -63,12 +65,14 @@ def test_finalize_command_is_the_only_global_vocab_stage() -> None:
         max_samples_per_field=1000,
         seed=7,
         drop_events=True,
+        build_regime_data=True,
     )
 
     assert "--events-only" not in command
     assert "--skip-clean" in command
     assert "--drop-events" in command
     assert "--v2-full-audit" in command
+    assert "--build-regime-data" in command
 
 
 def test_canonical_event_gate_fails_before_global_vocab(tmp_path: Path) -> None:
@@ -249,3 +253,33 @@ def test_formal_parallel_input_and_cpu_budget_fail_closed() -> None:
         validate_worker_budget(3, 30, cpu_count=64)
     with pytest.raises(ValueError, match="repeats bare symbols across markets"):
         expected_symbol_keys(("000001",), ("000001",))
+
+
+def test_parallel_regime_mode_requires_global_finalize_inputs(tmp_path: Path) -> None:
+    from quant_fm.scripts.run_v2_parallel_data import run
+
+    dates = tmp_path / "dates.txt"
+    symbols_sz = tmp_path / "sz.txt"
+    symbols_sh = tmp_path / "sh.txt"
+    dates.write_text("2026-01-05\n2026-01-06\n2026-01-07\n", encoding="utf-8")
+    symbols_sz.write_text("000001\n", encoding="utf-8")
+    symbols_sh.write_text("", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Regime finalize requires inputs"):
+        run(
+            dates_file=dates,
+            workdir=tmp_path / "work",
+            symbols_sz_file=symbols_sz,
+            symbols_sh_file=symbols_sh,
+            groups=1,
+            clean_workers=1,
+            canon_workers=1,
+            tokenize_workers=1,
+            train_end=None,
+            val_end=None,
+            n_bins=8,
+            max_samples_per_field=100,
+            seed=0,
+            drop_events=True,
+            build_regime_data=True,
+        )

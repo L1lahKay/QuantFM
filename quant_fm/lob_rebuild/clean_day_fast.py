@@ -242,6 +242,7 @@ def clean_day_fast(
     cut_serial: int | None = None,
     event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION,
     capture_book_state: bool = False,
+    capture_regime_atomic: bool = False,
 ) -> dict[str, int | list[str]]:
     """
     单日清洗：读一次原始数据，SZ+SH 共用内存帧，在同一进程池里并行清洗。
@@ -250,6 +251,9 @@ def clean_day_fast(
     产物写到 ``{clean_dir}/{MKT}/{symbol}/events.parquet``（与旧路径一致）。
     """
     clean_dir.mkdir(parents=True, exist_ok=True)
+    if capture_regime_atomic and not capture_book_state:
+        msg = "capture_regime_atomic requires capture_book_state"
+        raise ValueError(msg)
     union = tuple(symbols_sz) + tuple(symbols_sh)
     market_of: dict[str, str] = {}
     for s in symbols_sz:
@@ -292,11 +296,15 @@ def clean_day_fast(
                 not capture_book_state
                 or (out.parent / "book_features.parquet").is_file()
             )
-            if event_compatible and book_features_ready:
+            regime_atomic_ready = (
+                not capture_regime_atomic
+                or (out.parent / "regime_atomic.parquet").is_file()
+            )
+            if event_compatible and book_features_ready and regime_atomic_ready:
                 skipped += 1
                 continue
-            if event_compatible and not book_features_ready:
-                logger.info("resume: 重建缺失 V2 盘口特征: %s", out)
+            if event_compatible and (not book_features_ready or not regime_atomic_ready):
+                logger.info("resume: 重建缺失 V2 盘口/Regime 特征: %s", out)
                 pending.append(sym)
                 continue
             msg = (
@@ -336,6 +344,8 @@ def clean_day_fast(
             "cut_serial": cut_serial,
             "write_debug_artifacts": False,
             "capture_book_state": capture_book_state,
+            "capture_regime_atomic": capture_regime_atomic,
+            "date": date,
             "event_ordering_version": event_ordering_version,
         }
         for sym in pending

@@ -47,6 +47,8 @@ from quant_fm.lob_rebuild.export_events import (
     canonicalize_clean_dir,
 )
 from quant_fm.manifest.build_manifest import build_manifest
+from quant_fm.regime.archive import archive_atomic_day
+from quant_fm.regime.contract import atomic_manifest_path
 from quant_fm.schema.cn_l2_v1 import SCHEMA_VERSION as V1_SCHEMA_VERSION
 from quant_fm.schema.cn_l2_v2 import SCHEMA_VERSION as V2_SCHEMA_VERSION
 from quant_fm.scripts.minio_config import load_read_config, read_bucket
@@ -193,6 +195,7 @@ def clean_one_day(
     n_workers: int | None = None,
     event_ordering_version: str = DEFAULT_EVENT_ORDERING_VERSION,
     capture_book_state: bool = True,
+    capture_regime_atomic: bool = False,
 ) -> None:
     """单日单市场 PyLOB 清洗。"""
     from pylob.pipeline.workflow import default_clean_workers
@@ -212,6 +215,7 @@ def clean_one_day(
         n_workers=default_clean_workers() if n_workers is None else n_workers,
         event_ordering_version=event_ordering_version,
         capture_book_state=capture_book_state,
+        capture_regime_atomic=capture_regime_atomic,
     )
     build_clean_dataset(load_read_config(), cfg)
 
@@ -264,6 +268,7 @@ def run(
     v2_max_samples_per_field: int = 5_000_000,
     v2_seed: int = 0,
     v2_full_audit: bool = False,
+    build_regime_data: bool = False,
 ) -> None:
     """Run the medium-scale data preparation and optional upload pipeline."""
     if data_version not in {"v1", "v2"}:
@@ -271,6 +276,9 @@ def run(
         raise ValueError(msg)
     if v2_max_samples_per_field < 1:
         msg = "v2_max_samples_per_field must be positive"
+        raise ValueError(msg)
+    if build_regime_data and data_version != "v2":
+        msg = "Regime atomic production requires data_version='v2'"
         raise ValueError(msg)
     if events_only and reuse_vocab is not None:
         msg = "--events-only cannot be combined with --reuse-vocab"
@@ -428,6 +436,10 @@ def run(
         marker = _date_done_marker(workdir, date)
         failure_path = data_dir / ".failed" / f"{date}.json"
         coverage_path = coverage_receipt_path(workdir, date)
+        regime_archive = data_dir / "regime" / "stock_day_atomic" / f"{date}.parquet"
+        regime_archive_ready = regime_archive.is_file() and atomic_manifest_path(
+            regime_archive
+        ).is_file()
         # 旧 marker 可能只表示 canonicalize 完成、events 仍在磁盘上；
         # reuse-vocab 路径下补做按日 tokenize + drop。
         marker_ready = (
@@ -435,6 +447,7 @@ def run(
             and _marker_matches(marker, schema_version)
             and not (events_only and failure_path.is_file())
             and (data_version != "v2" or coverage_path.is_file())
+            and (not build_regime_data or regime_archive_ready)
         )
         if (
             marker_ready
@@ -448,6 +461,14 @@ def run(
             )
             marker_ready = False
         if marker_ready:
+            if build_regime_data:
+                archive_atomic_day(
+                    clean_dir / date,
+                    regime_archive,
+                    date=date,
+                    coverage_receipt=coverage_path,
+                    skip_existing=True,
+                )
             if vocab is not None and any(events_dir.rglob(f"{date}.parquet")):
                 with _timed_stage("resume_tokenize_day", date=date):
                     n = _tokenize_day(date)
@@ -496,6 +517,7 @@ def run(
                     skip_existing=resume,
                     event_ordering_version=effective_event_ordering,
                     capture_book_state=data_version == "v2",
+                    capture_regime_atomic=build_regime_data,
                 )
             if int(clean_stats["errors"]):
                 failed = clean_stats.get("failed_symbols", [])
@@ -529,6 +551,7 @@ def run(
                         skip_existing=resume,
                         event_ordering_version=effective_event_ordering,
                         capture_book_state=data_version == "v2",
+                        capture_regime_atomic=build_regime_data,
                     )
             if symbols_sh:
                 logger.info("clean %s SH (%d symbols)", date, len(symbols_sh))
@@ -541,6 +564,7 @@ def run(
                         skip_existing=resume,
                         event_ordering_version=effective_event_ordering,
                         capture_book_state=data_version == "v2",
+                        capture_regime_atomic=build_regime_data,
                     )
             clean_marker.parent.mkdir(parents=True, exist_ok=True)
             clean_marker.write_text(
@@ -602,6 +626,16 @@ def run(
                     skip_existing=resume,
                     strict=True,
                     schema_version=schema_version,
+                )
+
+        if build_regime_data:
+            with _timed_stage("archive_regime_atomic", date=date):
+                archive_atomic_day(
+                    day_clean,
+                    regime_archive,
+                    date=date,
+                    coverage_receipt=coverage_path,
+                    skip_existing=resume,
                 )
 
         if drop_clean and day_clean.exists():
@@ -854,6 +888,14 @@ def main() -> None:
         action="store_true",
         help="对 manifest 中全部 V2 token shards 做完整路径/内容合约审计",
     )
+    parser.add_argument(
+        "--build-regime-data",
+        action="store_true",
+        help=(
+            "清洗回放时流式生成逐股 Regime atomic，并在删除 clean/ 前按日归档；"
+            "最终跨日特征由 quant_fm.regime.cli finalize 统一生成"
+        ),
+    )
     parser.add_argument("--skip-clean", action="store_true")
     parser.add_argument(
         "--drop-clean",
@@ -993,6 +1035,7 @@ def main() -> None:
         v2_max_samples_per_field=args.v2_max_samples_per_field,
         v2_seed=args.v2_seed,
         v2_full_audit=args.v2_full_audit,
+        build_regime_data=args.build_regime_data,
     )
 
 

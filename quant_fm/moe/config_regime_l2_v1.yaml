@@ -1,0 +1,26 @@
+# 收盘后 Temporal Regime-MoE：全部字段可由 Level-2 + PIT 股票池生成。
+# market_amount_ratio_20d 是成交额活跃度，不冒充需要流通股本的换手率。
+# board_relative_strength_20d 是交易板块强度，不冒充需要 PIT 行业表的行业强度。
+moe_router_version: "1.0"
+placement: temporal_aggregator
+enabled: true
+n_experts: 4
+top_k: 2
+expert_hidden: 256
+router_hidden: 128
+dropout: 0.05
+temperature: 1.0
+capacity_factor: 1.25
+load_balance_weight: 0.01
+router_z_loss_weight: 0.001
+
+regime_features:
+  - {name: market_return_5d, availability_lag: 0}
+  - {name: market_return_20d, availability_lag: 0}
+  - {name: market_realized_vol_20d, availability_lag: 0}
+  - {name: market_breadth, availability_lag: 0}
+  - {name: market_amount_ratio_20d, availability_lag: 0}
+  - {name: board_relative_strength_20d, availability_lag: 0}
+  - {name: stock_spread_bps, availability_lag: 0}
+  - {name: stock_depth_l5_log, availability_lag: 0}
+  - {name: stock_ofi_l1, availability_lag: 0}

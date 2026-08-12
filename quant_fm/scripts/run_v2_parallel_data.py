@@ -29,6 +29,8 @@ from quant_fm.data_coverage import (
 )
 from quant_fm.manifest.build_manifest import Manifest
 from quant_fm.manifest.validation import sha256_file, validate_manifest_shard_paths
+from quant_fm.regime.contract import atomic_manifest_path
+from quant_fm.regime.finalize import finalize_l2_regime_features
 from quant_fm.scripts.run_medium import (
     DEFAULT_DATES,
     DEFAULT_SH,
@@ -107,9 +109,10 @@ def build_prepare_command(
     symbols_sh_file: Path,
     train_end: str,
     val_end: str,
+    build_regime_data: bool = False,
 ) -> list[str]:
     """Build one phase-one command that cannot fit or publish a vocab."""
-    return [
+    command = [
         sys.executable,
         "-m",
         "quant_fm.scripts.run_medium",
@@ -132,6 +135,9 @@ def build_prepare_command(
         "--drop-clean",
         "--resume",
     ]
+    if build_regime_data:
+        command.append("--build-regime-data")
+    return command
 
 
 def build_finalize_command(
@@ -146,6 +152,7 @@ def build_finalize_command(
     max_samples_per_field: int,
     seed: int,
     drop_events: bool,
+    build_regime_data: bool = False,
 ) -> list[str]:
     """Build the only command allowed to fit the global V2 vocabulary."""
     command = [
@@ -179,6 +186,8 @@ def build_finalize_command(
     ]
     if drop_events:
         command.append("--drop-events")
+    if build_regime_data:
+        command.append("--build-regime-data")
     return command
 
 
@@ -360,6 +369,11 @@ def run(
     max_samples_per_field: int,
     seed: int,
     drop_events: bool,
+    build_regime_data: bool = False,
+    regime_eod_path: Path | None = None,
+    regime_calendar_path: Path | None = None,
+    regime_universe_path: Path | None = None,
+    regime_output_path: Path | None = None,
 ) -> None:
     """Execute parallel canonical preparation and single-generation finalize."""
     dates = [
@@ -375,17 +389,68 @@ def run(
     if min(canon_workers, tokenize_workers, n_bins, max_samples_per_field) < 1:
         msg = "worker, bin, and sample counts must be positive"
         raise ValueError(msg)
+    if build_regime_data:
+        missing_inputs = [
+            name
+            for name, value in (
+                ("regime_eod_path", regime_eod_path),
+                ("regime_calendar_path", regime_calendar_path),
+                ("regime_universe_path", regime_universe_path),
+            )
+            if value is None
+        ]
+        if missing_inputs:
+            msg = f"Regime finalize requires inputs: {missing_inputs}"
+            raise ValueError(msg)
     effective_train_end, effective_val_end = _split_dates(dates, train_end, val_end)
     workdir = Path(workdir)
-    if artifacts_ready(
+
+    def _finalize_regime() -> None:
+        if not build_regime_data:
+            return
+        if (
+            regime_eod_path is None
+            or regime_calendar_path is None
+            or regime_universe_path is None
+        ):  # pragma: no cover - validated above
+            msg = "Regime finalize input invariant failed"
+            raise RuntimeError(msg)
+        output = regime_output_path or (
+            workdir
+            / "data"
+            / "regime"
+            / "features"
+            / "regime_features_l2_v1.parquet"
+        )
+        finalize_l2_regime_features(
+            atomic_dir=workdir / "data" / "regime" / "stock_day_atomic",
+            eod_path=regime_eod_path,
+            universe_path=regime_universe_path,
+            calendar_path=regime_calendar_path,
+            output_path=output,
+            signal_dates=dates,
+        )
+        logger.info("Regime L2 features ready: %s", output)
+
+    base_artifacts_ready = artifacts_ready(
         workdir,
         expected_dates=dates,
         train_end=effective_train_end,
         val_end=effective_val_end,
-    ):
+    )
+    if base_artifacts_ready and not build_regime_data:
         logger.info(
             "formal V2 artifacts already audit-ready; nothing to do: %s", workdir
         )
+        return
+    atomic_root = workdir / "data" / "regime" / "stock_day_atomic"
+    atomic_ready = all(
+        (path := atomic_root / f"{date}.parquet").is_file()
+        and atomic_manifest_path(path).is_file()
+        for date in dates
+    )
+    if base_artifacts_ready and build_regime_data and atomic_ready:
+        _finalize_regime()
         return
 
     chunks = split_dates_round_robin(dates, groups)
@@ -414,6 +479,7 @@ def run(
                 symbols_sh_file=symbols_sh_file,
                 train_end=effective_train_end,
                 val_end=effective_val_end,
+                build_regime_data=build_regime_data,
             )
             future = pool.submit(
                 _run_logged,
@@ -457,6 +523,7 @@ def run(
         max_samples_per_field=max_samples_per_field,
         seed=seed,
         drop_events=drop_events,
+        build_regime_data=build_regime_data,
     )
     started = time.perf_counter()
     _run_logged(
@@ -476,6 +543,7 @@ def run(
     ):
         msg = "global V2 finalize returned without audit-ready artifacts"
         raise RuntimeError(msg)
+    _finalize_regime()
 
 
 def main() -> None:
@@ -504,6 +572,15 @@ def main() -> None:
     parser.add_argument("--v2-max-samples-per-field", type=int, default=5_000_000)
     parser.add_argument("--v2-seed", type=int, default=0)
     parser.add_argument(
+        "--build-regime-data",
+        action="store_true",
+        help="并行清洗时生成 atomic，并在全局阶段生成最终 Regime L2 特征",
+    )
+    parser.add_argument("--regime-eod", type=Path)
+    parser.add_argument("--regime-calendar", type=Path)
+    parser.add_argument("--regime-universe", type=Path)
+    parser.add_argument("--regime-out", type=Path)
+    parser.add_argument(
         "--keep-events",
         action="store_true",
         help="tokenize 后保留 canonical events；默认删除以释放磁盘",
@@ -524,6 +601,11 @@ def main() -> None:
         max_samples_per_field=args.v2_max_samples_per_field,
         seed=args.v2_seed,
         drop_events=not args.keep_events,
+        build_regime_data=args.build_regime_data,
+        regime_eod_path=args.regime_eod,
+        regime_calendar_path=args.regime_calendar,
+        regime_universe_path=args.regime_universe,
+        regime_output_path=args.regime_out,
     )
 
 

@@ -17,6 +17,7 @@ from quant_fm.moe.regime_features import (
     attach_regime_features,
     validate_regime_feature_frame,
 )
+from quant_fm.regime.contract import L2_FEATURE_COLUMNS
 
 
 def _ranker_features(
@@ -61,6 +62,15 @@ def test_temporal_regime_config_loads_standard_yaml() -> None:
     assert config.placement == "temporal_aggregator"
     assert config.moe.enabled is True
     assert len(config.feature_specs) == 9
+
+
+def test_temporal_regime_l2_config_matches_production_contract() -> None:
+    config = TemporalRegimeTrainingConfig.from_yaml(
+        Path(__file__).resolve().parents[1]
+        / "quant_fm/moe/config_regime_l2_v1.yaml"
+    )
+
+    assert tuple(spec.name for spec in config.feature_specs) == L2_FEATURE_COLUMNS
 
 
 def test_temporal_regime_ranker_fits_normalizer_on_train_only() -> None:
