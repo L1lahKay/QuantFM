@@ -1,0 +1,60 @@
+{
+  "apiVersion": "v1",
+  "kind": "PersistentVolume",
+  "metadata": {
+    "annotations": {
+      "local.path.provisioner/selected-node": "gpu-dev-01",
+      "pv.kubernetes.io/provisioned-by": "rancher.io/local-path"
+    },
+    "creationTimestamp": "2026-07-30T08:47:35Z",
+    "finalizers": [
+      "kubernetes.io/pv-protection"
+    ],
+    "name": "pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580",
+    "resourceVersion": "27868819",
+    "uid": "8d66d1f8-7a0a-48ff-ae7b-e49a4e3e59fa"
+  },
+  "spec": {
+    "accessModes": [
+      "ReadWriteOnce"
+    ],
+    "capacity": {
+      "storage": "500Gi"
+    },
+    "claimRef": {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "name": "quantfm-data",
+      "namespace": "gpu-dev",
+      "resourceVersion": "27868459",
+      "uid": "dcfc08ba-7c57-466e-abeb-e60897855a39"
+    },
+    "local": {
+      "path": "/data/k3s/storage/pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580_khalil_quantfm-data"
+    },
+    "nodeAffinity": {
+      "required": {
+        "nodeSelectorTerms": [
+          {
+            "matchExpressions": [
+              {
+                "key": "kubernetes.io/hostname",
+                "operator": "In",
+                "values": [
+                  "gpu-dev-01"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "persistentVolumeReclaimPolicy": "Retain",
+    "storageClassName": "local-path",
+    "volumeMode": "Filesystem"
+  },
+  "status": {
+    "lastPhaseTransitionTime": "2026-07-31T06:45:54Z",
+    "phase": "Bound"
+  }
+}

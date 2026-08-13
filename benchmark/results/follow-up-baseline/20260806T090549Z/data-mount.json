@@ -1,0 +1,10 @@
+{
+   "filesystems": [
+      {
+         "target": "/",
+         "source": "/dev/mapper/ubuntu--vg-ubuntu--lv",
+         "fstype": "ext4",
+         "options": "rw,relatime"
+      }
+   ]
+}

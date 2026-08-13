@@ -1,0 +1,60 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "scheduling.volcano.sh/v1beta1",
+            "kind": "Queue",
+            "metadata": {
+                "creationTimestamp": "2026-07-31T07:16:46Z",
+                "generation": 2,
+                "name": "default",
+                "resourceVersion": "27876048",
+                "uid": "f116400a-4b41-4409-8680-3b00c69974cb"
+            },
+            "spec": {
+                "dequeueStrategy": "traverse",
+                "guarantee": {},
+                "parent": "root",
+                "reclaimable": true,
+                "weight": 1
+            },
+            "status": {
+                "allocated": {
+                    "cpu": "0",
+                    "memory": "0"
+                },
+                "reservation": {},
+                "state": "Open"
+            }
+        },
+        {
+            "apiVersion": "scheduling.volcano.sh/v1beta1",
+            "kind": "Queue",
+            "metadata": {
+                "creationTimestamp": "2026-07-31T07:16:46Z",
+                "generation": 1,
+                "name": "root",
+                "resourceVersion": "29837192",
+                "uid": "09b301c4-d3ac-4d85-91d3-86b1e4a90d49"
+            },
+            "spec": {
+                "dequeueStrategy": "traverse",
+                "guarantee": {},
+                "reclaimable": false,
+                "weight": 1
+            },
+            "status": {
+                "allocated": {
+                    "cpu": "0",
+                    "memory": "0"
+                },
+                "reservation": {},
+                "state": "Open"
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

@@ -1,0 +1,33 @@
+observed_at_utc=2026-08-03
+mode=read-only
+kubeconfig_path=/etc/rancher/k3s/k3s.yaml
+context=default
+
+KUEUE_VERSION=v0.19.0
+KUEUE_WAIT_FOR_PODS_READY=not_explicitly_enabled (example block is commented)
+KUEUE_FAIR_SHARING=not_explicitly_enabled (configuration block is commented)
+KUEUE_ADMISSION_FAIR_SHARING=not_explicitly_enabled (configuration block is commented)
+KUEUE_TOPOLOGY_OBJECT_COUNT=0
+KUEUE_CLUSTERQUEUE=cq-test
+KUEUE_CLUSTERQUEUE_COHORT=none
+KUEUE_CLUSTERQUEUE_FAIR_WEIGHT=none
+KUEUE_CLUSTERQUEUE_ADMISSION_CHECKS=none
+KUEUE_CLUSTERQUEUE_ACTIVE=True
+KUEUE_GPU_DEV_LOCALQUEUE=absent
+
+VOLCANO_VERSION=v1.15.1
+VOLCANO_ACTIONS=enqueue,allocate,backfill
+VOLCANO_PREEMPT_ACTION_CURRENTLY_ENABLED=false
+VOLCANO_RECLAIM_ACTION_CURRENTLY_ENABLED=false
+VOLCANO_TIER1_PLUGINS=priority,gang,conformance
+VOLCANO_GANG_ENABLE_PREEMPTABLE=false
+VOLCANO_TIER2_PLUGINS=overcommit,drf,predicates,proportion,nodeorder,binpack
+
+interpretation:
+- Upstream feature availability is not proof that this cluster enabled it.
+- Historical preemption evidence was captured under a bounded temporary test
+  configuration and then restored. The current Volcano scheduler action list
+  does not contain preempt or reclaim.
+- Current Kueue has no gpu-dev LocalQueue, Topology instance, Cohort, explicit
+  fair-sharing configuration, or waitForPodsReady block to validate those
+  features for the requested training matrix.

@@ -7,7 +7,8 @@
 1. [根 README](../README.md)：项目目标、架构、快速验证和目录结构；
 2. [复现与验证指南](REPRODUCIBILITY.md)：建议阅读路径、复现命令和实验边界；
 3. [项目与代码阅读指南](QuantFM.md)：面向新读者的模块与概念说明；
-4. [阶段进展](project/阶段进展.md)：当前实验与工程进展。
+4. [近期工作汇报](project/近期工作汇报-2026-08-05.md)：当前最新的数据、训练、信号交付与 GPU 环境汇总；
+5. [项目记录索引](project/README.md)：分支说明、阶段记录、执行计划及归档约定。
 
 ## 目录结构
 
@@ -18,7 +19,7 @@
 | [`data/`](data/) | MinIO、原始 L2、events 和 tokens 数据工作流 |
 | [`evaluation/`](evaluation/) | OOS、信号交付、回测契约与联调 |
 | [`operations/`](operations/) | CPU/GPU Kubernetes、PVC、调度评估和训练 runbook |
-| [`project/`](project/) | 分支说明、阶段进展和执行计划 |
+| [`project/`](project/README.md) | 最新工作汇报、分支说明、阶段记录和执行计划 |
 | [`research/`](research/) | 调研材料与历史方案 |
 | `assets/` | 文档图片和评估证据；由对应正文引用，不作为独立阅读入口 |
 | `handout-khalil-gpu/` | GPU 集群接入材料，包含访问配置和证书，仅限授权人员使用 |
@@ -84,11 +85,11 @@
 
 v2 checkpoint 加载必须携带原始 `vocab_v2.json`，并核对 schema、vocab SHA-256、有序 FieldSpec、输入/目标字段和 loss 声明。25M/100M 比较应复用同一份带 manifest fingerprint 的 `validation_windows.json`。
 
-当前全仓回归基线（2026-08-03）：
+当前全仓回归基线（2026-08-11）：
 
 ```bash
 uv run python -m pytest -q
-# 545 passed, 2 skipped, 1 xfailed
+# 630 passed, 2 skipped
 ```
 
 ## 包级说明
@@ -116,8 +117,10 @@ uv run python -m pytest -q
 
 ## 项目记录与研究材料
 
-这些文档提供背景，不作为当前代码接口的唯一事实来源：
+这些文档提供背景，不作为当前代码接口的唯一事实来源。完整的时间顺序和归档约定见
+[项目记录索引](project/README.md)：
 
+- [近期工作汇报（2026-08-05）](project/近期工作汇报-2026-08-05.md)
 - [当前分支工作说明](project/BRANCH_WORK.md)
 - [项目进展与规划](project/项目进展与规划.md)
 - [Dense230M 训练期间并行工作计划](project/Dense230M训练期间并行工作计划.md)

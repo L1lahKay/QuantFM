@@ -93,8 +93,8 @@ CUDA 信息和 `GPU_PVC_SMOKE_PASS`；短训练必须输出
 固定使用：
 
 ```text
-~/.kube/config-gpu
-gpu-dev-khalil@k3s-gpu
+/etc/rancher/k3s/k3s.yaml
+default
 gpu-dev
 ```
 

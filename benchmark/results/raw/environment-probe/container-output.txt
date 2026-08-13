@@ -1,0 +1,4 @@
+PROBE_START_UTC=2026-08-03T01:54:57.330Z
+0, NVIDIA GeForce RTX 5090, 595.71.05, 32607 MiB
+ENVIRONMENT_JSON={"cuda_available": true, "cuda_tensor_result": 42, "gpu_name": "NVIDIA GeForce RTX 5090", "nccl_available": true, "nccl_version": [2, 29, 7], "packages": {"lightgbm": false, "numpy": true, "pandas": true, "transformers": false}, "python": "3.12.13", "torch": "2.13.0+cu130", "torch_cuda_build": "13.0", "visible_gpu_count": 1}
+PROBE_FINISH_UTC=2026-08-03T01:55:01.706Z

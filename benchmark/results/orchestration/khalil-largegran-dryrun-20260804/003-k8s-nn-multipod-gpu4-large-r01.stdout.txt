@@ -1,0 +1,1 @@
+nn-multipod-gpu4-large k8s: dry-run-complete evidence=/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-8cc099-nn-multip-oe37bd6ac-c003-r01

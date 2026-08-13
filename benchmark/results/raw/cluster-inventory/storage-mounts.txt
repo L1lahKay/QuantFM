@@ -1,0 +1,15 @@
+observed_at_utc=2026-08-03T02:17:00Z
+command=findmnt -T /data -o TARGET,SOURCE,FSTYPE,OPTIONS,SIZE,AVAIL,USE%
+TARGET SOURCE                            FSTYPE OPTIONS                    SIZE  AVAIL USE%
+/      /dev/mapper/ubuntu--vg-ubuntu--lv ext4   ro,nosuid,nodev,relatime 995.6G 145.3G  81%
+
+command=findmnt -T / -o TARGET,SOURCE,FSTYPE,SIZE,AVAIL,USE%
+TARGET SOURCE                            FSTYPE   SIZE  AVAIL USE%
+/      /dev/mapper/ubuntu--vg-ubuntu--lv ext4   995.6G 145.3G  81%
+
+command=df -hT /data /
+Filesystem                        Type  Size  Used Avail Use% Mounted on
+/dev/mapper/ubuntu--vg-ubuntu--lv ext4  996G  809G  146G  85% /
+/dev/mapper/ubuntu--vg-ubuntu--lv ext4  996G  809G  146G  85% /
+
+interpretation=/data and / resolve to the same root filesystem; the local-path PV is not backed by a non-root disk.

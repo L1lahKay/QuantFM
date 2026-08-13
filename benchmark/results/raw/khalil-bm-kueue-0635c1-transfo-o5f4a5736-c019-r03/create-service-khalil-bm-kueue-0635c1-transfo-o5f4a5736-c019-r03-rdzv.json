@@ -1,0 +1,59 @@
+{
+    "apiVersion": "v1",
+    "kind": "Service",
+    "metadata": {
+        "annotations": {
+            "benchmark.quantfm.io/checkpoints-allowed": "false",
+            "benchmark.quantfm.io/downloads-allowed": "false",
+            "benchmark.quantfm.io/durable-output-allowed": "false",
+            "benchmark.quantfm.io/input-mode": "deterministic_synthetic_in_memory",
+            "benchmark.quantfm.io/ownership-token": "dfb04bee51ce4eea98918e82861ea81e",
+            "benchmark.quantfm.io/persistent-cache-allowed": "false",
+            "benchmark.quantfm.io/runtime-image": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+            "benchmark.quantfm.io/scaling-fingerprint": "sha256:d32a2c4974695a57eb120d6e73bacb57422bb14f7a7bbc88ab9f56c069781f4f",
+            "benchmark.quantfm.io/shm-mode": "shared-memory-emptydir",
+            "benchmark.quantfm.io/storage-mode": "synthetic_ephemeral",
+            "benchmark.quantfm.io/workload-implementation": "embedded-workload-entry-v1",
+            "benchmark.quantfm.io/workload-payload-sha256": "987b026bdbc499620e37cf77d725d75250a2ad05827da220b4fd08255d71ff6c"
+        },
+        "creationTimestamp": "2026-08-06T05:58:47Z",
+        "labels": {
+            "app.kubernetes.io/name": "khalil-scheduler-benchmark",
+            "benchmark.quantfm.io/model": "transformer",
+            "benchmark.quantfm.io/run-id": "khalil-bm-kueue-0635c1-transfo-o5f4a5736-c019-r03",
+            "benchmark.quantfm.io/scheduler": "kueue"
+        },
+        "name": "khalil-bm-kueue-0635c1-transfo-o5f4a5736-c019-r03-rdzv",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29834359",
+        "uid": "bbd39160-f085-42f7-a60b-409d359a25a3"
+    },
+    "spec": {
+        "clusterIP": "None",
+        "clusterIPs": [
+            "None"
+        ],
+        "internalTrafficPolicy": "Cluster",
+        "ipFamilies": [
+            "IPv4"
+        ],
+        "ipFamilyPolicy": "SingleStack",
+        "ports": [
+            {
+                "name": "rdzv",
+                "port": 29500,
+                "protocol": "TCP",
+                "targetPort": 29500
+            }
+        ],
+        "publishNotReadyAddresses": true,
+        "selector": {
+            "benchmark.quantfm.io/run-id": "khalil-bm-kueue-0635c1-transfo-o5f4a5736-c019-r03"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+    },
+    "status": {
+        "loadBalancer": {}
+    }
+}

@@ -1,0 +1,1 @@
+/bin/sh: 5: exec: python: Permission denied

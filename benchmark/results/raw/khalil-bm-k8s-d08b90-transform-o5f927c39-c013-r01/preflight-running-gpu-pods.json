@@ -1,0 +1,10 @@
+{
+  "items": [
+    {
+      "gpu_requests": 1,
+      "name": "khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-0-fxv9l",
+      "namespace": "gpu-dev",
+      "uid": "4748a8a2-ff17-4a54-b6a6-27638288518b"
+    }
+  ]
+}

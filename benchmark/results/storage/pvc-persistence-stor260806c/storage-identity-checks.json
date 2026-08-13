@@ -1,0 +1,15 @@
+{
+  "claim_ref_uid": true,
+  "live_mount_fstype": true,
+  "live_mount_is_not_root": true,
+  "live_mount_source": true,
+  "non_root_confirmed": true,
+  "pv_path": true,
+  "pv_retain": true,
+  "pv_uid": true,
+  "pvc_bound": true,
+  "pvc_uid": true,
+  "pvc_volume": true,
+  "root_source_matches_record": true,
+  "single_node_scope": true
+}

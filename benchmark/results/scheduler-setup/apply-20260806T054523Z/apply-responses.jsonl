@@ -1,0 +1,134 @@
+{
+    "apiVersion": "kueue.x-k8s.io/v1beta2",
+    "kind": "ResourceFlavor",
+    "metadata": {
+        "creationTimestamp": "2026-08-06T05:45:37Z",
+        "finalizers": [
+            "kueue.x-k8s.io/resource-in-use"
+        ],
+        "generation": 1,
+        "labels": {
+            "evaluation.quantfm/owner": "khalil",
+            "evaluation.quantfm/purpose": "scheduler-benchmark-runtime"
+        },
+        "name": "khalil-kueue-nvidia",
+        "resourceVersion": "29830260",
+        "uid": "43f2b4a8-b76b-4d39-9b65-ffc1345f262a"
+    },
+    "spec": {
+        "nodeLabels": {
+            "accelerator": "nvidia"
+        }
+    }
+}
+{
+    "apiVersion": "kueue.x-k8s.io/v1beta2",
+    "kind": "ClusterQueue",
+    "metadata": {
+        "creationTimestamp": "2026-08-06T05:45:37Z",
+        "finalizers": [
+            "kueue.x-k8s.io/resource-in-use"
+        ],
+        "generation": 1,
+        "labels": {
+            "evaluation.quantfm/owner": "khalil",
+            "evaluation.quantfm/purpose": "scheduler-benchmark-runtime"
+        },
+        "name": "khalil-kueue-eval",
+        "resourceVersion": "29830261",
+        "uid": "bd579335-0a22-4499-b779-1457a95aa163"
+    },
+    "spec": {
+        "flavorFungibility": {
+            "whenCanBorrow": "MayStopSearch",
+            "whenCanPreempt": "TryNextFlavor"
+        },
+        "namespaceSelector": {
+            "matchLabels": {
+                "kubernetes.io/metadata.name": "gpu-dev"
+            }
+        },
+        "preemption": {
+            "borrowWithinCohort": {
+                "policy": "Never"
+            },
+            "reclaimWithinCohort": "Never",
+            "withinClusterQueue": "Never"
+        },
+        "queueingStrategy": "StrictFIFO",
+        "resourceGroups": [
+            {
+                "coveredResources": [
+                    "cpu",
+                    "memory",
+                    "nvidia.com/gpu"
+                ],
+                "flavors": [
+                    {
+                        "name": "khalil-kueue-nvidia",
+                        "resources": [
+                            {
+                                "name": "cpu",
+                                "nominalQuota": "8"
+                            },
+                            {
+                                "name": "memory",
+                                "nominalQuota": "16Gi"
+                            },
+                            {
+                                "name": "nvidia.com/gpu",
+                                "nominalQuota": "4"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "stopPolicy": "None"
+    }
+}
+{
+    "apiVersion": "kueue.x-k8s.io/v1beta2",
+    "kind": "LocalQueue",
+    "metadata": {
+        "creationTimestamp": "2026-08-06T05:45:38Z",
+        "generation": 1,
+        "labels": {
+            "evaluation.quantfm/owner": "khalil",
+            "evaluation.quantfm/purpose": "scheduler-benchmark-runtime"
+        },
+        "name": "khalil-kueue-eval",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29830263",
+        "uid": "666f899b-68bc-4949-8d29-74273fe822d4"
+    },
+    "spec": {
+        "clusterQueue": "khalil-kueue-eval",
+        "stopPolicy": "None"
+    }
+}
+{
+    "apiVersion": "scheduling.volcano.sh/v1beta1",
+    "kind": "Queue",
+    "metadata": {
+        "creationTimestamp": "2026-08-06T05:45:38Z",
+        "generation": 1,
+        "labels": {
+            "evaluation.quantfm/owner": "khalil",
+            "evaluation.quantfm/purpose": "scheduler-benchmark-runtime"
+        },
+        "name": "khalil-volcano-smoke",
+        "resourceVersion": "29830272",
+        "uid": "d93bc318-7755-40e1-913a-6afb10765707"
+    },
+    "spec": {
+        "capability": {
+            "cpu": "8",
+            "memory": "16Gi",
+            "nvidia.com/gpu": "4"
+        },
+        "dequeueStrategy": "traverse",
+        "reclaimable": false,
+        "weight": 1
+    }
+}

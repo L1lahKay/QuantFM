@@ -1,0 +1,8 @@
+2026-08-06T07:49:20.629Z	experiment-start	run_token=retry260808
+2026-08-06T07:49:20.629Z	preflight-start
+2026-08-06T07:49:23.257Z	preflight-complete
+2026-08-06T07:49:23.529Z	job-created	name=khalil-pod-retry-retry260808	uid=0fd3f269-ce4b-4a16-8096-40c434e3cf5d
+2026-08-06T07:49:27.090Z	first-attempt-running	pod=khalil-pod-retry-retry260808-bcjp4	uid=f2fd0909-eabc-4184-bbfa-0c19f2ef81d2
+2026-08-06T07:49:27.744Z	failure-injected	pod=khalil-pod-retry-retry260808-bcjp4	uid=f2fd0909-eabc-4184-bbfa-0c19f2ef81d2
+2026-08-06T07:51:58.939Z	experiment-failed	ExperimentError: timeout waiting for second Pod retry attempt; last=None
+2026-08-06T07:51:59.995Z	cleanup-complete	job_absent=true	pods_absent=true	gpu_requests=0

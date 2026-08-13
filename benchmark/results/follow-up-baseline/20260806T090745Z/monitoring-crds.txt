@@ -1,0 +1,4 @@
+ABSENT clusterpolicies.nvidia.com
+ABSENT servicemonitors.monitoring.coreos.com
+ABSENT podmonitors.monitoring.coreos.com
+ABSENT prometheuses.monitoring.coreos.com

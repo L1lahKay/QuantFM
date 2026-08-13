@@ -1,0 +1,469 @@
+{
+  "schema_version": 1,
+  "observed_at_utc": "2026-08-03T08:38:23.335162Z",
+  "matrix_name": "requested-target",
+  "storage_mode": "persistent_pvc",
+  "selected_schedulers": [
+    "k8s",
+    "kueue",
+    "volcano"
+  ],
+  "selected_scenarios": [
+    "lgb-single-cpu",
+    "lgb-single-gpu1",
+    "nn-single-gpu1",
+    "nn-multipod-gpu4",
+    "transformer-single-gpu8",
+    "transformer-multipod-gpu8",
+    "production-contention-a-transformer8",
+    "production-contention-b-nn2",
+    "production-contention-c-lgb-cpu"
+  ],
+  "execution_ready": false,
+  "final_report_ready": false,
+  "execution_blocker_count": 21,
+  "final_report_blocker_count": 24,
+  "performance_evidence": {
+    "required_repetitions_per_cell": 3,
+    "ready_matrix_cells": 0,
+    "selected_matrix_cells": 27,
+    "missing_or_under_repeated_cells": [
+      {
+        "scenario_id": "lgb-single-cpu",
+        "scheduler": "k8s",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "lgb-single-cpu",
+        "scheduler": "kueue",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "lgb-single-cpu",
+        "scheduler": "volcano",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "lgb-single-gpu1",
+        "scheduler": "k8s",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "lgb-single-gpu1",
+        "scheduler": "kueue",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "lgb-single-gpu1",
+        "scheduler": "volcano",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "nn-single-gpu1",
+        "scheduler": "k8s",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "nn-single-gpu1",
+        "scheduler": "kueue",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "nn-single-gpu1",
+        "scheduler": "volcano",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "nn-multipod-gpu4",
+        "scheduler": "k8s",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "nn-multipod-gpu4",
+        "scheduler": "kueue",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "nn-multipod-gpu4",
+        "scheduler": "volcano",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "transformer-single-gpu8",
+        "scheduler": "k8s",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "transformer-single-gpu8",
+        "scheduler": "kueue",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "transformer-single-gpu8",
+        "scheduler": "volcano",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "transformer-multipod-gpu8",
+        "scheduler": "k8s",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "transformer-multipod-gpu8",
+        "scheduler": "kueue",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "transformer-multipod-gpu8",
+        "scheduler": "volcano",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "production-contention-a-transformer8",
+        "scheduler": "k8s",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "production-contention-a-transformer8",
+        "scheduler": "kueue",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "production-contention-a-transformer8",
+        "scheduler": "volcano",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "production-contention-b-nn2",
+        "scheduler": "k8s",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "production-contention-b-nn2",
+        "scheduler": "kueue",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "production-contention-b-nn2",
+        "scheduler": "volcano",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "production-contention-c-lgb-cpu",
+        "scheduler": "k8s",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "production-contention-c-lgb-cpu",
+        "scheduler": "kueue",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "production-contention-c-lgb-cpu",
+        "scheduler": "volcano",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      }
+    ]
+  },
+  "execution_blockers": [
+    {
+      "code": "STORAGE_NOT_CONFIRMED",
+      "scope": "execution",
+      "message": "The exact training PVC/backend has not been confirmed for this evaluation.",
+      "evidence": "runtime.policy.training_storage_backend_confirmed"
+    },
+    {
+      "code": "STORAGE_ON_ROOT_DISK",
+      "scope": "execution",
+      "message": "Training storage is not proven to be backed by a non-root disk.",
+      "evidence": "runtime.policy.storage_backend_non_root_disk"
+    },
+    {
+      "code": "KUEUE_NOT_AUTHORIZED",
+      "scope": "execution",
+      "message": "The selected kueue evaluation has no current bounded authorization.",
+      "evidence": "runtime.policy.kueue_evaluation_authorized"
+    },
+    {
+      "code": "VOLCANO_NOT_AUTHORIZED",
+      "scope": "execution",
+      "message": "The selected volcano evaluation has no current bounded authorization.",
+      "evidence": "runtime.policy.volcano_evaluation_authorized"
+    },
+    {
+      "code": "KUEUE_LOCALQUEUE_ABSENT",
+      "scope": "execution",
+      "message": "gpu-dev has no LocalQueue for the selected Kueue lane.",
+      "evidence": "inventory.schedulers.kueue.gpu_dev_local_queue_present"
+    },
+    {
+      "code": "VOLCANO_QUEUE_ABSENT",
+      "scope": "execution",
+      "message": "The configured Volcano Queue 'khalil-volcano-smoke' is not present/open.",
+      "evidence": "runtime.volcano.queue + inventory.schedulers.volcano.open_queues"
+    },
+    {
+      "code": "MATRIX_SCENARIO_DISABLED",
+      "scope": "execution",
+      "message": "Scenario 'lgb-single-cpu' is not executable: The CPU runner path exists, but no observed digest-pinned internal LightGBM image has passed the in-container CPU training smoke; storage approval is also still blocked.",
+      "evidence": "matrix.scenarios[lgb-single-cpu].execution_allowed"
+    },
+    {
+      "code": "MATRIX_SCENARIO_DISABLED",
+      "scope": "execution",
+      "message": "Scenario 'lgb-single-gpu1' is not executable: No digest-pinned LightGBM build has passed an in-container device_type=cuda smoke; wheel provenance alone does not establish the requested CUDA backend, so this GPU cell remains blocked.",
+      "evidence": "matrix.scenarios[lgb-single-gpu1].execution_allowed"
+    },
+    {
+      "code": "MATRIX_SCENARIO_DISABLED",
+      "scope": "execution",
+      "message": "Scenario 'transformer-single-gpu8' is not executable: Requires eight GPUs but gpu-dev has a hard four-GPU quota and the runner refuses requests above four.",
+      "evidence": "matrix.scenarios[transformer-single-gpu8].execution_allowed"
+    },
+    {
+      "code": "RUNNER_GPU_LIMIT_EXCEEDED",
+      "scope": "execution",
+      "message": "Scenario 'transformer-single-gpu8' requests 8 GPUs; runner limit is 4.",
+      "evidence": "matrix.scenarios[].gpu_number + runtime.limits.max_total_gpus"
+    },
+    {
+      "code": "NAMESPACE_GPU_QUOTA_EXCEEDED",
+      "scope": "execution",
+      "message": "Scenario 'transformer-single-gpu8' requests 8 GPUs; namespace hard quota is 4.",
+      "evidence": "matrix.scenarios[].gpu_number + inventory.namespace.resource_quota"
+    },
+    {
+      "code": "MATRIX_SCENARIO_DISABLED",
+      "scope": "execution",
+      "message": "Scenario 'transformer-multipod-gpu8' is not executable: Requires eight GPUs but gpu-dev has a hard four-GPU quota and the runner refuses requests above four.",
+      "evidence": "matrix.scenarios[transformer-multipod-gpu8].execution_allowed"
+    },
+    {
+      "code": "RUNNER_GPU_LIMIT_EXCEEDED",
+      "scope": "execution",
+      "message": "Scenario 'transformer-multipod-gpu8' requests 8 GPUs; runner limit is 4.",
+      "evidence": "matrix.scenarios[].gpu_number + runtime.limits.max_total_gpus"
+    },
+    {
+      "code": "NAMESPACE_GPU_QUOTA_EXCEEDED",
+      "scope": "execution",
+      "message": "Scenario 'transformer-multipod-gpu8' requests 8 GPUs; namespace hard quota is 4.",
+      "evidence": "matrix.scenarios[].gpu_number + inventory.namespace.resource_quota"
+    },
+    {
+      "code": "MATRIX_SCENARIO_DISABLED",
+      "scope": "execution",
+      "message": "Scenario 'production-contention-a-transformer8' is not executable: The requested concurrent 8+2 GPU pressure test exceeds both the four-GPU namespace quota and the runner safety ceiling.",
+      "evidence": "matrix.scenarios[production-contention-a-transformer8].execution_allowed"
+    },
+    {
+      "code": "RUNNER_GPU_LIMIT_EXCEEDED",
+      "scope": "execution",
+      "message": "Scenario 'production-contention-a-transformer8' requests 8 GPUs; runner limit is 4.",
+      "evidence": "matrix.scenarios[].gpu_number + runtime.limits.max_total_gpus"
+    },
+    {
+      "code": "NAMESPACE_GPU_QUOTA_EXCEEDED",
+      "scope": "execution",
+      "message": "Scenario 'production-contention-a-transformer8' requests 8 GPUs; namespace hard quota is 4.",
+      "evidence": "matrix.scenarios[].gpu_number + inventory.namespace.resource_quota"
+    },
+    {
+      "code": "MATRIX_SCENARIO_DISABLED",
+      "scope": "execution",
+      "message": "Scenario 'production-contention-b-nn2' is not executable: This row is part of the requested concurrent A(8 GPU)+B(2 GPU)+C(CPU) pressure group, whose aggregate GPU demand is unsafe under the four-GPU quota.",
+      "evidence": "matrix.scenarios[production-contention-b-nn2].execution_allowed"
+    },
+    {
+      "code": "MATRIX_SCENARIO_DISABLED",
+      "scope": "execution",
+      "message": "Scenario 'production-contention-c-lgb-cpu' is not executable: CPU-only pressure Jobs need a separate bounded policy and this row belongs to the unsafe 8+2 GPU concurrent pressure group.",
+      "evidence": "matrix.scenarios[production-contention-c-lgb-cpu].execution_allowed"
+    },
+    {
+      "code": "IMAGE_NOT_DIGEST_PINNED",
+      "scope": "execution",
+      "message": "Image for model 'lgb' is not pinned by sha256 digest.",
+      "evidence": "runtime.images.lgb"
+    },
+    {
+      "code": "IMAGE_SMOKE_NOT_PASSED",
+      "scope": "execution",
+      "message": "Image readiness for model 'lgb' is 'gpu_backend_not_implemented', not a passed in-container smoke state.",
+      "evidence": "runtime.image_status.lgb"
+    }
+  ],
+  "final_report_blockers": [
+    {
+      "code": "STORAGE_NOT_CONFIRMED",
+      "scope": "final-report",
+      "message": "The exact training PVC/backend has not been confirmed for this evaluation.",
+      "evidence": "runtime.policy.training_storage_backend_confirmed"
+    },
+    {
+      "code": "STORAGE_ON_ROOT_DISK",
+      "scope": "final-report",
+      "message": "Training storage is not proven to be backed by a non-root disk.",
+      "evidence": "runtime.policy.storage_backend_non_root_disk"
+    },
+    {
+      "code": "KUEUE_NOT_AUTHORIZED",
+      "scope": "final-report",
+      "message": "The selected kueue evaluation has no current bounded authorization.",
+      "evidence": "runtime.policy.kueue_evaluation_authorized"
+    },
+    {
+      "code": "VOLCANO_NOT_AUTHORIZED",
+      "scope": "final-report",
+      "message": "The selected volcano evaluation has no current bounded authorization.",
+      "evidence": "runtime.policy.volcano_evaluation_authorized"
+    },
+    {
+      "code": "KUEUE_LOCALQUEUE_ABSENT",
+      "scope": "final-report",
+      "message": "gpu-dev has no LocalQueue for the selected Kueue lane.",
+      "evidence": "inventory.schedulers.kueue.gpu_dev_local_queue_present"
+    },
+    {
+      "code": "VOLCANO_QUEUE_ABSENT",
+      "scope": "final-report",
+      "message": "The configured Volcano Queue 'khalil-volcano-smoke' is not present/open.",
+      "evidence": "runtime.volcano.queue + inventory.schedulers.volcano.open_queues"
+    },
+    {
+      "code": "MATRIX_SCENARIO_DISABLED",
+      "scope": "final-report",
+      "message": "Scenario 'lgb-single-cpu' is not executable: The CPU runner path exists, but no observed digest-pinned internal LightGBM image has passed the in-container CPU training smoke; storage approval is also still blocked.",
+      "evidence": "matrix.scenarios[lgb-single-cpu].execution_allowed"
+    },
+    {
+      "code": "MATRIX_SCENARIO_DISABLED",
+      "scope": "final-report",
+      "message": "Scenario 'lgb-single-gpu1' is not executable: No digest-pinned LightGBM build has passed an in-container device_type=cuda smoke; wheel provenance alone does not establish the requested CUDA backend, so this GPU cell remains blocked.",
+      "evidence": "matrix.scenarios[lgb-single-gpu1].execution_allowed"
+    },
+    {
+      "code": "MATRIX_SCENARIO_DISABLED",
+      "scope": "final-report",
+      "message": "Scenario 'transformer-single-gpu8' is not executable: Requires eight GPUs but gpu-dev has a hard four-GPU quota and the runner refuses requests above four.",
+      "evidence": "matrix.scenarios[transformer-single-gpu8].execution_allowed"
+    },
+    {
+      "code": "RUNNER_GPU_LIMIT_EXCEEDED",
+      "scope": "final-report",
+      "message": "Scenario 'transformer-single-gpu8' requests 8 GPUs; runner limit is 4.",
+      "evidence": "matrix.scenarios[].gpu_number + runtime.limits.max_total_gpus"
+    },
+    {
+      "code": "NAMESPACE_GPU_QUOTA_EXCEEDED",
+      "scope": "final-report",
+      "message": "Scenario 'transformer-single-gpu8' requests 8 GPUs; namespace hard quota is 4.",
+      "evidence": "matrix.scenarios[].gpu_number + inventory.namespace.resource_quota"
+    },
+    {
+      "code": "MATRIX_SCENARIO_DISABLED",
+      "scope": "final-report",
+      "message": "Scenario 'transformer-multipod-gpu8' is not executable: Requires eight GPUs but gpu-dev has a hard four-GPU quota and the runner refuses requests above four.",
+      "evidence": "matrix.scenarios[transformer-multipod-gpu8].execution_allowed"
+    },
+    {
+      "code": "RUNNER_GPU_LIMIT_EXCEEDED",
+      "scope": "final-report",
+      "message": "Scenario 'transformer-multipod-gpu8' requests 8 GPUs; runner limit is 4.",
+      "evidence": "matrix.scenarios[].gpu_number + runtime.limits.max_total_gpus"
+    },
+    {
+      "code": "NAMESPACE_GPU_QUOTA_EXCEEDED",
+      "scope": "final-report",
+      "message": "Scenario 'transformer-multipod-gpu8' requests 8 GPUs; namespace hard quota is 4.",
+      "evidence": "matrix.scenarios[].gpu_number + inventory.namespace.resource_quota"
+    },
+    {
+      "code": "MATRIX_SCENARIO_DISABLED",
+      "scope": "final-report",
+      "message": "Scenario 'production-contention-a-transformer8' is not executable: The requested concurrent 8+2 GPU pressure test exceeds both the four-GPU namespace quota and the runner safety ceiling.",
+      "evidence": "matrix.scenarios[production-contention-a-transformer8].execution_allowed"
+    },
+    {
+      "code": "RUNNER_GPU_LIMIT_EXCEEDED",
+      "scope": "final-report",
+      "message": "Scenario 'production-contention-a-transformer8' requests 8 GPUs; runner limit is 4.",
+      "evidence": "matrix.scenarios[].gpu_number + runtime.limits.max_total_gpus"
+    },
+    {
+      "code": "NAMESPACE_GPU_QUOTA_EXCEEDED",
+      "scope": "final-report",
+      "message": "Scenario 'production-contention-a-transformer8' requests 8 GPUs; namespace hard quota is 4.",
+      "evidence": "matrix.scenarios[].gpu_number + inventory.namespace.resource_quota"
+    },
+    {
+      "code": "MATRIX_SCENARIO_DISABLED",
+      "scope": "final-report",
+      "message": "Scenario 'production-contention-b-nn2' is not executable: This row is part of the requested concurrent A(8 GPU)+B(2 GPU)+C(CPU) pressure group, whose aggregate GPU demand is unsafe under the four-GPU quota.",
+      "evidence": "matrix.scenarios[production-contention-b-nn2].execution_allowed"
+    },
+    {
+      "code": "MATRIX_SCENARIO_DISABLED",
+      "scope": "final-report",
+      "message": "Scenario 'production-contention-c-lgb-cpu' is not executable: CPU-only pressure Jobs need a separate bounded policy and this row belongs to the unsafe 8+2 GPU concurrent pressure group.",
+      "evidence": "matrix.scenarios[production-contention-c-lgb-cpu].execution_allowed"
+    },
+    {
+      "code": "IMAGE_NOT_DIGEST_PINNED",
+      "scope": "final-report",
+      "message": "Image for model 'lgb' is not pinned by sha256 digest.",
+      "evidence": "runtime.images.lgb"
+    },
+    {
+      "code": "IMAGE_SMOKE_NOT_PASSED",
+      "scope": "final-report",
+      "message": "Image readiness for model 'lgb' is 'gpu_backend_not_implemented', not a passed in-container smoke state.",
+      "evidence": "runtime.image_status.lgb"
+    },
+    {
+      "code": "MONITORING_CHAIN_INCOMPLETE",
+      "scope": "final-report",
+      "message": "Required monitoring components are not ready: gpu_operator, dcgm_exporter, prometheus, grafana.",
+      "evidence": "requirements.monitoring.required_components + inventory.monitoring"
+    },
+    {
+      "code": "MODEL_MATRIX_INCOMPLETE",
+      "scope": "final-report",
+      "message": "Only 0/27 selected matrix cells have at least 3 validated completed repetition(s).",
+      "evidence": "report.benchmark_results.json execution_stage/status"
+    },
+    {
+      "code": "GPU_NODE_TOPOLOGY_MISMATCH",
+      "scope": "final-report",
+      "message": "Requested evaluation topology is 8 GPU nodes; inventory observed 1.",
+      "evidence": "requirements.target_environment.gpu_node_count + inventory.cluster.gpu_node_count"
+    }
+  ]
+}

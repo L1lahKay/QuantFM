@@ -1,0 +1,15 @@
+KIND         NAMESPACE                NAME                                           READY    AVAILABLE
+Deployment   kube-system              coredns                                        <none>   1
+Deployment   kube-system              local-path-provisioner                         <none>   1
+Deployment   kube-system              metrics-server                                 <none>   1
+Deployment   kuboard                  metrics-scraper                                <none>   1
+Deployment   kueue-system             kueue-controller-manager                       <none>   1
+Deployment   node-feature-discovery   nfd-node-feature-discovery-gc                  <none>   1
+Deployment   node-feature-discovery   nfd-node-feature-discovery-master              <none>   1
+Deployment   registry                 registry                                       <none>   1
+Deployment   volcano-system           volcano-admission                              <none>   1
+Deployment   volcano-system           volcano-controllers                            <none>   1
+Deployment   volcano-system           volcano-scheduler                              <none>   1
+DaemonSet    node-feature-discovery   nfd-node-feature-discovery-worker              1        <none>
+DaemonSet    nvidia-device-plugin     nvdp-nvidia-device-plugin                      1        <none>
+DaemonSet    nvidia-device-plugin     nvdp-nvidia-device-plugin-mps-control-daemon   0        <none>

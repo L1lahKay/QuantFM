@@ -1,0 +1,2 @@
+PREFLIGHT_BEGIN=2026-08-03T07:23:46.476Z
+PREFLIGHT_BLOCKED=2026-08-03T07:23:49.543Z	insufficient namespace ResourceQuota headroom for rendered Pod resources: gpu-quota:requests.nvidia.com/gpu:hard=4,used=1,required=4

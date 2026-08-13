@@ -1,0 +1,4 @@
+job/khalil-bm-k8s-2143b4-transform-o721a2a2d-c007-r03: rc=0 job.batch "khalil-bm-k8s-2143b4-transform-o721a2a2d-c007-r03" deleted from gpu-dev namespace
+job/khalil-bm-k8s-2143b4-transform-o721a2a2d-c007-r03: verified absent
+owner-UID dependants: verified absent
+GPU ResourceQuota: restored after 1 observation(s)

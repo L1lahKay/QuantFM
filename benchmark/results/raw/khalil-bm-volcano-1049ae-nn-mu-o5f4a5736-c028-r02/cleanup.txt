@@ -1,0 +1,8 @@
+job/khalil-bm-volcano-1049ae-nn-mu-o5f4a5736-c028-r02: rc=0 job.batch "khalil-bm-volcano-1049ae-nn-mu-o5f4a5736-c028-r02" deleted from gpu-dev namespace
+podgroup.scheduling.volcano.sh/khalil-bm-volcano-1049ae-nn-mu-o5f4a5736-c028-r02-pg: rc=0 podgroup.scheduling.volcano.sh "khalil-bm-volcano-1049ae-nn-mu-o5f4a5736-c028-r02-pg" deleted from gpu-dev namespace
+service/khalil-bm-volcano-1049ae-nn-mu-o5f4a5736-c028-r02-rdzv: rc=0 service "khalil-bm-volcano-1049ae-nn-mu-o5f4a5736-c028-r02-rdzv" deleted from gpu-dev namespace
+job/khalil-bm-volcano-1049ae-nn-mu-o5f4a5736-c028-r02: verified absent
+podgroup.scheduling.volcano.sh/khalil-bm-volcano-1049ae-nn-mu-o5f4a5736-c028-r02-pg: verified absent
+service/khalil-bm-volcano-1049ae-nn-mu-o5f4a5736-c028-r02-rdzv: verified absent
+owner-UID dependants: verified absent
+GPU ResourceQuota: restored after 1 observation(s)

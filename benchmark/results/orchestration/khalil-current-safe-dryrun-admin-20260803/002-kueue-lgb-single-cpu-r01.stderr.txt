@@ -1,0 +1,1 @@
+lgb-single-cpu kueue: ERROR scenario lgb-single-cpu is intentionally disabled: The CPU runner path exists, but no observed digest-pinned internal LightGBM image has passed the in-container CPU training smoke; storage approval is also still blocked.

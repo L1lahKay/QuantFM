@@ -1,0 +1,5 @@
+injected_at=2026-08-06T07:53:55.290Z
+returncode=1
+stdout=
+stderr=command terminated with exit code 1
+

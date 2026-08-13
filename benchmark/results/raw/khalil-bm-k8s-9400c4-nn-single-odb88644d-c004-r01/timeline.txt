@@ -1,0 +1,2 @@
+PREFLIGHT_BEGIN=2026-08-03T05:57:32.846Z
+PREFLIGHT_BLOCKED=2026-08-03T05:57:34.903Z	identity lacks required create/evidence/cleanup permissions: create jobs.batch scope=gpu-dev, get jobs.batch scope=gpu-dev, delete jobs.batch scope=gpu-dev, get pods scope=gpu-dev, list pods scope=gpu-dev, get pods/log scope=gpu-dev, list events scope=gpu-dev, list resourcequotas scope=gpu-dev, list pods scope=all-namespaces

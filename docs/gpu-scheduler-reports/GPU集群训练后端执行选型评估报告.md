@@ -301,7 +301,7 @@ Volcano 直接参与 Pod 绑定，PodGroup `minMember/minResources` 用于固定
 
 ## 5. 后续工作
 
-1. 使用同一镜像、参数和数据，补齐 Kueue/Volcano 的 NN 和 Transformer Single/Multi-Pod N≥3 运行，同时记录 training time 和 Wall Clock。
+1. 使用同一镜像、参数和数据，补齐 Kueue/Volcano 的 NN 和 Transformer Single/Multi-Pod N≥3 运行，同时记录 training time 和 Wall Clock。（2026-08-06 已完成 45/45）
 2. 分别验证 LGB 的 CPU、OpenCL GPU 和 CUDA 后端，然后补齐三种后端的运行结果。
 3. 确定 8-GPU/多节点物理拓扑和 Pod 布局，再做真实 NCCL/DDP 测试。
 4. 并发提交不同项目的 Transformer、NN 和 LGB 任务，检查长期排队、队列顺序、配额释放和公平性。
@@ -309,4 +309,10 @@ Volcano 直接参与 Pod 绑定，PodGroup `minMember/minResources` 用于固定
 6. 按最终 actions 回归 Volcano Gang、Queue 和 preempt/reclaim。
 7. 补齐 Pod/Node 故障、重试、checkpoint/resume 和抢占后恢复。
 8. 部署 GPU Operator/DCGM Exporter/Prometheus/Grafana，按 Job、团队和队列关联监控数据。
-9. 替换根盘 `local-path` PVC，再验证数据吞吐、checkpoint 持久性、存储配额和故障恢复。
+9. 先按 PV 的精确 local path 判断物理后端，再决定是否替换 `local-path` PVC；随后验证数据吞吐、checkpoint 持久性、存储配额和故障恢复。
+
+> 2026-08-06 更正：`quantfm-data` 的精确路径实际落在独立的
+> `/dev/mapper/data--vg-k3s` XFS/7TB NVMe，而不是根 LV。64MiB 同节点跨 Pod
+> checkpoint persistence smoke 已通过；该卷仍为 RWO、node-affine，不能替代
+> 多节点共享 CSI，也尚未证明 filesystem quota 或节点故障恢复。完整状态和证据见
+> [后续实验计划](../../benchmark/experiments/follow-up/EXPERIMENT_PLAN.md)。

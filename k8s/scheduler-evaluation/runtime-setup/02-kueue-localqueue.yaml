@@ -1,0 +1,10 @@
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: LocalQueue
+metadata:
+  name: khalil-kueue-eval
+  namespace: gpu-dev
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/purpose: scheduler-benchmark-runtime
+spec:
+  clusterQueue: khalil-kueue-eval

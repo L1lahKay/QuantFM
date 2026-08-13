@@ -1,0 +1,38 @@
+{
+  "benchmark_role": "performance",
+  "cleanup_status": "not-required-no-mutation",
+  "created_at": "2026-08-03T02:31:09.544Z",
+  "execution_blockers": [
+    "server-side dry-run failed: Error from server: error when creating \"STDIN\": admission webhook \"validatepodgroup.volcano.sh\" denied the request: unable to find queue: queue.scheduling.volcano.sh \"khalil-volcano-smoke\" not found",
+    "host nvidia-smi reports active compute processes; refusing to kill, preempt, or overlap them",
+    "training storage gate is closed: The exact claim gpu-dev/quantfm-data is local-path storage and /data resolves to the same /dev/mapper/ubuntu--vg-ubuntu--lv filesystem as /; it is root-disk-backed and therefore ineligible for training even with an approval marker.",
+    "training storage hard block: the configured PVC is not backed by a verified non-root-disk filesystem",
+    "Volcano execution is blocked: the dedicated administrator kubeconfig/active exception is not available for this run; The 2026-07-31 one-time exceptions have ended. gpu-dev currently has no LocalQueue, the dedicated Volcano administrator kubeconfig is absent, and a new bounded AGENTS.md authorization plus active maintenance window are required before execution.",
+    "required Volcano Queue is absent or unreadable: kubectl get queue.scheduling.volcano.sh khalil-volcano-smoke -o failed: Error from server (NotFound): queues.scheduling.volcano.sh \"khalil-volcano-smoke\" not found"
+  ],
+  "gpu_number": 1,
+  "gpus_per_pod": 1,
+  "image": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+  "image_status": "observed_digest_pinned",
+  "kube_context": "default",
+  "model": "nn",
+  "namespace": "gpu-dev",
+  "pod_mode": "single",
+  "replicas": 1,
+  "resource_names": {
+    "job": "khalil-bm-nn-single-gpu1-volca-20260803023109-5edfcc",
+    "ownership_token": "3e0f5fe85c17433a8e8293a5ea0b44c7",
+    "podgroup": "khalil-bm-nn-single-gpu1-volca-20260803023109-5edfcc-pg",
+    "service": ""
+  },
+  "run_id": "khalil-bm-nn-single-gpu1-volca-20260803023109-5edfcc",
+  "scenario_id": "nn-single-gpu1",
+  "scheduler": "volcano",
+  "schema_version": 1,
+  "status": "dry-run-blocked",
+  "storage": {
+    "mount_path": "/mnt/quantfm",
+    "pvc_name": "quantfm-data"
+  },
+  "updated_at": "2026-08-03T02:31:12.395Z"
+}

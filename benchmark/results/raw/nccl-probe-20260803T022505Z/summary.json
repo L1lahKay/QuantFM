@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "captured_at_utc": "2026-08-03T02:25:24.489Z",
+  "scope": "single_node_four_gpu_nccl_collective_probe_not_training",
+  "performance_baseline_valid": false,
+  "invalid_baseline_reason": "One allocated physical GPU was concurrently used by an external host process that was invisible to Kubernetes GPU-request accounting.",
+  "job": {
+    "namespace": "gpu-dev",
+    "name": "khalil-nccl-probe",
+    "uid": "8edefb7d-17fe-4953-800a-14e391f62bfe",
+    "pod": "khalil-nccl-probe-jxjrv",
+    "pod_uid": "fd027c02-b7db-47eb-860c-d91f788b7456",
+    "node": "gpu-dev-01",
+    "scheduler": "default-scheduler",
+    "gpu_request": 4,
+    "image": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574"
+  },
+  "timestamps": {
+    "client_submit_begin": "2026-08-03T02:25:06.693Z",
+    "client_submit_return": "2026-08-03T02:25:06.974Z",
+    "job_created": "2026-08-03T02:25:06Z",
+    "pod_scheduled_event": "2026-08-03T02:25:06.978763Z",
+    "container_started": "2026-08-03T02:25:09Z",
+    "collective_started": "2026-08-03T02:25:18.242Z",
+    "collective_finished": "2026-08-03T02:25:19.082Z",
+    "container_finished": "2026-08-03T02:25:21Z",
+    "job_completed": "2026-08-03T02:25:24Z",
+    "client_completion_observed": "2026-08-03T02:25:24.489Z"
+  },
+  "wall_clock_seconds": {
+    "client_submit_rtt": 0.281,
+    "client_submit_to_pod_scheduled": 0.285763,
+    "client_submit_to_container_start": 2.307,
+    "container_runtime": 12.0,
+    "api_job_create_to_complete": 18.0,
+    "client_submit_to_complete_observed": 17.796
+  },
+  "nccl": {
+    "effective": true,
+    "world_size": 4,
+    "backend": "nccl",
+    "nccl_version": "2.29.7",
+    "torch_version": "2.13.0+cu130",
+    "cuda_build": "13.0",
+    "payload_bytes_per_rank": 67108864,
+    "iterations": 50,
+    "max_rank_elapsed_seconds": 0.8358874917030334,
+    "mean_collective_milliseconds": 16.71774983406067,
+    "raw_payload_gigabytes_per_second": 4.014228270318575,
+    "validation_value": 1.0,
+    "visible_gpu_count": 4,
+    "transport_observation": "single-node SHM/direct rings; no InfiniBand plugin",
+    "interpretation": "The four-rank collective and validation succeeded. This proves the current single-node NCCL execution chain, not multi-node networking or uncontaminated training throughput."
+  },
+  "gpu_metrics": {
+    "sample_count": 20,
+    "avg_gpu_utilization_percent": 53.95,
+    "peak_memory_used_mib": 14987.0,
+    "avg_power_watts": 77.1725,
+    "contaminated_by_external_process": true
+  },
+  "cleanup": {
+    "exact_job_absent": true,
+    "namespace_gpu_quota_used_after": 0
+  },
+  "evidence": {
+    "raw_directory": "benchmark/results/raw/nccl-probe-20260803T022505Z",
+    "host_process_snapshot": "benchmark/results/raw/cluster-inventory/host-gpu-snapshot.txt"
+  }
+}

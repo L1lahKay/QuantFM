@@ -1,0 +1,100 @@
+{
+  "items": [
+    {
+      "allowed": false,
+      "resource": "jobs.batch",
+      "scope": "gpu-dev",
+      "verb": "create"
+    },
+    {
+      "allowed": false,
+      "resource": "jobs.batch",
+      "scope": "gpu-dev",
+      "verb": "get"
+    },
+    {
+      "allowed": false,
+      "resource": "jobs.batch",
+      "scope": "gpu-dev",
+      "verb": "delete"
+    },
+    {
+      "allowed": false,
+      "resource": "pods",
+      "scope": "gpu-dev",
+      "verb": "get"
+    },
+    {
+      "allowed": false,
+      "resource": "pods",
+      "scope": "gpu-dev",
+      "verb": "list"
+    },
+    {
+      "allowed": false,
+      "resource": "pods/log",
+      "scope": "gpu-dev",
+      "verb": "get"
+    },
+    {
+      "allowed": false,
+      "resource": "events",
+      "scope": "gpu-dev",
+      "verb": "list"
+    },
+    {
+      "allowed": false,
+      "resource": "resourcequotas",
+      "scope": "gpu-dev",
+      "verb": "list"
+    },
+    {
+      "allowed": false,
+      "resource": "pods",
+      "scope": "all-namespaces",
+      "verb": "list"
+    },
+    {
+      "allowed": false,
+      "resource": "services",
+      "scope": "gpu-dev",
+      "verb": "create"
+    },
+    {
+      "allowed": false,
+      "resource": "services",
+      "scope": "gpu-dev",
+      "verb": "get"
+    },
+    {
+      "allowed": false,
+      "resource": "services",
+      "scope": "gpu-dev",
+      "verb": "delete"
+    },
+    {
+      "allowed": false,
+      "resource": "podgroups.scheduling.volcano.sh",
+      "scope": "gpu-dev",
+      "verb": "create"
+    },
+    {
+      "allowed": false,
+      "resource": "podgroups.scheduling.volcano.sh",
+      "scope": "gpu-dev",
+      "verb": "get"
+    },
+    {
+      "allowed": false,
+      "resource": "podgroups.scheduling.volcano.sh",
+      "scope": "gpu-dev",
+      "verb": "delete"
+    },
+    {
+      "allowed": false,
+      "resource": "queues.scheduling.volcano.sh",
+      "scope": "cluster",
+      "verb": "get"
+    }
+  ]
+}

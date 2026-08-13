@@ -1,0 +1,198 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "kueue.x-k8s.io/v1beta2",
+            "kind": "ResourceFlavor",
+            "metadata": {
+                "annotations": {
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"kueue.x-k8s.io/v1beta2\",\"kind\":\"ResourceFlavor\",\"metadata\":{\"annotations\":{},\"name\":\"default-flavor\"}}\n"
+                },
+                "creationTimestamp": "2026-07-30T08:58:33Z",
+                "finalizers": [
+                    "kueue.x-k8s.io/resource-in-use"
+                ],
+                "generation": 1,
+                "name": "default-flavor",
+                "resourceVersion": "27570506",
+                "uid": "34ad5096-cb9c-4a7e-aea2-823fcf9eda92"
+            },
+            "spec": {}
+        },
+        {
+            "apiVersion": "kueue.x-k8s.io/v1beta2",
+            "kind": "ClusterQueue",
+            "metadata": {
+                "annotations": {
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"kueue.x-k8s.io/v1beta2\",\"kind\":\"ClusterQueue\",\"metadata\":{\"annotations\":{},\"name\":\"cq-test\"},\"spec\":{\"namespaceSelector\":{},\"resourceGroups\":[{\"coveredResources\":[\"cpu\",\"memory\",\"nvidia.com/gpu\"],\"flavors\":[{\"name\":\"default-flavor\",\"resources\":[{\"name\":\"cpu\",\"nominalQuota\":\"2\"},{\"name\":\"memory\",\"nominalQuota\":\"8Gi\"},{\"name\":\"nvidia.com/gpu\",\"nominalQuota\":\"2\"}]}]}]}}\n"
+                },
+                "creationTimestamp": "2026-07-30T08:58:33Z",
+                "finalizers": [
+                    "kueue.x-k8s.io/resource-in-use"
+                ],
+                "generation": 1,
+                "name": "cq-test",
+                "resourceVersion": "27571375",
+                "uid": "4a72ee3c-a737-46ea-8c66-fea22c95d277"
+            },
+            "spec": {
+                "flavorFungibility": {
+                    "whenCanBorrow": "MayStopSearch",
+                    "whenCanPreempt": "TryNextFlavor"
+                },
+                "namespaceSelector": {},
+                "preemption": {
+                    "borrowWithinCohort": {
+                        "policy": "Never"
+                    },
+                    "reclaimWithinCohort": "Never",
+                    "withinClusterQueue": "Never"
+                },
+                "queueingStrategy": "BestEffortFIFO",
+                "resourceGroups": [
+                    {
+                        "coveredResources": [
+                            "cpu",
+                            "memory",
+                            "nvidia.com/gpu"
+                        ],
+                        "flavors": [
+                            {
+                                "name": "default-flavor",
+                                "resources": [
+                                    {
+                                        "name": "cpu",
+                                        "nominalQuota": "2"
+                                    },
+                                    {
+                                        "name": "memory",
+                                        "nominalQuota": "8Gi"
+                                    },
+                                    {
+                                        "name": "nvidia.com/gpu",
+                                        "nominalQuota": "2"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "stopPolicy": "None"
+            },
+            "status": {
+                "admittedWorkloads": 0,
+                "conditions": [
+                    {
+                        "lastTransitionTime": "2026-07-30T08:58:33Z",
+                        "message": "Can admit new workloads",
+                        "observedGeneration": 1,
+                        "reason": "Ready",
+                        "status": "True",
+                        "type": "Active"
+                    }
+                ],
+                "flavorsReservation": [
+                    {
+                        "name": "default-flavor",
+                        "resources": [
+                            {
+                                "borrowed": "0",
+                                "name": "cpu",
+                                "total": "0"
+                            },
+                            {
+                                "borrowed": "0",
+                                "name": "memory",
+                                "total": "0"
+                            },
+                            {
+                                "borrowed": "0",
+                                "name": "nvidia.com/gpu",
+                                "total": "0"
+                            }
+                        ]
+                    }
+                ],
+                "flavorsUsage": [
+                    {
+                        "name": "default-flavor",
+                        "resources": [
+                            {
+                                "borrowed": "0",
+                                "name": "cpu",
+                                "total": "0"
+                            },
+                            {
+                                "borrowed": "0",
+                                "name": "memory",
+                                "total": "0"
+                            },
+                            {
+                                "borrowed": "0",
+                                "name": "nvidia.com/gpu",
+                                "total": "0"
+                            }
+                        ]
+                    }
+                ],
+                "pendingWorkloads": 0,
+                "reservingWorkloads": 0
+            }
+        },
+        {
+            "apiVersion": "scheduling.volcano.sh/v1beta1",
+            "kind": "Queue",
+            "metadata": {
+                "creationTimestamp": "2026-07-31T07:16:46Z",
+                "generation": 2,
+                "name": "default",
+                "resourceVersion": "27876048",
+                "uid": "f116400a-4b41-4409-8680-3b00c69974cb"
+            },
+            "spec": {
+                "dequeueStrategy": "traverse",
+                "guarantee": {},
+                "parent": "root",
+                "reclaimable": true,
+                "weight": 1
+            },
+            "status": {
+                "allocated": {
+                    "cpu": "0",
+                    "memory": "0"
+                },
+                "reservation": {},
+                "state": "Open"
+            }
+        },
+        {
+            "apiVersion": "scheduling.volcano.sh/v1beta1",
+            "kind": "Queue",
+            "metadata": {
+                "creationTimestamp": "2026-07-31T07:16:46Z",
+                "generation": 1,
+                "name": "root",
+                "resourceVersion": "27884118",
+                "uid": "09b301c4-d3ac-4d85-91d3-86b1e4a90d49"
+            },
+            "spec": {
+                "dequeueStrategy": "traverse",
+                "guarantee": {},
+                "reclaimable": false,
+                "weight": 1
+            },
+            "status": {
+                "allocated": {
+                    "cpu": "0",
+                    "memory": "0"
+                },
+                "reservation": {},
+                "state": "Open"
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

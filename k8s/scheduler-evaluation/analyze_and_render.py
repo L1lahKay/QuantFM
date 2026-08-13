@@ -16,7 +16,9 @@ RAW = ROOT / "docs/assets/gpu-scheduler-evaluation/raw"
 CURRENT = RAW / "current"
 SCREENSHOTS = ROOT / "docs/assets/gpu-scheduler-evaluation/screenshots"
 RESULTS = ROOT / "docs/assets/gpu-scheduler-evaluation/bare-k8s-results.json"
-KUEUE_RESULTS = ROOT / "docs/assets/gpu-scheduler-evaluation/current-kueue-results.json"
+KUEUE_RESULTS = (
+    ROOT / "docs/assets/gpu-scheduler-evaluation/pre-queue-kueue-results.json"
+)
 ANSI_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
 
@@ -424,12 +426,12 @@ def render(result: dict[str, object], kueue_result: dict[str, object]) -> None:
     catchup = "\n".join(catchup_lines)
 
     render_terminal(
-        "01 - Pre-Volcano restricted-account inventory (2026-07-31 06:25 UTC)",
+        "01 - Pre-queue historical restricted-account inventory (2026-07-31 06:25 UTC)",
         current_inventory,
         SCREENSHOTS / "01-current-cluster-access.png",
     )
     render_terminal(
-        "01 - Pre-Volcano restricted-account inventory (2026-07-31 06:25 UTC)",
+        "01 - Pre-queue historical restricted-account inventory (2026-07-31 06:25 UTC)",
         current_inventory,
         SCREENSHOTS / "01-cluster-inventory.png",
     )

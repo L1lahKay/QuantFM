@@ -1,0 +1,10 @@
+2026-08-06T05:45:23Z	BEGIN action=apply context=default namespace=gpu-dev
+2026-08-06T05:45:31Z	HOST_GPU_PROCESS_QUERY suffix=initial success=true count=0
+2026-08-06T05:45:33Z	EXACT_OBJECT_ABSENT resourceflavors.kueue.x-k8s.io/khalil-kueue-nvidia
+2026-08-06T05:45:34Z	EXACT_OBJECT_ABSENT clusterqueues.kueue.x-k8s.io/khalil-kueue-eval
+2026-08-06T05:45:34Z	EXACT_OBJECT_ABSENT localqueues.kueue.x-k8s.io/khalil-kueue-eval
+2026-08-06T05:45:34Z	EXACT_OBJECT_ABSENT queues.scheduling.volcano.sh/khalil-volcano-smoke
+2026-08-06T05:45:36Z	NO_BENCHMARK_OBJECTS_CONFIRMED
+2026-08-06T05:45:37Z	DEDICATED_QUEUES_UNUSED_CONFIRMED
+2026-08-06T05:45:37Z	HOST_GPU_PROCESS_QUERY suffix=pre-apply success=true count=0
+2026-08-06T05:45:40Z	COMPLETE action=apply

@@ -1,0 +1,6 @@
+requests.gpu=4
+limits.gpu=4
+requests.cpu=64
+limits.cpu=128
+requests.memory=256Gi
+limits.memory=512Gi

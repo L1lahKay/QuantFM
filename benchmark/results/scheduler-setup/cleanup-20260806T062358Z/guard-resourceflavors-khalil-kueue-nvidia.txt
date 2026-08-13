@@ -1,0 +1,1 @@
+resourceflavor.kueue.x-k8s.io/khalil-kueue-nvidia

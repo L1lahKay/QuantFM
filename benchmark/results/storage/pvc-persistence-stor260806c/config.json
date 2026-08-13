@@ -1,0 +1,46 @@
+{
+  "claim": {
+    "access_modes": [
+      "ReadWriteOnce"
+    ],
+    "filesystem": "xfs",
+    "local_path": "/data/k3s/storage/pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580_khalil_quantfm-data",
+    "mount_source": "/dev/mapper/data--vg-k3s",
+    "mount_target": "/data/k3s",
+    "name": "quantfm-data",
+    "node": "gpu-dev-01",
+    "reclaim_policy": "Retain",
+    "uid": "dcfc08ba-7c57-466e-abeb-e60897855a39",
+    "volume_name": "pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580",
+    "volume_uid": "8d66d1f8-7a0a-48ff-ae7b-e49a4e3e59fa"
+  },
+  "confirmation_evidence": [
+    "docs/operations/GPU-PVC-\u7533\u8bf7\u4e0e\u8fc1\u79fb-khalil.md",
+    "k8s/storage/README.md",
+    "benchmark/results/follow-up-baseline/20260806T090745Z/quantfm-pvc-backing.tsv",
+    "benchmark/results/follow-up-baseline/20260806T090745Z/block-devices.json"
+  ],
+  "experiment": "single-node-pvc-checkpoint-persistence-smoke",
+  "image": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+  "limits": {
+    "active_deadline_seconds": 300,
+    "checkpoint_bytes_default": 67108864,
+    "checkpoint_bytes_max": 1073741824,
+    "ttl_seconds_after_finished": 3600,
+    "wait_timeout_seconds": 360
+  },
+  "namespace": "gpu-dev",
+  "physical_backend": {
+    "disk_model": "INTEL SSDPF2KX076T9N",
+    "disk_size": "7T",
+    "non_root_disk_confirmed": true,
+    "root_mount_source": "/dev/mapper/ubuntu--vg-ubuntu--lv"
+  },
+  "schema_version": 1,
+  "scope": {
+    "filesystem_quota_enforcement_proven": false,
+    "multi_node_reattach_proven": false,
+    "node_failure_recovery_proven": false,
+    "single_node_persistence_allowed": true
+  }
+}

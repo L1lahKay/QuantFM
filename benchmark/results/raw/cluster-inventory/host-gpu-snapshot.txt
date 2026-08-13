@@ -1,0 +1,16 @@
+observed_at_utc=2026-08-03T02:27:00Z
+command=nvidia-smi --query-gpu=index,uuid,name,driver_version,memory.total,memory.used,utilization.gpu,power.draw --format=csv,noheader,nounits
+0, GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce, NVIDIA GeForce RTX 5090, 595.71.05, 32607, 4, 0, 18.01
+1, GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8, NVIDIA GeForce RTX 5090, 595.71.05, 32607, 4, 0, 22.54
+2, GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651, NVIDIA GeForce RTX 5090, 595.71.05, 32607, 4, 0, 21.09
+3, GPU-0849f450-d650-f9ec-058a-70cd2f3c2977, NVIDIA GeForce RTX 5090, 595.71.05, 32607, 4, 0, 24.88
+4, GPU-b1e8e147-6f36-3444-3732-1069ebeaa0ab, NVIDIA GeForce RTX 5090, 595.71.05, 32607, 4, 0, 25.58
+5, GPU-123e9fbb-6ac6-2bde-ca53-8e4f73305abd, NVIDIA GeForce RTX 5090, 595.71.05, 32607, 4, 0, 19.41
+6, GPU-7c0a7fb1-4ff9-84df-922c-429ff4cf417e, NVIDIA GeForce RTX 5090, 595.71.05, 32607, 4, 0, 13.95
+7, GPU-766082cf-e715-90e9-c3ec-5da1db1d5878, NVIDIA GeForce RTX 5090, 595.71.05, 32607, 13534, 7, 94.13
+
+command=nvidia-smi --query-compute-apps=gpu_uuid,used_memory --format=csv,noheader,nounits
+GPU-766082cf-e715-90e9-c3ec-5da1db1d5878, 13524
+privacy_note=PID, user identity, and command path are intentionally omitted from the deliverable.
+
+interpretation=An external host compute process is using GPU 7 while Kubernetes reports zero Running GPU requests. It must not be killed or preempted by this evaluation. Performance runs require an idle or administratively isolated GPU set.

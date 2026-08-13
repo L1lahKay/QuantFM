@@ -1,0 +1,58 @@
+{
+  "items": [
+    {
+      "allowed": true,
+      "resource": "jobs.batch",
+      "scope": "gpu-dev",
+      "verb": "create"
+    },
+    {
+      "allowed": true,
+      "resource": "jobs.batch",
+      "scope": "gpu-dev",
+      "verb": "get"
+    },
+    {
+      "allowed": true,
+      "resource": "jobs.batch",
+      "scope": "gpu-dev",
+      "verb": "delete"
+    },
+    {
+      "allowed": true,
+      "resource": "pods",
+      "scope": "gpu-dev",
+      "verb": "get"
+    },
+    {
+      "allowed": true,
+      "resource": "pods",
+      "scope": "gpu-dev",
+      "verb": "list"
+    },
+    {
+      "allowed": true,
+      "resource": "pods/log",
+      "scope": "gpu-dev",
+      "verb": "get"
+    },
+    {
+      "allowed": true,
+      "resource": "events",
+      "scope": "gpu-dev",
+      "verb": "list"
+    },
+    {
+      "allowed": true,
+      "resource": "resourcequotas",
+      "scope": "gpu-dev",
+      "verb": "list"
+    },
+    {
+      "allowed": true,
+      "resource": "pods",
+      "scope": "all-namespaces",
+      "verb": "list"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "experiment": "pod-process-failure-job-retry",
+  "status": "failed",
+  "run_token": "retry260807",
+  "job_name": "khalil-pod-retry-retry260807",
+  "job_uid": "274ffdd7-a821-48fc-9040-e67d5216c303",
+  "error_type": "ExperimentError",
+  "error": "first Pod terminated before the injection marker: phase=Failed reason=Error exit=126 log='/bin/sh: 5: exec: python: Permission denied\\n'",
+  "failed_at": "2026-08-06T07:48:30.729Z"
+}

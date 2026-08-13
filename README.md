@@ -2,7 +2,7 @@
 
 > 当前分支：[`V2`](https://github.com/zeusamc/quant-fm/tree/V2)
 >
-> 最近核验：2026-08-03；全仓回归为 `545 passed, 2 skipped, 1 xfailed`。
+> 最近核验：2026-08-11；全仓回归为 `630 passed, 2 skipped`。
 
 面向 A 股 Level-2 订单流的端到端基础模型研发框架。项目将沪深逐笔委托与成交数据重建为统一市场事件，使用 Decoder-only Transformer 进行多字段 next-event 自监督预训练，并由冻结截面 Ranker 生成可交付的日频 `score` 信号。V2 分支在保持 `cn_l2_v1` 兼容性的同时，引入独立的 `cn_l2_v2` schema、词表、存储编码和 checkpoint artifact；两代产物必须显式匹配，不允许静默混用。
 
@@ -78,7 +78,8 @@ uv run python -m quant_fm.scripts.smoke --workdir /tmp/quantfm-smoke
 uv run python -m pytest -q
 ```
 
-当前 V2 分支基线（2026-08-03）：`545 passed, 2 skipped, 1 xfailed`。
+当前 V2 分支基线（2026-08-11）：`630 passed, 2 skipped`。两个跳过项需要
+仓库外的真实行情 parquet fixture。
 
 ## V2 推荐工作流
 
@@ -243,6 +244,19 @@ uv run torchrun --standalone --nproc_per_node=8 \
 ```
 
 这些 v2 配置复用 `quant_fm/runs/v2_shared/validation_windows.json`。首次训练会按日期、交易所、板块、流动性和活跃度分层生成固定验证窗口；之后配置、manifest 或窗口参数不匹配会直接报错。
+
+Temporal Regime-MoE 按设计接在冻结 FM 的股日 embedding 与 Ranker 之间。研究训练入口已接入 `run_judge`：
+
+```bash
+uv run python -m quant_fm.downstream.run_judge \
+  --workdir quant_fm/runs/v2_dense_230m \
+  --checkpoint quant_fm/runs/v2_dense_230m/run/best.pt \
+  --regime-config quant_fm/moe/config_regime_v1.yaml \
+  --regime-features /path/to/pit_regime_features.parquet \
+  --dev-only
+```
+
+Regime parquet 必须以 `(date, symbol)` 唯一，包含配置声明的全部特征，并为每个特征提供 `<name>__asof_date`，或提供共享 `asof_date`。入口会校验时点、禁止目标列、只用训练日期拟合 normalizer，把 Router 正则加入 Ranker loss，并在报告中记录专家占比、熵、Top-1 概率和 overflow。训练后的独立 `regime_moe_v1` artifact 可严格重建 Temporal 模块；该入口仍是研究评估路径，尚未启用严格生产 `build_oos_delivery`。
 
 v2 checkpoint 标记 `fm_artifact_version=2.0`，加载和续训时严格核对 `schema_version`、`vocab_version`、vocab SHA-256、`FieldSpec`、字段顺序和 loss target 声明。v1 checkpoint 则继续走原有 `legacy_sum` 与 v1 特殊 token 语义。
 

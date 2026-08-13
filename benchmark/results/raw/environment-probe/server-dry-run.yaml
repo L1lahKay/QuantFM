@@ -1,0 +1,100 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  creationTimestamp: "2026-08-03T01:54:54Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/name: khalil-scheduler-benchmark
+    benchmark.quantfm.io/scenario: environment-probe
+  name: khalil-benchmark-env-probe
+  namespace: gpu-dev
+  uid: b12ca3b2-1f8d-4885-a53b-e93fa291a347
+spec:
+  activeDeadlineSeconds: 120
+  backoffLimit: 0
+  completionMode: NonIndexed
+  completions: 1
+  manualSelector: false
+  parallelism: 1
+  podReplacementPolicy: TerminatingOrFailed
+  selector:
+    matchLabels:
+      batch.kubernetes.io/controller-uid: b12ca3b2-1f8d-4885-a53b-e93fa291a347
+  suspend: false
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: khalil-scheduler-benchmark
+        batch.kubernetes.io/controller-uid: b12ca3b2-1f8d-4885-a53b-e93fa291a347
+        batch.kubernetes.io/job-name: khalil-benchmark-env-probe
+        benchmark.quantfm.io/scenario: environment-probe
+        controller-uid: b12ca3b2-1f8d-4885-a53b-e93fa291a347
+        job-name: khalil-benchmark-env-probe
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - args:
+        - |
+          echo "PROBE_START_UTC=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+          nvidia-smi --query-gpu=index,name,driver_version,memory.total --format=csv,noheader
+          python - <<'PY'
+          import importlib.util
+          import json
+          import platform
+
+          import torch
+
+          result = {
+              "python": platform.python_version(),
+              "torch": torch.__version__,
+              "torch_cuda_build": torch.version.cuda,
+              "cuda_available": torch.cuda.is_available(),
+              "visible_gpu_count": torch.cuda.device_count(),
+              "gpu_name": torch.cuda.get_device_name(0),
+              "nccl_available": torch.distributed.is_nccl_available(),
+              "nccl_version": list(torch.cuda.nccl.version()),
+              "packages": {
+                  name: importlib.util.find_spec(name) is not None
+                  for name in ("lightgbm", "transformers", "pandas", "numpy")
+              },
+          }
+          value = torch.tensor([20, 22], device="cuda").sum()
+          torch.cuda.synchronize()
+          result["cuda_tensor_result"] = int(value.item())
+          print("ENVIRONMENT_JSON=" + json.dumps(result, sort_keys=True), flush=True)
+          assert result["cuda_available"]
+          assert result["visible_gpu_count"] == 1
+          assert result["cuda_tensor_result"] == 42
+          PY
+          echo "PROBE_FINISH_UTC=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+        command:
+        - /bin/sh
+        - -ceu
+        image: registry.zs/gpu-dev/dylan-trainer:ac4218e
+        imagePullPolicy: IfNotPresent
+        name: probe
+        resources:
+          limits:
+            cpu: "2"
+            memory: 2Gi
+            nvidia.com/gpu: "1"
+          requests:
+            cpu: "1"
+            memory: 1Gi
+            nvidia.com/gpu: "1"
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        accelerator: nvidia
+      restartPolicy: Never
+      runtimeClassName: nvidia
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      tolerations:
+      - effect: NoSchedule
+        key: nvidia.com/gpu
+        operator: Exists
+  ttlSecondsAfterFinished: 3600
+status: {}

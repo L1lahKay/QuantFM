@@ -1,0 +1,12 @@
+{
+  "items": [
+    {
+      "gpu_uuid": "GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce",
+      "used_memory_mib": "3952"
+    },
+    {
+      "gpu_uuid": "GPU-7c0a7fb1-4ff9-84df-922c-429ff4cf417e",
+      "used_memory_mib": "3920"
+    }
+  ]
+}

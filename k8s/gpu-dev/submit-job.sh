@@ -43,8 +43,8 @@ fi
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd -- "${script_dir}/../.." && pwd)"
-kubeconfig_path="${HOME}/.kube/config-gpu"
-context_name="gpu-dev-khalil@k3s-gpu"
+kubeconfig_path="/etc/rancher/k3s/k3s.yaml"
+context_name="default"
 namespace="gpu-dev"
 
 case "${mode}" in

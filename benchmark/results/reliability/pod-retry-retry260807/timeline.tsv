@@ -1,0 +1,6 @@
+2026-08-06T07:48:22.728Z	experiment-start	run_token=retry260807
+2026-08-06T07:48:22.728Z	preflight-start
+2026-08-06T07:48:25.380Z	preflight-complete
+2026-08-06T07:48:25.670Z	job-created	name=khalil-pod-retry-retry260807	uid=274ffdd7-a821-48fc-9040-e67d5216c303
+2026-08-06T07:48:30.730Z	experiment-failed	ExperimentError: first Pod terminated before the injection marker: phase=Failed reason=Error exit=126 log='/bin/sh: 5: exec: python: Permission denied\n'
+2026-08-06T07:48:31.830Z	cleanup-complete	job_absent=true	pods_absent=true	gpu_requests=0

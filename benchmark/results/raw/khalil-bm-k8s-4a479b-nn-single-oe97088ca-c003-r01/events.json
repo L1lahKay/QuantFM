@@ -1,0 +1,196 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "action": "Binding",
+      "apiVersion": "v1",
+      "eventTime": "2026-08-04T05:16:53.265875Z",
+      "firstTimestamp": null,
+      "involvedObject": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "name": "khalil-bm-k8s-4a479b-nn-single-oe97088ca-c003-r01-gjlsm",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29166654",
+        "uid": "7e56cfc2-f2c5-474f-92b1-a18933536969"
+      },
+      "kind": "Event",
+      "lastTimestamp": null,
+      "message": "Successfully assigned gpu-dev/khalil-bm-k8s-4a479b-nn-single-oe97088ca-c003-r01-gjlsm to gpu-dev-01",
+      "metadata": {
+        "creationTimestamp": "2026-08-04T05:16:53Z",
+        "name": "khalil-bm-k8s-4a479b-nn-single-oe97088ca-c003-r01-gjlsm.18c88262d6489558",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29166658",
+        "uid": "0cf3973b-1b69-499a-bc10-4dfb6f651bbc"
+      },
+      "reason": "Scheduled",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "default-scheduler-zhisui",
+      "source": {},
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-04T05:16:54Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{trainer}",
+        "kind": "Pod",
+        "name": "khalil-bm-k8s-4a479b-nn-single-oe97088ca-c003-r01-gjlsm",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29166656",
+        "uid": "7e56cfc2-f2c5-474f-92b1-a18933536969"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-04T05:16:54Z",
+      "message": "Container image \"registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574\" already present on machine and can be accessed by the pod",
+      "metadata": {
+        "creationTimestamp": "2026-08-04T05:16:54Z",
+        "name": "khalil-bm-k8s-4a479b-nn-single-oe97088ca-c003-r01-gjlsm.18c88263035b0851",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29166665",
+        "uid": "1dcdf05a-4ed2-4ce3-8bbe-e2efb6622805"
+      },
+      "reason": "Pulled",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "gpu-dev-01",
+      "source": {
+        "component": "kubelet",
+        "host": "gpu-dev-01"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-04T05:16:54Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{trainer}",
+        "kind": "Pod",
+        "name": "khalil-bm-k8s-4a479b-nn-single-oe97088ca-c003-r01-gjlsm",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29166656",
+        "uid": "7e56cfc2-f2c5-474f-92b1-a18933536969"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-04T05:16:54Z",
+      "message": "Container created",
+      "metadata": {
+        "creationTimestamp": "2026-08-04T05:16:54Z",
+        "name": "khalil-bm-k8s-4a479b-nn-single-oe97088ca-c003-r01-gjlsm.18c882630534fc34",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29166666",
+        "uid": "c09007aa-f937-4d8a-9158-139ff533dd6c"
+      },
+      "reason": "Created",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "gpu-dev-01",
+      "source": {
+        "component": "kubelet",
+        "host": "gpu-dev-01"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-04T05:16:55Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{trainer}",
+        "kind": "Pod",
+        "name": "khalil-bm-k8s-4a479b-nn-single-oe97088ca-c003-r01-gjlsm",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29166656",
+        "uid": "7e56cfc2-f2c5-474f-92b1-a18933536969"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-04T05:16:55Z",
+      "message": "Container started",
+      "metadata": {
+        "creationTimestamp": "2026-08-04T05:16:55Z",
+        "name": "khalil-bm-k8s-4a479b-nn-single-oe97088ca-c003-r01-gjlsm.18c882634f2baff4",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29166670",
+        "uid": "2afd4b57-459c-45f6-b348-7348363a648b"
+      },
+      "reason": "Started",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "gpu-dev-01",
+      "source": {
+        "component": "kubelet",
+        "host": "gpu-dev-01"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-04T05:16:53Z",
+      "involvedObject": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "name": "khalil-bm-k8s-4a479b-nn-single-oe97088ca-c003-r01",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29166652",
+        "uid": "bf76857d-c062-4d48-9997-e83044548ba4"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-04T05:16:53Z",
+      "message": "Created pod: khalil-bm-k8s-4a479b-nn-single-oe97088ca-c003-r01-gjlsm",
+      "metadata": {
+        "creationTimestamp": "2026-08-04T05:16:53Z",
+        "name": "khalil-bm-k8s-4a479b-nn-single-oe97088ca-c003-r01.18c88262d5d474a9",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29166655",
+        "uid": "f7894aff-aed9-4e0c-801e-778cfde13fef"
+      },
+      "reason": "SuccessfulCreate",
+      "reportingComponent": "job-controller",
+      "reportingInstance": "",
+      "source": {
+        "component": "job-controller"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-04T05:17:36Z",
+      "involvedObject": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "name": "khalil-bm-k8s-4a479b-nn-single-oe97088ca-c003-r01",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29166836",
+        "uid": "bf76857d-c062-4d48-9997-e83044548ba4"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-04T05:17:36Z",
+      "message": "Job completed",
+      "metadata": {
+        "creationTimestamp": "2026-08-04T05:17:36Z",
+        "name": "khalil-bm-k8s-4a479b-nn-single-oe97088ca-c003-r01.18c8826ce92cf406",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29166839",
+        "uid": "f564e0b8-efed-4051-ac84-c066e35afe89"
+      },
+      "reason": "Completed",
+      "reportingComponent": "job-controller",
+      "reportingInstance": "",
+      "source": {
+        "component": "job-controller"
+      },
+      "type": "Normal"
+    }
+  ],
+  "kind": "List"
+}

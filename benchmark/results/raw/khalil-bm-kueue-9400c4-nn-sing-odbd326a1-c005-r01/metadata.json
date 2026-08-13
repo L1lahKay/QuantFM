@@ -1,0 +1,88 @@
+{
+  "benchmark_role": "performance",
+  "cleanup_status": "not-required-no-mutation",
+  "config_semantics_version": "quantfm.scheduler-benchmark.v1",
+  "created_at": "2026-08-03T06:00:00.390Z",
+  "execution_blockers": [
+    "host nvidia-smi reports active compute processes; refusing to kill, preempt, or overlap them",
+    "training storage gate is closed: The exact claim gpu-dev/quantfm-data is local-path storage and /data resolves to the same /dev/mapper/ubuntu--vg-ubuntu--lv filesystem as /; it is root-disk-backed and therefore ineligible for training even with an approval marker.",
+    "training storage hard block: the configured PVC is not backed by a verified non-root-disk filesystem",
+    "Kueue execution is blocked: the previous one-time exception has ended; The 2026-07-31 one-time exceptions have ended. gpu-dev currently has no LocalQueue, the dedicated Volcano administrator kubeconfig is absent, and a new bounded AGENTS.md authorization plus active maintenance window are required before execution.",
+    "required Kueue LocalQueue gpu-dev/khalil-kueue-eval is absent or unreadable: kubectl get localqueue.kueue.x-k8s.io khalil-kueue-eval -o failed: Error from server (NotFound): localqueues.kueue.x-k8s.io \"khalil-kueue-eval\" not found"
+  ],
+  "gpu_number": 1,
+  "gpus_per_pod": 1,
+  "image": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+  "image_status": "observed_digest_pinned",
+  "kube_context": "default",
+  "model": "nn",
+  "namespace": "gpu-dev",
+  "normalized_config": {
+    "architecture": "mlp",
+    "global_batch_size": 4096,
+    "gpu_number": 1,
+    "gpus_per_pod": 1,
+    "hidden_layers": [
+      1024,
+      1024,
+      512
+    ],
+    "input_features": 100,
+    "model": "nn",
+    "optimizer_steps": 80,
+    "per_rank_batch_size": 4096,
+    "pod_mode": "single",
+    "replicas": 1,
+    "warmup_steps": 10
+  },
+  "pod_mode": "single",
+  "replicas": 1,
+  "resource_names": {
+    "job": "khalil-bm-kueue-9400c4-nn-sing-odbd326a1-c005-r01",
+    "ownership_token": "0305a8429f174973a7615b667af1a5fe",
+    "podgroup": "",
+    "runtime_image": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "service": "",
+    "workload_payload_sha256": "7ea3aaa8cc9a35a8e9d5731c68891552610955d27a046b84896cd2a0622091a3"
+  },
+  "run_id": "khalil-bm-kueue-9400c4-nn-sing-odbd326a1-c005-r01",
+  "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+  "scaling_fingerprint_config": {
+    "aggregate_cpu": "8",
+    "aggregate_memory": "16Gi",
+    "architecture": "mlp",
+    "config_semantics_version": "quantfm.scheduler-benchmark.v1",
+    "fingerprint_semantics": "strong-scaling-global-work-image-resources.v3",
+    "global_batch_size": 4096,
+    "hidden_layers": [
+      1024,
+      1024,
+      512
+    ],
+    "input_features": 100,
+    "learning_rate": 0.001,
+    "loss": "mse",
+    "model": "nn",
+    "optimizer": "AdamW",
+    "optimizer_steps": 80,
+    "precision": "bfloat16",
+    "runtime_image": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+    "seed": 20260803,
+    "warmup_steps": 10,
+    "workload_implementation": "embedded-workload-entry-v1",
+    "workload_payload_sha256": "7ea3aaa8cc9a35a8e9d5731c68891552610955d27a046b84896cd2a0622091a3"
+  },
+  "scaling_fingerprint_semantics": "strong-scaling-global-work-image-resources.v3",
+  "scenario_id": "nn-single-gpu1",
+  "scheduler": "kueue",
+  "schema_version": 1,
+  "status": "dry-run-complete",
+  "storage": {
+    "mount_path": "/mnt/quantfm",
+    "pvc_name": "quantfm-data"
+  },
+  "updated_at": "2026-08-03T06:00:05.068Z",
+  "workload_implementation": "embedded-workload-entry-v1",
+  "workload_payload_sha256": "7ea3aaa8cc9a35a8e9d5731c68891552610955d27a046b84896cd2a0622091a3"
+}

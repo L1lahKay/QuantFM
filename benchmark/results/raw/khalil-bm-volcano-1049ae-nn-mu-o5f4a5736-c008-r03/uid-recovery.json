@@ -1,0 +1,9 @@
+{
+  "errors": {},
+  "recovered_uids": {
+    "job": "7a57f9e1-43ec-4100-9151-bbd70f260565",
+    "podgroup": "ead253a0-a6ac-484e-aad4-db39363dafab",
+    "service": "16c6d156-584e-4889-b287-112782ac93d1"
+  },
+  "verified_absent_keys": []
+}

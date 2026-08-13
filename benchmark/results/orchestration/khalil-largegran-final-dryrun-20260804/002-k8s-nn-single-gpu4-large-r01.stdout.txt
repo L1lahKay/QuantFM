@@ -1,0 +1,1 @@
+nn-single-gpu4-large k8s: dry-run-complete evidence=/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-8eecb8-nn-single-oc4563fa3-c002-r01

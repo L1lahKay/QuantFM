@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "observed_at_utc": "2026-08-03T06:27:43.130Z",
+  "observation_mode": "read_only_summary",
+  "kubeconfig_path": "/etc/rancher/k3s/k3s.yaml",
+  "context": "default",
+  "credentials_captured": false,
+  "host_gpu_compute_processes": {
+    "query": "nvidia-smi --query-compute-apps=gpu_uuid,used_memory --format=csv,noheader,nounits",
+    "query_succeeded": true,
+    "process_count": 0,
+    "items": []
+  },
+  "gpu_dev": {
+    "jobs": [],
+    "pods": [],
+    "local_queues": [],
+    "pod_groups": [],
+    "gpu_quota_hard": 4,
+    "gpu_quota_used": 0,
+    "persistent_volume_claims": [
+      {
+        "name": "quantfm-data",
+        "storage_class": "local-path",
+        "status": "Bound",
+        "capacity": "500Gi",
+        "host_path": "/data/k3s/storage/pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580_khalil_quantfm-data",
+        "non_root_disk_confirmed": false
+      }
+    ]
+  },
+  "volcano_open_queues": ["default", "root"],
+  "monitoring_components_detected": [],
+  "interpretation": "The earlier external GPU compute process is no longer present, but storage, scheduler queue, monitoring, quota, and topology gates remain closed. This read-only refresh is not a training result."
+}

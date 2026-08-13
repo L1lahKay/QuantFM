@@ -1,0 +1,2583 @@
+[
+  {
+    "run_id": "not-run-lgb-single-cpu-k8s",
+    "scenario_id": "lgb-single-cpu",
+    "model": "LGB",
+    "scheduler": "K8s",
+    "pod_mode": "Single Pod",
+    "gpu_number": 0,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — The CPU runner path exists, but no observed digest-pinned internal LightGBM image has passed the in-container CPU training smoke; storage approval is also still blocked.; N/A: not executed — quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; LightGBM CPU runner path exists, but its internal image is not observed-digest-pinned and CPU-smoke-verified",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-lgb-single-cpu-kueue",
+    "scenario_id": "lgb-single-cpu",
+    "model": "LGB",
+    "scheduler": "Kueue",
+    "pod_mode": "Single Pod",
+    "gpu_number": 0,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — The CPU runner path exists, but no observed digest-pinned internal LightGBM image has passed the in-container CPU training smoke; storage approval is also still blocked.; N/A: not executed — quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; LightGBM CPU runner path exists, but its internal image is not observed-digest-pinned and CPU-smoke-verified; gpu-dev has no authorized LocalQueue; the prior one-time Kueue exception ended; new bounded authorization is absent",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-lgb-single-cpu-volcano",
+    "scenario_id": "lgb-single-cpu",
+    "model": "LGB",
+    "scheduler": "Volcano",
+    "pod_mode": "Single Pod",
+    "gpu_number": 0,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — The CPU runner path exists, but no observed digest-pinned internal LightGBM image has passed the in-container CPU training smoke; storage approval is also still blocked.; N/A: not executed — quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; LightGBM CPU runner path exists, but its internal image is not observed-digest-pinned and CPU-smoke-verified; Volcano Queue khalil-volcano-smoke is absent/not open; new PodGroup/Queue use lacks the dedicated admin and active maintenance authorization",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-lgb-single-gpu1-k8s",
+    "scenario_id": "lgb-single-gpu1",
+    "model": "LGB",
+    "scheduler": "K8s",
+    "pod_mode": "Single Pod",
+    "gpu_number": 1,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — No digest-pinned LightGBM build has passed an in-container device_type=cuda smoke; wheel provenance alone does not establish the requested CUDA backend, so this GPU cell remains blocked.; N/A: not executed — quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; current LightGBM candidate has no recorded device_type=cuda smoke; the target CUDA cell requires a separately verified CUDA build and immutable image digest",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-lgb-single-gpu1-kueue",
+    "scenario_id": "lgb-single-gpu1",
+    "model": "LGB",
+    "scheduler": "Kueue",
+    "pod_mode": "Single Pod",
+    "gpu_number": 1,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — No digest-pinned LightGBM build has passed an in-container device_type=cuda smoke; wheel provenance alone does not establish the requested CUDA backend, so this GPU cell remains blocked.; N/A: not executed — quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; current LightGBM candidate has no recorded device_type=cuda smoke; the target CUDA cell requires a separately verified CUDA build and immutable image digest; gpu-dev has no authorized LocalQueue; the prior one-time Kueue exception ended; new bounded authorization is absent",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-lgb-single-gpu1-volcano",
+    "scenario_id": "lgb-single-gpu1",
+    "model": "LGB",
+    "scheduler": "Volcano",
+    "pod_mode": "Single Pod",
+    "gpu_number": 1,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — No digest-pinned LightGBM build has passed an in-container device_type=cuda smoke; wheel provenance alone does not establish the requested CUDA backend, so this GPU cell remains blocked.; N/A: not executed — quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; current LightGBM candidate has no recorded device_type=cuda smoke; the target CUDA cell requires a separately verified CUDA build and immutable image digest; Volcano Queue khalil-volcano-smoke is absent/not open; new PodGroup/Queue use lacks the dedicated admin and active maintenance authorization",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-k8s-9400c4-nn-single-o01cb4a0a-c001-r01",
+    "model": "NN",
+    "scheduler": "K8s",
+    "pod_mode": "Single Pod",
+    "gpu_number": 1,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {
+          "gpu-quota/requests.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          },
+          "gpu-quota/limits.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          }
+        },
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-single-gpu1",
+    "matrix_storage_mode": "synthetic_ephemeral",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":1,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":4096,\"pod_mode\":\"single\",\"replicas\":1,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-9400c4-nn-single-o01cb4a0a-c001-r01",
+    "execution_stage": "server-dry-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-k8s-9400c4-nn-single-o1fe23f08-c001-r01",
+    "model": "NN",
+    "scheduler": "K8s",
+    "pod_mode": "Single Pod",
+    "gpu_number": 1,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {
+          "gpu-quota/requests.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          },
+          "gpu-quota/limits.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          }
+        },
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-single-gpu1",
+    "matrix_storage_mode": "synthetic_ephemeral",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":1,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":4096,\"pod_mode\":\"single\",\"replicas\":1,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-9400c4-nn-single-o1fe23f08-c001-r01",
+    "execution_stage": "server-dry-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-k8s-9400c4-nn-single-o5f927c39-c010-r02",
+    "model": "NN",
+    "scheduler": "K8s",
+    "pod_mode": "Single Pod",
+    "gpu_number": 1,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "runner blocked: unrelated Running GPU requests exist; refusing benchmark submission: gpu-dev/khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-0-fxv9l=1, gpu-dev/khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-1-t6qsz=1, gpu-dev/khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-2-29sk8=1, gpu-dev/khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-3-bnwr8=1; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {},
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-single-gpu1",
+    "matrix_storage_mode": "synthetic_ephemeral",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":1,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":4096,\"pod_mode\":\"single\",\"replicas\":1,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-9400c4-nn-single-o5f927c39-c010-r02",
+    "execution_stage": "readiness-only",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-k8s-9400c4-nn-single-o5f927c39-c011-r03",
+    "model": "NN",
+    "scheduler": "K8s",
+    "pod_mode": "Single Pod",
+    "gpu_number": 1,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "runner blocked: unrelated Running GPU requests exist; refusing benchmark submission: gpu-dev/khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-0-fxv9l=1, gpu-dev/khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-1-t6qsz=1, gpu-dev/khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-2-29sk8=1, gpu-dev/khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-3-bnwr8=1; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {},
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-single-gpu1",
+    "matrix_storage_mode": "synthetic_ephemeral",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":1,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":4096,\"pod_mode\":\"single\",\"replicas\":1,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-9400c4-nn-single-o5f927c39-c011-r03",
+    "execution_stage": "readiness-only",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-k8s-9400c4-nn-single-odb88644d-c004-r01",
+    "model": "NN",
+    "scheduler": "K8s",
+    "pod_mode": "Single Pod",
+    "gpu_number": 1,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "runner blocked: identity lacks required create/evidence/cleanup permissions: create jobs.batch scope=gpu-dev, get jobs.batch scope=gpu-dev, delete jobs.batch scope=gpu-dev, get pods scope=gpu-dev, list pods scope=gpu-dev, get pods/log scope=gpu-dev, list events scope=gpu-dev, list resourcequotas scope=gpu-dev, list pods scope=all-namespaces; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {},
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-single-gpu1",
+    "matrix_storage_mode": "",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":1,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":4096,\"pod_mode\":\"single\",\"replicas\":1,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-9400c4-nn-single-odb88644d-c004-r01",
+    "execution_stage": "readiness-only",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-k8s-9400c4-nn-single-odbd326a1-c004-r01",
+    "model": "NN",
+    "scheduler": "K8s",
+    "pod_mode": "Single Pod",
+    "gpu_number": 1,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "runner execution blocker: host nvidia-smi reports active compute processes; refusing to kill, preempt, or overlap them; runner execution blocker: training storage gate is closed: The exact claim gpu-dev/quantfm-data is local-path storage and /data resolves to the same /dev/mapper/ubuntu--vg-ubuntu--lv filesystem as /; it is root-disk-backed and therefore ineligible for training even with an approval marker.; runner execution blocker: training storage hard block: the configured PVC is not backed by a verified non-root-disk filesystem; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {
+          "gpu-quota/requests.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          },
+          "gpu-quota/limits.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          }
+        },
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-single-gpu1",
+    "matrix_storage_mode": "",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":1,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":4096,\"pod_mode\":\"single\",\"replicas\":1,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-9400c4-nn-single-odbd326a1-c004-r01",
+    "execution_stage": "server-dry-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-nn-single-gpu1-k8s-20260803023025-2d6820",
+    "model": "NN",
+    "scheduler": "K8s",
+    "pod_mode": "Single Pod",
+    "gpu_number": 1,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": null,
+    "status": "blocked",
+    "reason": "runner execution blocker: host nvidia-smi reports active compute processes; refusing to kill, preempt, or overlap them; runner execution blocker: training storage gate is closed: The exact claim gpu-dev/quantfm-data is local-path storage and /data resolves to the same /dev/mapper/ubuntu--vg-ubuntu--lv filesystem as /; it is root-disk-backed and therefore ineligible for training even with an approval marker.; runner execution blocker: training storage hard block: the configured PVC is not backed by a verified non-root-disk filesystem; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {
+          "gpu-quota/requests.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          },
+          "gpu-quota/limits.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          }
+        },
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-single-gpu1",
+    "matrix_storage_mode": "",
+    "normalized_config_json": null,
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-nn-single-gpu1-k8s-20260803023025-2d6820",
+    "execution_stage": "server-dry-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-kueue-9400c4-nn-sing-odb88644d-c005-r01",
+    "model": "NN",
+    "scheduler": "Kueue",
+    "pod_mode": "Single Pod",
+    "gpu_number": 1,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "runner blocked: identity lacks required create/evidence/cleanup permissions: create jobs.batch scope=gpu-dev, get jobs.batch scope=gpu-dev, delete jobs.batch scope=gpu-dev, get pods scope=gpu-dev, list pods scope=gpu-dev, get pods/log scope=gpu-dev, list events scope=gpu-dev, list resourcequotas scope=gpu-dev, list pods scope=all-namespaces, get localqueues.kueue.x-k8s.io scope=gpu-dev, get clusterqueues.kueue.x-k8s.io scope=cluster, get workloads.kueue.x-k8s.io scope=gpu-dev, list workloads.kueue.x-k8s.io scope=gpu-dev; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing; Kueue run lacks a Job-UID-owned Workload with QuotaReserved=True and Admitted=True",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {},
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-single-gpu1",
+    "matrix_storage_mode": "",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":1,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":4096,\"pod_mode\":\"single\",\"replicas\":1,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-kueue-9400c4-nn-sing-odb88644d-c005-r01",
+    "execution_stage": "readiness-only",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-kueue-9400c4-nn-sing-odbd326a1-c005-r01",
+    "model": "NN",
+    "scheduler": "Kueue",
+    "pod_mode": "Single Pod",
+    "gpu_number": 1,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "runner execution blocker: host nvidia-smi reports active compute processes; refusing to kill, preempt, or overlap them; runner execution blocker: training storage gate is closed: The exact claim gpu-dev/quantfm-data is local-path storage and /data resolves to the same /dev/mapper/ubuntu--vg-ubuntu--lv filesystem as /; it is root-disk-backed and therefore ineligible for training even with an approval marker.; runner execution blocker: training storage hard block: the configured PVC is not backed by a verified non-root-disk filesystem; runner execution blocker: Kueue execution is blocked: the previous one-time exception has ended; The 2026-07-31 one-time exceptions have ended. gpu-dev currently has no LocalQueue, the dedicated Volcano administrator kubeconfig is absent, and a new bounded AGENTS.md authorization plus active maintenance window are required before execution.; runner execution blocker: required Kueue LocalQueue gpu-dev/khalil-kueue-eval is absent or unreadable: kubectl get localqueue.kueue.x-k8s.io khalil-kueue-eval -o failed: Error from server (NotFound): localqueues.kueue.x-k8s.io \"khalil-kueue-eval\" not found; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing; Kueue run lacks a Job-UID-owned Workload with QuotaReserved=True and Admitted=True",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {
+          "gpu-quota/requests.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          },
+          "gpu-quota/limits.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          }
+        },
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-single-gpu1",
+    "matrix_storage_mode": "",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":1,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":4096,\"pod_mode\":\"single\",\"replicas\":1,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-kueue-9400c4-nn-sing-odbd326a1-c005-r01",
+    "execution_stage": "server-dry-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-nn-single-gpu1-kueue-20260803023048-e6f40d",
+    "model": "NN",
+    "scheduler": "Kueue",
+    "pod_mode": "Single Pod",
+    "gpu_number": 1,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": null,
+    "status": "blocked",
+    "reason": "runner execution blocker: host nvidia-smi reports active compute processes; refusing to kill, preempt, or overlap them; runner execution blocker: training storage gate is closed: The exact claim gpu-dev/quantfm-data is local-path storage and /data resolves to the same /dev/mapper/ubuntu--vg-ubuntu--lv filesystem as /; it is root-disk-backed and therefore ineligible for training even with an approval marker.; runner execution blocker: training storage hard block: the configured PVC is not backed by a verified non-root-disk filesystem; runner execution blocker: Kueue execution is blocked: the previous one-time exception has ended; The 2026-07-31 one-time exceptions have ended. gpu-dev currently has no LocalQueue, the dedicated Volcano administrator kubeconfig is absent, and a new bounded AGENTS.md authorization plus active maintenance window are required before execution.; runner execution blocker: required Kueue LocalQueue gpu-dev/khalil-kueue-eval is absent or unreadable: kubectl get localqueue.kueue.x-k8s.io khalil-kueue-eval -o failed: Error from server (NotFound): localqueues.kueue.x-k8s.io \"khalil-kueue-eval\" not found; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing; Kueue run lacks a Job-UID-owned Workload with QuotaReserved=True and Admitted=True",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {
+          "gpu-quota/requests.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          },
+          "gpu-quota/limits.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          }
+        },
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-single-gpu1",
+    "matrix_storage_mode": "",
+    "normalized_config_json": null,
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-nn-single-gpu1-kueue-20260803023048-e6f40d",
+    "execution_stage": "server-dry-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-nn-single-gpu1-volca-20260803023109-5edfcc",
+    "model": "NN",
+    "scheduler": "Volcano",
+    "pod_mode": "Single Pod",
+    "gpu_number": 1,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": null,
+    "status": "blocked",
+    "reason": "runner execution blocker: server-side dry-run failed: Error from server: error when creating \"STDIN\": admission webhook \"validatepodgroup.volcano.sh\" denied the request: unable to find queue: queue.scheduling.volcano.sh \"khalil-volcano-smoke\" not found; runner execution blocker: host nvidia-smi reports active compute processes; refusing to kill, preempt, or overlap them; runner execution blocker: training storage gate is closed: The exact claim gpu-dev/quantfm-data is local-path storage and /data resolves to the same /dev/mapper/ubuntu--vg-ubuntu--lv filesystem as /; it is root-disk-backed and therefore ineligible for training even with an approval marker.; runner execution blocker: training storage hard block: the configured PVC is not backed by a verified non-root-disk filesystem; runner execution blocker: Volcano execution is blocked: the dedicated administrator kubeconfig/active exception is not available for this run; The 2026-07-31 one-time exceptions have ended. gpu-dev currently has no LocalQueue, the dedicated Volcano administrator kubeconfig is absent, and a new bounded AGENTS.md authorization plus active maintenance window are required before execution.; runner execution blocker: required Volcano Queue is absent or unreadable: kubectl get queue.scheduling.volcano.sh khalil-volcano-smoke -o failed: Error from server (NotFound): queues.scheduling.volcano.sh \"khalil-volcano-smoke\" not found; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal volcano; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing; Volcano run lacks a captured Running PodGroup matched by Pod annotation and metadata.created_uids.podgroup",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "volcano",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {
+          "gpu-quota/requests.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          },
+          "gpu-quota/limits.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          }
+        },
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-single-gpu1",
+    "matrix_storage_mode": "",
+    "normalized_config_json": null,
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-nn-single-gpu1-volca-20260803023109-5edfcc",
+    "execution_stage": "server-dry-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-volcano-9400c4-nn-si-odb88644d-c006-r01",
+    "model": "NN",
+    "scheduler": "Volcano",
+    "pod_mode": "Single Pod",
+    "gpu_number": 1,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "runner blocked: identity lacks required create/evidence/cleanup permissions: create jobs.batch scope=gpu-dev, get jobs.batch scope=gpu-dev, delete jobs.batch scope=gpu-dev, get pods scope=gpu-dev, list pods scope=gpu-dev, get pods/log scope=gpu-dev, list events scope=gpu-dev, list resourcequotas scope=gpu-dev, list pods scope=all-namespaces, create podgroups.scheduling.volcano.sh scope=gpu-dev, get podgroups.scheduling.volcano.sh scope=gpu-dev, delete podgroups.scheduling.volcano.sh scope=gpu-dev, get queues.scheduling.volcano.sh scope=cluster; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal volcano; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing; Volcano run lacks a captured Running PodGroup matched by Pod annotation and metadata.created_uids.podgroup",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "volcano",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {},
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-single-gpu1",
+    "matrix_storage_mode": "",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":1,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":4096,\"pod_mode\":\"single\",\"replicas\":1,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-volcano-9400c4-nn-si-odb88644d-c006-r01",
+    "execution_stage": "readiness-only",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-volcano-9400c4-nn-si-odbd326a1-c006-r01",
+    "model": "NN",
+    "scheduler": "Volcano",
+    "pod_mode": "Single Pod",
+    "gpu_number": 1,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "runner execution blocker: server-side dry-run failed: Error from server: error when creating \"STDIN\": admission webhook \"validatepodgroup.volcano.sh\" denied the request: unable to find queue: queue.scheduling.volcano.sh \"khalil-volcano-smoke\" not found; runner execution blocker: host nvidia-smi reports active compute processes; refusing to kill, preempt, or overlap them; runner execution blocker: training storage gate is closed: The exact claim gpu-dev/quantfm-data is local-path storage and /data resolves to the same /dev/mapper/ubuntu--vg-ubuntu--lv filesystem as /; it is root-disk-backed and therefore ineligible for training even with an approval marker.; runner execution blocker: training storage hard block: the configured PVC is not backed by a verified non-root-disk filesystem; runner execution blocker: Volcano execution is blocked: the dedicated administrator kubeconfig/active exception is not available for this run; The 2026-07-31 one-time exceptions have ended. gpu-dev currently has no LocalQueue, the dedicated Volcano administrator kubeconfig is absent, and a new bounded AGENTS.md authorization plus active maintenance window are required before execution.; runner execution blocker: required Volcano Queue is absent or unreadable: kubectl get queue.scheduling.volcano.sh khalil-volcano-smoke -o failed: Error from server (NotFound): queues.scheduling.volcano.sh \"khalil-volcano-smoke\" not found; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal volcano; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing; Volcano run lacks a captured Running PodGroup matched by Pod annotation and metadata.created_uids.podgroup",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "volcano",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {
+          "gpu-quota/requests.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          },
+          "gpu-quota/limits.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          }
+        },
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-single-gpu1",
+    "matrix_storage_mode": "",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":1,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":4096,\"pod_mode\":\"single\",\"replicas\":1,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-volcano-9400c4-nn-si-odbd326a1-c006-r01",
+    "execution_stage": "server-dry-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-k8s-1049ae-nn-multip-o01cb4a0a-c002-r01",
+    "model": "NN",
+    "scheduler": "K8s",
+    "pod_mode": "Multi Pod",
+    "gpu_number": 4,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {
+          "gpu-quota/requests.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          },
+          "gpu-quota/limits.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          }
+        },
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-multipod-gpu4",
+    "matrix_storage_mode": "synthetic_ephemeral",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":4,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":1024,\"pod_mode\":\"multi\",\"replicas\":4,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-1049ae-nn-multip-o01cb4a0a-c002-r01",
+    "execution_stage": "server-dry-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-k8s-1049ae-nn-multip-o1fe23f08-c002-r01",
+    "model": "NN",
+    "scheduler": "K8s",
+    "pod_mode": "Multi Pod",
+    "gpu_number": 4,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {
+          "gpu-quota/requests.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          },
+          "gpu-quota/limits.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          }
+        },
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-multipod-gpu4",
+    "matrix_storage_mode": "synthetic_ephemeral",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":4,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":1024,\"pod_mode\":\"multi\",\"replicas\":4,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-1049ae-nn-multip-o1fe23f08-c002-r01",
+    "execution_stage": "server-dry-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-k8s-1049ae-nn-multip-o5f927c39-c009-r01",
+    "model": "NN",
+    "scheduler": "K8s",
+    "pod_mode": "Multi Pod",
+    "gpu_number": 4,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "runner blocked: unrelated Running GPU requests exist; refusing benchmark submission: gpu-dev/khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-0-fxv9l=1, gpu-dev/khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-1-t6qsz=1, gpu-dev/khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-2-29sk8=1, gpu-dev/khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-3-bnwr8=1; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {},
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-multipod-gpu4",
+    "matrix_storage_mode": "synthetic_ephemeral",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":4,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":1024,\"pod_mode\":\"multi\",\"replicas\":4,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-1049ae-nn-multip-o5f927c39-c009-r01",
+    "execution_stage": "readiness-only",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-k8s-1049ae-nn-multip-odb88644d-c007-r01",
+    "model": "NN",
+    "scheduler": "K8s",
+    "pod_mode": "Multi Pod",
+    "gpu_number": 4,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "runner blocked: identity lacks required create/evidence/cleanup permissions: create jobs.batch scope=gpu-dev, get jobs.batch scope=gpu-dev, delete jobs.batch scope=gpu-dev, get pods scope=gpu-dev, list pods scope=gpu-dev, get pods/log scope=gpu-dev, list events scope=gpu-dev, list resourcequotas scope=gpu-dev, list pods scope=all-namespaces, create services scope=gpu-dev, get services scope=gpu-dev, delete services scope=gpu-dev; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {},
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-multipod-gpu4",
+    "matrix_storage_mode": "",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":4,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":1024,\"pod_mode\":\"multi\",\"replicas\":4,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-1049ae-nn-multip-odb88644d-c007-r01",
+    "execution_stage": "readiness-only",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-k8s-1049ae-nn-multip-odbd326a1-c007-r01",
+    "model": "NN",
+    "scheduler": "K8s",
+    "pod_mode": "Multi Pod",
+    "gpu_number": 4,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "runner execution blocker: host nvidia-smi reports active compute processes; refusing to kill, preempt, or overlap them; runner execution blocker: training storage gate is closed: The exact claim gpu-dev/quantfm-data is local-path storage and /data resolves to the same /dev/mapper/ubuntu--vg-ubuntu--lv filesystem as /; it is root-disk-backed and therefore ineligible for training even with an approval marker.; runner execution blocker: training storage hard block: the configured PVC is not backed by a verified non-root-disk filesystem; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {
+          "gpu-quota/requests.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          },
+          "gpu-quota/limits.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          }
+        },
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-multipod-gpu4",
+    "matrix_storage_mode": "",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":4,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":1024,\"pod_mode\":\"multi\",\"replicas\":4,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-1049ae-nn-multip-odbd326a1-c007-r01",
+    "execution_stage": "server-dry-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-kueue-1049ae-nn-mult-odb88644d-c008-r01",
+    "model": "NN",
+    "scheduler": "Kueue",
+    "pod_mode": "Multi Pod",
+    "gpu_number": 4,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "runner blocked: identity lacks required create/evidence/cleanup permissions: create jobs.batch scope=gpu-dev, get jobs.batch scope=gpu-dev, delete jobs.batch scope=gpu-dev, get pods scope=gpu-dev, list pods scope=gpu-dev, get pods/log scope=gpu-dev, list events scope=gpu-dev, list resourcequotas scope=gpu-dev, list pods scope=all-namespaces, create services scope=gpu-dev, get services scope=gpu-dev, delete services scope=gpu-dev, get localqueues.kueue.x-k8s.io scope=gpu-dev, get clusterqueues.kueue.x-k8s.io scope=cluster, get workloads.kueue.x-k8s.io scope=gpu-dev, list workloads.kueue.x-k8s.io scope=gpu-dev; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing; Kueue run lacks a Job-UID-owned Workload with QuotaReserved=True and Admitted=True",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {},
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-multipod-gpu4",
+    "matrix_storage_mode": "",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":4,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":1024,\"pod_mode\":\"multi\",\"replicas\":4,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-kueue-1049ae-nn-mult-odb88644d-c008-r01",
+    "execution_stage": "readiness-only",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-kueue-1049ae-nn-mult-odbd326a1-c008-r01",
+    "model": "NN",
+    "scheduler": "Kueue",
+    "pod_mode": "Multi Pod",
+    "gpu_number": 4,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "runner execution blocker: host nvidia-smi reports active compute processes; refusing to kill, preempt, or overlap them; runner execution blocker: training storage gate is closed: The exact claim gpu-dev/quantfm-data is local-path storage and /data resolves to the same /dev/mapper/ubuntu--vg-ubuntu--lv filesystem as /; it is root-disk-backed and therefore ineligible for training even with an approval marker.; runner execution blocker: training storage hard block: the configured PVC is not backed by a verified non-root-disk filesystem; runner execution blocker: Kueue execution is blocked: the previous one-time exception has ended; The 2026-07-31 one-time exceptions have ended. gpu-dev currently has no LocalQueue, the dedicated Volcano administrator kubeconfig is absent, and a new bounded AGENTS.md authorization plus active maintenance window are required before execution.; runner execution blocker: required Kueue LocalQueue gpu-dev/khalil-kueue-eval is absent or unreadable: kubectl get localqueue.kueue.x-k8s.io khalil-kueue-eval -o failed: Error from server (NotFound): localqueues.kueue.x-k8s.io \"khalil-kueue-eval\" not found; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal default-scheduler; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing; Kueue run lacks a Job-UID-owned Workload with QuotaReserved=True and Admitted=True",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "default-scheduler",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {
+          "gpu-quota/requests.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          },
+          "gpu-quota/limits.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          }
+        },
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-multipod-gpu4",
+    "matrix_storage_mode": "",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":4,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":1024,\"pod_mode\":\"multi\",\"replicas\":4,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-kueue-1049ae-nn-mult-odbd326a1-c008-r01",
+    "execution_stage": "server-dry-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-volcano-1049ae-nn-mu-odb88644d-c009-r01",
+    "model": "NN",
+    "scheduler": "Volcano",
+    "pod_mode": "Multi Pod",
+    "gpu_number": 4,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "runner blocked: identity lacks required create/evidence/cleanup permissions: create jobs.batch scope=gpu-dev, get jobs.batch scope=gpu-dev, delete jobs.batch scope=gpu-dev, get pods scope=gpu-dev, list pods scope=gpu-dev, get pods/log scope=gpu-dev, list events scope=gpu-dev, list resourcequotas scope=gpu-dev, list pods scope=all-namespaces, create services scope=gpu-dev, get services scope=gpu-dev, delete services scope=gpu-dev, create podgroups.scheduling.volcano.sh scope=gpu-dev, get podgroups.scheduling.volcano.sh scope=gpu-dev, delete podgroups.scheduling.volcano.sh scope=gpu-dev, get queues.scheduling.volcano.sh scope=cluster; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal volcano; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing; Volcano run lacks a captured Running PodGroup matched by Pod annotation and metadata.created_uids.podgroup",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "volcano",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {},
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-multipod-gpu4",
+    "matrix_storage_mode": "",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":4,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":1024,\"pod_mode\":\"multi\",\"replicas\":4,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-volcano-1049ae-nn-mu-odb88644d-c009-r01",
+    "execution_stage": "readiness-only",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "khalil-bm-volcano-1049ae-nn-mu-odbd326a1-c009-r01",
+    "model": "NN",
+    "scheduler": "Volcano",
+    "pod_mode": "Multi Pod",
+    "gpu_number": 4,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "throughput_unit": null,
+    "image_identity": null,
+    "scaling_fingerprint": "sha256:cf1fc00c5e94353f51f4ba84cf386b019b40bcd55ad8da8cdbaf2002efd032f2",
+    "status": "blocked",
+    "reason": "runner execution blocker: server-side dry-run failed: Error from server: error when creating \"STDIN\": admission webhook \"validatepodgroup.volcano.sh\" denied the request: unable to find queue: queue.scheduling.volcano.sh \"khalil-volcano-smoke\" not found; runner execution blocker: host nvidia-smi reports active compute processes; refusing to kill, preempt, or overlap them; runner execution blocker: training storage gate is closed: The exact claim gpu-dev/quantfm-data is local-path storage and /data resolves to the same /dev/mapper/ubuntu--vg-ubuntu--lv filesystem as /; it is root-disk-backed and therefore ineligible for training even with an approval marker.; runner execution blocker: training storage hard block: the configured PVC is not backed by a verified non-root-disk filesystem; runner execution blocker: Volcano execution is blocked: the dedicated administrator kubeconfig/active exception is not available for this run; The 2026-07-31 one-time exceptions have ended. gpu-dev currently has no LocalQueue, the dedicated Volcano administrator kubeconfig is absent, and a new bounded AGENTS.md authorization plus active maintenance window are required before execution.; runner execution blocker: required Volcano Queue is absent or unreadable: kubectl get queue.scheduling.volcano.sh khalil-volcano-smoke -o failed: Error from server (NotFound): queues.scheduling.volcano.sh \"khalil-volcano-smoke\" not found; expected exactly one captured Job, found 0; complete UID-linked Pod scheduling evidence is missing; UID-owned Pod spec.schedulerName does not consistently equal volcano; UID-filtered Scheduled Event reporter does not prove the expected scheduler performed binding; Job Complete condition/completionTime is missing; BENCHMARK_RESULT_JSON training duration is missing; unambiguous BENCHMARK_RESULT_JSON throughput is missing; GPU utilization samples/summary are missing; Volcano run lacks a captured Running PodGroup matched by Pod annotation and metadata.created_uids.podgroup",
+    "timestamps": {
+      "client_submission": null,
+      "job_created": null,
+      "first_pod_scheduled": null,
+      "last_pod_scheduled": null,
+      "first_container_started": null,
+      "last_container_finished": null,
+      "job_completed": null
+    },
+    "derived": {
+      "api_create_latency_seconds": null,
+      "pod_binding_spread_seconds": null,
+      "container_runtime_envelope_seconds": null,
+      "queue_time_definition": "client submission to last expected Pod scheduled",
+      "wall_clock_definition": "client submission to Job API completionTime",
+      "scheduling_timestamp_source": "UID-filtered Scheduled Events"
+    },
+    "evidence": {
+      "job_uid": null,
+      "pod_uids": [],
+      "expected_pods": null,
+      "captured_pods": 0,
+      "scheduled_pods": 0,
+      "uid_filtered_event_count": 0,
+      "expected_pod_scheduler": "volcano",
+      "pod_scheduler_names": {},
+      "pod_scheduler_binding_valid": false,
+      "scheduled_event_components": {},
+      "scheduled_event_reporter_valid": false,
+      "training_marker_count": 0,
+      "captured_training_marker_count": 0,
+      "training_record_identity_valid": false,
+      "training_aggregation": {
+        "record_count": 0,
+        "method": null
+      },
+      "target_comparable": true,
+      "workload_device": null,
+      "admission": {
+        "workloads": [],
+        "podgroups": [],
+        "expected_podgroup_uid": null,
+        "kueue_admitted": false,
+        "volcano_podgroup_running": false
+      },
+      "cleanup": {
+        "cleanup_status": "not-required-no-mutation",
+        "status_verified": false,
+        "exact_created_objects_absent": null,
+        "owner_uid_dependants_absent": null,
+        "gpu_quota_restored": null,
+        "gpu_quota_before": {
+          "gpu-quota/requests.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          },
+          "gpu-quota/limits.nvidia.com/gpu": {
+            "hard": 4,
+            "used": 0
+          }
+        },
+        "gpu_quota_after": {},
+        "verified": false,
+        "explicit_failure": false
+      }
+    },
+    "gpu_metrics": {
+      "sample_count": 0,
+      "summary_record_count": 0,
+      "gpu_utilization": null,
+      "memory_usage_mib_average": null,
+      "memory_usage_mib_max": null,
+      "power_watts_average": null,
+      "samples": [],
+      "aggregation": "arithmetic mean across captured device samples"
+    },
+    "training_records": [],
+    "scenario_id": "nn-multipod-gpu4",
+    "matrix_storage_mode": "",
+    "normalized_config_json": "{\"architecture\":\"mlp\",\"global_batch_size\":4096,\"gpu_number\":4,\"gpus_per_pod\":1,\"hidden_layers\":[1024,1024,512],\"input_features\":100,\"model\":\"nn\",\"optimizer_steps\":80,\"per_rank_batch_size\":1024,\"pod_mode\":\"multi\",\"replicas\":4,\"warmup_steps\":10}",
+    "evidence_dir": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-volcano-1049ae-nn-mu-odbd326a1-c009-r01",
+    "execution_stage": "server-dry-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-transformer-single-gpu8-k8s",
+    "scenario_id": "transformer-single-gpu8",
+    "model": "Transformer",
+    "scheduler": "K8s",
+    "pod_mode": "Single Pod",
+    "gpu_number": 8,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — Requires eight GPUs but gpu-dev has a hard four-GPU quota and the runner refuses requests above four.; N/A: not executed — requires 8 GPUs but gpu-dev quota hard=4 and runner safety max=4; quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-transformer-single-gpu8-kueue",
+    "scenario_id": "transformer-single-gpu8",
+    "model": "Transformer",
+    "scheduler": "Kueue",
+    "pod_mode": "Single Pod",
+    "gpu_number": 8,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — Requires eight GPUs but gpu-dev has a hard four-GPU quota and the runner refuses requests above four.; N/A: not executed — requires 8 GPUs but gpu-dev quota hard=4 and runner safety max=4; quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; gpu-dev has no authorized LocalQueue; the prior one-time Kueue exception ended; new bounded authorization is absent",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-transformer-single-gpu8-volcano",
+    "scenario_id": "transformer-single-gpu8",
+    "model": "Transformer",
+    "scheduler": "Volcano",
+    "pod_mode": "Single Pod",
+    "gpu_number": 8,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — Requires eight GPUs but gpu-dev has a hard four-GPU quota and the runner refuses requests above four.; N/A: not executed — requires 8 GPUs but gpu-dev quota hard=4 and runner safety max=4; quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; Volcano Queue khalil-volcano-smoke is absent/not open; new PodGroup/Queue use lacks the dedicated admin and active maintenance authorization",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-transformer-multipod-gpu8-k8s",
+    "scenario_id": "transformer-multipod-gpu8",
+    "model": "Transformer",
+    "scheduler": "K8s",
+    "pod_mode": "Multi Pod",
+    "gpu_number": 8,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — Requires eight GPUs but gpu-dev has a hard four-GPU quota and the runner refuses requests above four.; N/A: not executed — requires 8 GPUs but gpu-dev quota hard=4 and runner safety max=4; quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-transformer-multipod-gpu8-kueue",
+    "scenario_id": "transformer-multipod-gpu8",
+    "model": "Transformer",
+    "scheduler": "Kueue",
+    "pod_mode": "Multi Pod",
+    "gpu_number": 8,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — Requires eight GPUs but gpu-dev has a hard four-GPU quota and the runner refuses requests above four.; N/A: not executed — requires 8 GPUs but gpu-dev quota hard=4 and runner safety max=4; quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; gpu-dev has no authorized LocalQueue; the prior one-time Kueue exception ended; new bounded authorization is absent",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-transformer-multipod-gpu8-volcano",
+    "scenario_id": "transformer-multipod-gpu8",
+    "model": "Transformer",
+    "scheduler": "Volcano",
+    "pod_mode": "Multi Pod",
+    "gpu_number": 8,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — Requires eight GPUs but gpu-dev has a hard four-GPU quota and the runner refuses requests above four.; N/A: not executed — requires 8 GPUs but gpu-dev quota hard=4 and runner safety max=4; quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; Volcano Queue khalil-volcano-smoke is absent/not open; new PodGroup/Queue use lacks the dedicated admin and active maintenance authorization",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-production-contention-a-transformer8-k8s",
+    "scenario_id": "production-contention-a-transformer8",
+    "model": "Transformer",
+    "scheduler": "K8s",
+    "pod_mode": "Multi Pod",
+    "gpu_number": 8,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — The requested concurrent 8+2 GPU pressure test exceeds both the four-GPU namespace quota and the runner safety ceiling.; N/A: not executed — requires 8 GPUs but gpu-dev quota hard=4 and runner safety max=4; quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-production-contention-a-transformer8-kueue",
+    "scenario_id": "production-contention-a-transformer8",
+    "model": "Transformer",
+    "scheduler": "Kueue",
+    "pod_mode": "Multi Pod",
+    "gpu_number": 8,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — The requested concurrent 8+2 GPU pressure test exceeds both the four-GPU namespace quota and the runner safety ceiling.; N/A: not executed — requires 8 GPUs but gpu-dev quota hard=4 and runner safety max=4; quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; gpu-dev has no authorized LocalQueue; the prior one-time Kueue exception ended; new bounded authorization is absent",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-production-contention-a-transformer8-volcano",
+    "scenario_id": "production-contention-a-transformer8",
+    "model": "Transformer",
+    "scheduler": "Volcano",
+    "pod_mode": "Multi Pod",
+    "gpu_number": 8,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — The requested concurrent 8+2 GPU pressure test exceeds both the four-GPU namespace quota and the runner safety ceiling.; N/A: not executed — requires 8 GPUs but gpu-dev quota hard=4 and runner safety max=4; quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; Volcano Queue khalil-volcano-smoke is absent/not open; new PodGroup/Queue use lacks the dedicated admin and active maintenance authorization",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-production-contention-b-nn2-k8s",
+    "scenario_id": "production-contention-b-nn2",
+    "model": "NN",
+    "scheduler": "K8s",
+    "pod_mode": "Single Pod",
+    "gpu_number": 2,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — This row is part of the requested concurrent A(8 GPU)+B(2 GPU)+C(CPU) pressure group, whose aggregate GPU demand is unsafe under the four-GPU quota.; N/A: not executed — quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-production-contention-b-nn2-kueue",
+    "scenario_id": "production-contention-b-nn2",
+    "model": "NN",
+    "scheduler": "Kueue",
+    "pod_mode": "Single Pod",
+    "gpu_number": 2,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — This row is part of the requested concurrent A(8 GPU)+B(2 GPU)+C(CPU) pressure group, whose aggregate GPU demand is unsafe under the four-GPU quota.; N/A: not executed — quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; gpu-dev has no authorized LocalQueue; the prior one-time Kueue exception ended; new bounded authorization is absent",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-production-contention-b-nn2-volcano",
+    "scenario_id": "production-contention-b-nn2",
+    "model": "NN",
+    "scheduler": "Volcano",
+    "pod_mode": "Single Pod",
+    "gpu_number": 2,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — This row is part of the requested concurrent A(8 GPU)+B(2 GPU)+C(CPU) pressure group, whose aggregate GPU demand is unsafe under the four-GPU quota.; N/A: not executed — quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; Volcano Queue khalil-volcano-smoke is absent/not open; new PodGroup/Queue use lacks the dedicated admin and active maintenance authorization",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-production-contention-c-lgb-cpu-k8s",
+    "scenario_id": "production-contention-c-lgb-cpu",
+    "model": "LGB",
+    "scheduler": "K8s",
+    "pod_mode": "Single Pod",
+    "gpu_number": 0,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — CPU-only pressure Jobs need a separate bounded policy and this row belongs to the unsafe 8+2 GPU concurrent pressure group.; N/A: not executed — quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; LightGBM CPU runner path exists, but its internal image is not observed-digest-pinned and CPU-smoke-verified",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-production-contention-c-lgb-cpu-kueue",
+    "scenario_id": "production-contention-c-lgb-cpu",
+    "model": "LGB",
+    "scheduler": "Kueue",
+    "pod_mode": "Single Pod",
+    "gpu_number": 0,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — CPU-only pressure Jobs need a separate bounded policy and this row belongs to the unsafe 8+2 GPU concurrent pressure group.; N/A: not executed — quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; LightGBM CPU runner path exists, but its internal image is not observed-digest-pinned and CPU-smoke-verified; gpu-dev has no authorized LocalQueue; the prior one-time Kueue exception ended; new bounded authorization is absent",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  },
+  {
+    "run_id": "not-run-production-contention-c-lgb-cpu-volcano",
+    "scenario_id": "production-contention-c-lgb-cpu",
+    "model": "LGB",
+    "scheduler": "Volcano",
+    "pod_mode": "Single Pod",
+    "gpu_number": 0,
+    "queue_time": null,
+    "training_time": null,
+    "wall_clock_time": null,
+    "gpu_utilization": null,
+    "throughput": null,
+    "status": "blocked",
+    "reason": "matrix execution_allowed=false — CPU-only pressure Jobs need a separate bounded policy and this row belongs to the unsafe 8+2 GPU concurrent pressure group.; N/A: not executed — quantfm-data local-path is on the root filesystem and fails the mandatory non-root-disk PVC gate; LightGBM CPU runner path exists, but its internal image is not observed-digest-pinned and CPU-smoke-verified; Volcano Queue khalil-volcano-smoke is absent/not open; new PodGroup/Queue use lacks the dedicated admin and active maintenance authorization",
+    "gpu_metrics": {
+      "samples": []
+    },
+    "evidence": {},
+    "evidence_dir": null,
+    "execution_stage": "not-run",
+    "scaling_efficiency": null
+  }
+]

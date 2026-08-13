@@ -1,0 +1,7 @@
+{
+  "items": [
+    "host nvidia-smi reports active compute processes; refusing to kill, preempt, or overlap them",
+    "training storage gate is closed: The exact claim gpu-dev/quantfm-data is local-path storage and /data resolves to the same /dev/mapper/ubuntu--vg-ubuntu--lv filesystem as /; it is root-disk-backed and therefore ineligible for training even with an approval marker.",
+    "training storage hard block: the configured PVC is not backed by a verified non-root-disk filesystem"
+  ]
+}

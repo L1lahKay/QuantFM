@@ -1,0 +1,269 @@
+{
+   "blockdevices": [
+      {
+         "name": "loop0",
+         "kname": "loop0",
+         "type": "loop",
+         "size": "63.8M",
+         "fstype": "squashfs",
+         "mountpoints": [
+             "/snap/core20/2769"
+         ],
+         "model": null,
+         "serial": null,
+         "wwn": null
+      },{
+         "name": "loop1",
+         "kname": "loop1",
+         "type": "loop",
+         "size": "63.8M",
+         "fstype": "squashfs",
+         "mountpoints": [
+             "/snap/core20/2866"
+         ],
+         "model": null,
+         "serial": null,
+         "wwn": null
+      },{
+         "name": "loop2",
+         "kname": "loop2",
+         "type": "loop",
+         "size": "50.1M",
+         "fstype": "squashfs",
+         "mountpoints": [
+             "/snap/snapd/27591"
+         ],
+         "model": null,
+         "serial": null,
+         "wwn": null
+      },{
+         "name": "loop4",
+         "kname": "loop4",
+         "type": "loop",
+         "size": "74M",
+         "fstype": "squashfs",
+         "mountpoints": [
+             "/snap/core22/2411"
+         ],
+         "model": null,
+         "serial": null,
+         "wwn": null
+      },{
+         "name": "loop5",
+         "kname": "loop5",
+         "type": "loop",
+         "size": "115.3M",
+         "fstype": "squashfs",
+         "mountpoints": [
+             "/snap/lxd/40338"
+         ],
+         "model": null,
+         "serial": null,
+         "wwn": null
+      },{
+         "name": "loop6",
+         "kname": "loop6",
+         "type": "loop",
+         "size": "50.1M",
+         "fstype": "squashfs",
+         "mountpoints": [
+             "/snap/snapd/27406"
+         ],
+         "model": null,
+         "serial": null,
+         "wwn": null
+      },{
+         "name": "loop7",
+         "kname": "loop7",
+         "type": "loop",
+         "size": "115.1M",
+         "fstype": "squashfs",
+         "mountpoints": [
+             "/snap/lxd/40115"
+         ],
+         "model": null,
+         "serial": null,
+         "wwn": null
+      },{
+         "name": "nvme1n1",
+         "kname": "nvme1n1",
+         "type": "disk",
+         "size": "1.8T",
+         "fstype": null,
+         "mountpoints": [
+             null
+         ],
+         "model": "Samsung SSD 990 PRO 2TB",
+         "serial": "S7HENU0Y965308F",
+         "wwn": "eui.0025384951a14077",
+         "children": [
+            {
+               "name": "nvme1n1p1",
+               "kname": "nvme1n1p1",
+               "type": "part",
+               "size": "1G",
+               "fstype": "vfat",
+               "mountpoints": [
+                   "/boot/efi"
+               ],
+               "model": null,
+               "serial": null,
+               "wwn": "eui.0025384951a14077"
+            },{
+               "name": "nvme1n1p2",
+               "kname": "nvme1n1p2",
+               "type": "part",
+               "size": "2G",
+               "fstype": "ext4",
+               "mountpoints": [
+                   "/boot"
+               ],
+               "model": null,
+               "serial": null,
+               "wwn": "eui.0025384951a14077"
+            },{
+               "name": "nvme1n1p3",
+               "kname": "nvme1n1p3",
+               "type": "part",
+               "size": "1.8T",
+               "fstype": "LVM2_member",
+               "mountpoints": [
+                   null
+               ],
+               "model": null,
+               "serial": null,
+               "wwn": "eui.0025384951a14077",
+               "children": [
+                  {
+                     "name": "ubuntu--vg-ubuntu--lv",
+                     "kname": "dm-6",
+                     "type": "lvm",
+                     "size": "1012G",
+                     "fstype": "ext4",
+                     "mountpoints": [
+                         "/var/lib/kubelet/pods/d56b6959-ccc1-43d3-8957-b12e5ceb8c16/volume-subpaths/manager-config/manager/2", "/"
+                     ],
+                     "model": null,
+                     "serial": null,
+                     "wwn": null
+                  }
+               ]
+            }
+         ]
+      },{
+         "name": "nvme0n1",
+         "kname": "nvme0n1",
+         "type": "disk",
+         "size": "7T",
+         "fstype": null,
+         "mountpoints": [
+             null
+         ],
+         "model": "INTEL SSDPF2KX076T9N",
+         "serial": "PHAB4201007T7P6GGN",
+         "wwn": "eui.01000000000000005cd2e47f9a745651",
+         "children": [
+            {
+               "name": "nvme0n1p1",
+               "kname": "nvme0n1p1",
+               "type": "part",
+               "size": "200M",
+               "fstype": "vfat",
+               "mountpoints": [
+                   null
+               ],
+               "model": null,
+               "serial": null,
+               "wwn": "eui.01000000000000005cd2e47f9a745651"
+            },{
+               "name": "nvme0n1p2",
+               "kname": "nvme0n1p2",
+               "type": "part",
+               "size": "1G",
+               "fstype": "xfs",
+               "mountpoints": [
+                   null
+               ],
+               "model": null,
+               "serial": null,
+               "wwn": "eui.01000000000000005cd2e47f9a745651"
+            },{
+               "name": "nvme0n1p3",
+               "kname": "nvme0n1p3",
+               "type": "part",
+               "size": "7T",
+               "fstype": "LVM2_member",
+               "mountpoints": [
+                   null
+               ],
+               "model": null,
+               "serial": null,
+               "wwn": "eui.01000000000000005cd2e47f9a745651",
+               "children": [
+                  {
+                     "name": "data--vg-k3s",
+                     "kname": "dm-0",
+                     "type": "lvm",
+                     "size": "2T",
+                     "fstype": "xfs",
+                     "mountpoints": [
+                         "/data/k3s"
+                     ],
+                     "model": null,
+                     "serial": null,
+                     "wwn": null
+                  },{
+                     "name": "data--vg-registry",
+                     "kname": "dm-1",
+                     "type": "lvm",
+                     "size": "1.5T",
+                     "fstype": "xfs",
+                     "mountpoints": [
+                         "/data/registry"
+                     ],
+                     "model": null,
+                     "serial": null,
+                     "wwn": null
+                  },{
+                     "name": "data--vg-pv",
+                     "kname": "dm-2",
+                     "type": "lvm",
+                     "size": "2.5T",
+                     "fstype": "xfs",
+                     "mountpoints": [
+                         "/data/pv"
+                     ],
+                     "model": null,
+                     "serial": null,
+                     "wwn": null
+                  },{
+                     "name": "data--vg-backup",
+                     "kname": "dm-3",
+                     "type": "lvm",
+                     "size": "700G",
+                     "fstype": "xfs",
+                     "mountpoints": [
+                         "/data/backup"
+                     ],
+                     "model": null,
+                     "serial": null,
+                     "wwn": null
+                  },{
+                     "name": "data--vg-log",
+                     "kname": "dm-4",
+                     "type": "lvm",
+                     "size": "200G",
+                     "fstype": "xfs",
+                     "mountpoints": [
+                         "/var/log/pods", "/var/log/journal", "/var/log/containers", "/data/log"
+                     ],
+                     "model": null,
+                     "serial": null,
+                     "wwn": null
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}

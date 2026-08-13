@@ -1,0 +1,10 @@
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ResourceFlavor
+metadata:
+  name: khalil-kueue-nvidia
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/purpose: scheduler-benchmark-runtime
+spec:
+  nodeLabels:
+    accelerator: nvidia

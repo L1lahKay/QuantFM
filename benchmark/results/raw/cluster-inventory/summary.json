@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "observed_at_utc": "2026-08-03T02:07:00Z",
+  "observation_mode": "read_only",
+  "kubeconfig_path": "/etc/rancher/k3s/k3s.yaml",
+  "context": "default",
+  "credentials_captured": false,
+  "cluster": {
+    "distribution": "k3s",
+    "kubernetes_version": "v1.35.4+k3s1",
+    "container_runtime": "containerd://2.2.3-k3s1",
+    "node_count": 1,
+    "gpu_node_count": 1,
+    "nodes": [
+      {
+        "name": "gpu-dev-01",
+        "ready": true,
+        "kernel": "5.15.0-185-generic",
+        "allocatable_cpu": "64",
+        "allocatable_memory": "528002100Ki",
+        "allocatable_nvidia_com_gpu": "8"
+      }
+    ]
+  },
+  "gpu_probe": {
+    "model": "NVIDIA GeForce RTX 5090",
+    "driver_version": "595.71.05",
+    "memory_mib_per_visible_gpu": 32607,
+    "pytorch_version": "2.13.0+cu130",
+    "pytorch_cuda_build": "13.0",
+    "cuda_available": true,
+    "nccl_available": true,
+    "nccl_version": "2.29.7",
+    "source": "benchmark/results/raw/environment-probe/container-output.txt"
+  },
+  "host_gpu_process_snapshot": {
+    "observed_at_utc": "2026-08-03T02:27:00Z",
+    "external_compute_processes_detected": 1,
+    "affected_gpu_index": 7,
+    "affected_gpu_uuid": "GPU-766082cf-e715-90e9-c3ec-5da1db1d5878",
+    "memory_used_mib": 13524,
+    "gpu_utilization_percent": 7,
+    "kubernetes_running_gpu_requests_at_observation": 0,
+    "evidence": "benchmark/results/raw/cluster-inventory/host-gpu-snapshot.txt"
+  },
+  "nccl_probe": {
+    "status": "success",
+    "scope": "single_node_four_gpu_collective_not_training",
+    "world_size": 4,
+    "performance_baseline_valid": false,
+    "evidence": "benchmark/results/raw/nccl-probe-20260803T022505Z/summary.json"
+  },
+  "namespace": {
+    "name": "gpu-dev",
+    "resource_quota": {
+      "name": "gpu-quota",
+      "requests_cpu_hard": "64",
+      "requests_memory_hard": "256Gi",
+      "requests_nvidia_com_gpu_hard": "4",
+      "requests_nvidia_com_gpu_used": "0",
+      "limits_nvidia_com_gpu_hard": "4"
+    },
+    "running_gpu_requests_at_observation": "0"
+  },
+  "storage": {
+    "claim": "gpu-dev/quantfm-data",
+    "phase": "Bound",
+    "capacity": "500Gi",
+    "access_mode": "ReadWriteOnce",
+    "storage_class": "local-path",
+    "pv": "pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580",
+    "reclaim_policy": "Retain",
+    "local_path": "/data/k3s/storage/pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580_khalil_quantfm-data",
+    "node_affinity": "gpu-dev-01",
+    "administrator_backend_confirmation_for_this_benchmark": false,
+    "host_mount_observation": {
+      "checked_at_utc": "2026-08-03T02:17:00Z",
+      "data_mount_target": "/",
+      "data_mount_source": "/dev/mapper/ubuntu--vg-ubuntu--lv",
+      "root_mount_source": "/dev/mapper/ubuntu--vg-ubuntu--lv",
+      "is_non_root_disk": false,
+      "commands": ["findmnt -T /data", "findmnt -T /", "df -hT /data /"]
+    }
+  },
+  "schedulers": {
+    "kubernetes_default_scheduler": "present",
+    "kueue": {
+      "version": "v0.19.0",
+      "ready_replicas": 1,
+      "gpu_dev_local_queue_present": false,
+      "existing_local_queue": "kueue-test/lq-test",
+      "existing_cluster_queue": "cq-test"
+    },
+    "volcano": {
+      "version": "v1.15.1",
+      "admission_ready_replicas": 1,
+      "controllers_ready_replicas": 1,
+      "scheduler_ready_replicas": 1,
+      "open_queues": ["default", "root"],
+      "gpu_dev_podgroups": []
+    }
+  },
+  "monitoring": {
+    "gpu_operator": "absent",
+    "dcgm_exporter": "absent",
+    "prometheus": "absent",
+    "grafana": "absent",
+    "existing_nvidia_device_plugin": "v0.19.1",
+    "existing_node_feature_discovery": "v0.18.3"
+  },
+  "hard_feasibility_constraints": [
+    "The requested eight-GPU rows exceed gpu-dev's four-GPU ResourceQuota.",
+    "The observed topology is one eight-GPU node, not eight GPU nodes; cross-node scaling cannot be measured.",
+    "No LocalQueue exists in gpu-dev, so a new Kueue training run cannot be admitted without authorized queue setup.",
+    "Cluster monitoring installation and new Volcano PodGroups require a current maintenance authorization under AGENTS.md.",
+    "The approved benchmark image containing LightGBM and the local benchmark sources is not present in the internal registry.",
+    "The discovered quantfm-data local-path is on the same filesystem as /, so it does not satisfy the required non-root-disk PVC gate.",
+    "An external host compute process uses GPU 7 but is invisible to Kubernetes GPU-request accounting; performance tests require an idle or isolated GPU set."
+  ]
+}

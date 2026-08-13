@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "observed_at_utc": "2026-08-03T08:38:23.344622Z",
+  "matrix_name": "current-safe",
+  "storage_mode": "synthetic_ephemeral",
+  "selected_schedulers": [
+    "k8s",
+    "kueue",
+    "volcano"
+  ],
+  "selected_scenarios": [
+    "nn-single-gpu1",
+    "nn-multipod-gpu4",
+    "transformer-single-gpu1",
+    "transformer-single-gpu4",
+    "transformer-multipod-gpu4"
+  ],
+  "execution_ready": false,
+  "final_report_ready": false,
+  "execution_blocker_count": 2,
+  "final_report_blocker_count": 5,
+  "performance_evidence": {
+    "required_repetitions_per_cell": 3,
+    "ready_matrix_cells": 5,
+    "selected_matrix_cells": 15,
+    "missing_or_under_repeated_cells": [
+      {
+        "scenario_id": "nn-single-gpu1",
+        "scheduler": "kueue",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "nn-single-gpu1",
+        "scheduler": "volcano",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "nn-multipod-gpu4",
+        "scheduler": "kueue",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "nn-multipod-gpu4",
+        "scheduler": "volcano",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "transformer-single-gpu1",
+        "scheduler": "kueue",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "transformer-single-gpu1",
+        "scheduler": "volcano",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "transformer-single-gpu4",
+        "scheduler": "kueue",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "transformer-single-gpu4",
+        "scheduler": "volcano",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "transformer-multipod-gpu4",
+        "scheduler": "kueue",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      },
+      {
+        "scenario_id": "transformer-multipod-gpu4",
+        "scheduler": "volcano",
+        "completed_repetitions": 0,
+        "required_repetitions": 3
+      }
+    ]
+  },
+  "execution_blockers": [
+    {
+      "code": "KUEUE_LOCALQUEUE_ABSENT",
+      "scope": "execution",
+      "message": "gpu-dev has no LocalQueue for the selected Kueue lane.",
+      "evidence": "inventory.schedulers.kueue.gpu_dev_local_queue_present"
+    },
+    {
+      "code": "VOLCANO_QUEUE_ABSENT",
+      "scope": "execution",
+      "message": "The configured Volcano Queue 'khalil-volcano-smoke' is not present/open.",
+      "evidence": "runtime.volcano.queue + inventory.schedulers.volcano.open_queues"
+    }
+  ],
+  "final_report_blockers": [
+    {
+      "code": "KUEUE_LOCALQUEUE_ABSENT",
+      "scope": "final-report",
+      "message": "gpu-dev has no LocalQueue for the selected Kueue lane.",
+      "evidence": "inventory.schedulers.kueue.gpu_dev_local_queue_present"
+    },
+    {
+      "code": "VOLCANO_QUEUE_ABSENT",
+      "scope": "final-report",
+      "message": "The configured Volcano Queue 'khalil-volcano-smoke' is not present/open.",
+      "evidence": "runtime.volcano.queue + inventory.schedulers.volcano.open_queues"
+    },
+    {
+      "code": "MONITORING_CHAIN_INCOMPLETE",
+      "scope": "final-report",
+      "message": "Required monitoring components are not ready: gpu_operator, dcgm_exporter, prometheus, grafana.",
+      "evidence": "requirements.monitoring.required_components + inventory.monitoring"
+    },
+    {
+      "code": "MODEL_MATRIX_INCOMPLETE",
+      "scope": "final-report",
+      "message": "Only 5/15 selected matrix cells have at least 3 validated completed repetition(s).",
+      "evidence": "report.benchmark_results.json execution_stage/status"
+    },
+    {
+      "code": "GPU_NODE_TOPOLOGY_MISMATCH",
+      "scope": "final-report",
+      "message": "Requested evaluation topology is 8 GPU nodes; inventory observed 1.",
+      "evidence": "requirements.target_environment.gpu_node_count + inventory.cluster.gpu_node_count"
+    }
+  ]
+}

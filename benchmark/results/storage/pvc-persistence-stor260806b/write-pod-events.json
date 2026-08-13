@@ -1,0 +1,137 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "action": "Binding",
+      "apiVersion": "v1",
+      "eventTime": "2026-08-06T09:13:42.749173Z",
+      "firstTimestamp": null,
+      "involvedObject": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "name": "khalil-pvc-write-stor260806b-9kpbp",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29880699",
+        "uid": "64059f01-7a53-4c15-bbf2-288ee75329ff"
+      },
+      "kind": "Event",
+      "lastTimestamp": null,
+      "message": "Successfully assigned gpu-dev/khalil-pvc-write-stor260806b-9kpbp to gpu-dev-01",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T09:13:42Z",
+        "name": "khalil-pvc-write-stor260806b-9kpbp.18c92c78601adb66",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29880703",
+        "uid": "0d2b9ef8-bed7-4c14-9bce-4a239855a33c"
+      },
+      "reason": "Scheduled",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "default-scheduler-zhisui",
+      "source": {},
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-06T09:13:43Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{write}",
+        "kind": "Pod",
+        "name": "khalil-pvc-write-stor260806b-9kpbp",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29880701",
+        "uid": "64059f01-7a53-4c15-bbf2-288ee75329ff"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-06T09:13:43Z",
+      "message": "Container image \"registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574\" already present on machine and can be accessed by the pod",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T09:13:43Z",
+        "name": "khalil-pvc-write-stor260806b-9kpbp.18c92c7881c749f3",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29880710",
+        "uid": "fd41cbd6-536f-49bd-a7f9-e889ec1f69ee"
+      },
+      "reason": "Pulled",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "gpu-dev-01",
+      "source": {
+        "component": "kubelet",
+        "host": "gpu-dev-01"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-06T09:13:43Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{write}",
+        "kind": "Pod",
+        "name": "khalil-pvc-write-stor260806b-9kpbp",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29880701",
+        "uid": "64059f01-7a53-4c15-bbf2-288ee75329ff"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-06T09:13:43Z",
+      "message": "Container created",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T09:13:43Z",
+        "name": "khalil-pvc-write-stor260806b-9kpbp.18c92c78831fd096",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29880711",
+        "uid": "4962b6f4-6c79-4342-93b3-aa4e0a1fe419"
+      },
+      "reason": "Created",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "gpu-dev-01",
+      "source": {
+        "component": "kubelet",
+        "host": "gpu-dev-01"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-06T09:13:43Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{write}",
+        "kind": "Pod",
+        "name": "khalil-pvc-write-stor260806b-9kpbp",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29880701",
+        "uid": "64059f01-7a53-4c15-bbf2-288ee75329ff"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-06T09:13:43Z",
+      "message": "Error: failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: exec: \"python\": executable file not found in $PATH",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T09:13:43Z",
+        "name": "khalil-pvc-write-stor260806b-9kpbp.18c92c788931cc48",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29880712",
+        "uid": "7f9bc55f-54bc-489c-8a23-d3c8ba4635f2"
+      },
+      "reason": "Failed",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "gpu-dev-01",
+      "source": {
+        "component": "kubelet",
+        "host": "gpu-dev-01"
+      },
+      "type": "Warning"
+    }
+  ],
+  "kind": "List",
+  "metadata": {
+    "resourceVersion": ""
+  }
+}

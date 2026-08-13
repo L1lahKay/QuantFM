@@ -1,0 +1,28 @@
+CAPTURED_AT_UTC=2026-08-03T03:32:22Z
+KUBECONFIG_PATH=/etc/rancher/k3s/k3s.yaml
+CONTEXT=default
+NAMESPACE=gpu-dev
+NODE_COUNT=1
+GPU_NODE=gpu-dev-01
+GPU_NODE_READY=True
+GPU_NODE_ALLOCATABLE_NVIDIA_COM_GPU=8
+TEST_JOBS=none
+TEST_PODS=none
+GPU_RESOURCEQUOTA_HARD=4
+GPU_RESOURCEQUOTA_USED=0
+KUEUE_CONTROLLER_AVAILABLE=1 READY=1
+GPU_DEV_KUEUE_LOCALQUEUES=none
+VOLCANO_ADMISSION_AVAILABLE=1 READY=1
+VOLCANO_CONTROLLERS_AVAILABLE=1 READY=1
+VOLCANO_SCHEDULER_AVAILABLE=1 READY=1
+GPU_DEV_VOLCANO_PODGROUPS=none
+VOLCANO_QUEUES=default,root
+EXTERNAL_HOST_COMPUTE_PROCESSES=1
+EXTERNAL_GPU_UUID=GPU-766082cf-e715-90e9-c3ec-5da1db1d5878
+EXTERNAL_GPU_MEMORY_USED_MIB=13812
+
+Notes:
+- This is a credential-free transcription of final read-only kubectl checks.
+- No kubeconfig contents or credentials are included.
+- The external-process check records only GPU UUID and memory, never PID,
+  username, or command. No external process was targeted or modified.

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING
 
 import polars as pl
 
@@ -13,22 +13,6 @@ if TYPE_CHECKING:
     from pylob.pipeline.config import MinioConfig
 
 logger = logging.getLogger(__name__)
-
-
-class ObjectReader(Protocol):
-    """Minimal interface consumed by the cleaning workflow."""
-
-    def read_object_keys(
-        self, bucket: str, object_keys: tuple[str, ...]
-    ) -> pl.DataFrame:
-        """Read explicit object keys from a bucket."""
-        ...
-
-    def read_prefix(
-        self, bucket: str, prefix: str, suffixes: tuple[str, ...]
-    ) -> pl.DataFrame:
-        """Read matching objects beneath a bucket prefix."""
-        ...
 
 
 def build_storage_options(config: MinioConfig) -> dict[str, str | int]:

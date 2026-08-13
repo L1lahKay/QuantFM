@@ -1,0 +1,403 @@
+{
+  "action": "dry-run",
+  "cluster_mutation_requested": false,
+  "completed_at": "2026-08-04T01:43:53.509Z",
+  "final_deliverable_blockers": [
+    {
+      "code": "monitoring_stack_evidence_not_confirmed",
+      "message": "GPU Operator/DCGM Exporter/Prometheus/Grafana runtime evidence and the required Grafana screenshot are not confirmed"
+    }
+  ],
+  "generated_at": "2026-08-04T01:43:28.586Z",
+  "global_execution_blockers": [],
+  "matrix": {
+    "name": "long-scaling-native-k8s-20260804",
+    "path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+    "sha256": "ea6c1f28f031c3f99a6ab5c04df4ba8f87ec4c5a79a23ebc5413dc28ec41a08d",
+    "storage_mode": "synthetic_ephemeral"
+  },
+  "orchestration_id": "khalil-long-scaling-dryrun-20260804",
+  "output_directory": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/orchestration/khalil-long-scaling-dryrun-20260804",
+  "release_ready_for_actual_run": true,
+  "runtime": {
+    "path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+    "sha256": "f161b1fb736f57fafe7ecc55275f78a946096b51f1d5ca72111e21edbabe6f2b"
+  },
+  "schema_version": 1,
+  "selection": {
+    "order": "deterministic",
+    "repetitions": 1,
+    "scenarios": [
+      "nn-single-gpu1-long",
+      "nn-single-gpu4-long",
+      "nn-multipod-gpu4-long",
+      "transformer-single-gpu1-long",
+      "transformer-single-gpu4-long",
+      "transformer-multipod-gpu4-long"
+    ],
+    "schedulers": [
+      "k8s"
+    ],
+    "seed": null
+  },
+  "started_at": "2026-08-04T01:43:28.586Z",
+  "status": "succeeded",
+  "task_count": 6,
+  "tasks": [
+    {
+      "command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "dry-run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "nn-single-gpu1-long",
+        "--run-token",
+        "o45106494-c001-r01"
+      ],
+      "dry_run_command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "dry-run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "nn-single-gpu1-long",
+        "--run-token",
+        "o45106494-c001-r01"
+      ],
+      "gpu_number": 1,
+      "model": "nn",
+      "pod_mode": "single",
+      "repetition": 1,
+      "result": {
+        "completed_at": "2026-08-04T01:43:32.436Z",
+        "duration_seconds": 3.848813,
+        "returncode": 0,
+        "started_at": "2026-08-04T01:43:28.587Z",
+        "status": "succeeded",
+        "stderr_path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/orchestration/khalil-long-scaling-dryrun-20260804/001-k8s-nn-single-gpu1-long-r01.stderr.txt",
+        "stdout_path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/orchestration/khalil-long-scaling-dryrun-20260804/001-k8s-nn-single-gpu1-long-r01.stdout.txt"
+      },
+      "run_command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "nn-single-gpu1-long",
+        "--run-token",
+        "o45106494-c001-r01",
+        "--execute"
+      ],
+      "run_token": "o45106494-c001-r01",
+      "scenario_blocked_reason": "",
+      "scenario_execution_allowed": true,
+      "scenario_id": "nn-single-gpu1-long",
+      "scheduler": "k8s",
+      "sequence": 1
+    },
+    {
+      "command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "dry-run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "nn-single-gpu4-long",
+        "--run-token",
+        "o45106494-c002-r01"
+      ],
+      "dry_run_command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "dry-run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "nn-single-gpu4-long",
+        "--run-token",
+        "o45106494-c002-r01"
+      ],
+      "gpu_number": 4,
+      "model": "nn",
+      "pod_mode": "single",
+      "repetition": 1,
+      "result": {
+        "completed_at": "2026-08-04T01:43:36.263Z",
+        "duration_seconds": 3.825272,
+        "returncode": 0,
+        "started_at": "2026-08-04T01:43:32.437Z",
+        "status": "succeeded",
+        "stderr_path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/orchestration/khalil-long-scaling-dryrun-20260804/002-k8s-nn-single-gpu4-long-r01.stderr.txt",
+        "stdout_path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/orchestration/khalil-long-scaling-dryrun-20260804/002-k8s-nn-single-gpu4-long-r01.stdout.txt"
+      },
+      "run_command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "nn-single-gpu4-long",
+        "--run-token",
+        "o45106494-c002-r01",
+        "--execute"
+      ],
+      "run_token": "o45106494-c002-r01",
+      "scenario_blocked_reason": "",
+      "scenario_execution_allowed": true,
+      "scenario_id": "nn-single-gpu4-long",
+      "scheduler": "k8s",
+      "sequence": 2
+    },
+    {
+      "command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "dry-run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "nn-multipod-gpu4-long",
+        "--run-token",
+        "o45106494-c003-r01"
+      ],
+      "dry_run_command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "dry-run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "nn-multipod-gpu4-long",
+        "--run-token",
+        "o45106494-c003-r01"
+      ],
+      "gpu_number": 4,
+      "model": "nn",
+      "pod_mode": "multi",
+      "repetition": 1,
+      "result": {
+        "completed_at": "2026-08-04T01:43:41.006Z",
+        "duration_seconds": 4.740451,
+        "returncode": 0,
+        "started_at": "2026-08-04T01:43:36.265Z",
+        "status": "succeeded",
+        "stderr_path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/orchestration/khalil-long-scaling-dryrun-20260804/003-k8s-nn-multipod-gpu4-long-r01.stderr.txt",
+        "stdout_path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/orchestration/khalil-long-scaling-dryrun-20260804/003-k8s-nn-multipod-gpu4-long-r01.stdout.txt"
+      },
+      "run_command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "nn-multipod-gpu4-long",
+        "--run-token",
+        "o45106494-c003-r01",
+        "--execute"
+      ],
+      "run_token": "o45106494-c003-r01",
+      "scenario_blocked_reason": "",
+      "scenario_execution_allowed": true,
+      "scenario_id": "nn-multipod-gpu4-long",
+      "scheduler": "k8s",
+      "sequence": 3
+    },
+    {
+      "command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "dry-run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "transformer-single-gpu1-long",
+        "--run-token",
+        "o45106494-c004-r01"
+      ],
+      "dry_run_command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "dry-run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "transformer-single-gpu1-long",
+        "--run-token",
+        "o45106494-c004-r01"
+      ],
+      "gpu_number": 1,
+      "model": "transformer",
+      "pod_mode": "single",
+      "repetition": 1,
+      "result": {
+        "completed_at": "2026-08-04T01:43:44.835Z",
+        "duration_seconds": 3.82774,
+        "returncode": 0,
+        "started_at": "2026-08-04T01:43:41.007Z",
+        "status": "succeeded",
+        "stderr_path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/orchestration/khalil-long-scaling-dryrun-20260804/004-k8s-transformer-single-gpu1-long-r01.stderr.txt",
+        "stdout_path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/orchestration/khalil-long-scaling-dryrun-20260804/004-k8s-transformer-single-gpu1-long-r01.stdout.txt"
+      },
+      "run_command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "transformer-single-gpu1-long",
+        "--run-token",
+        "o45106494-c004-r01",
+        "--execute"
+      ],
+      "run_token": "o45106494-c004-r01",
+      "scenario_blocked_reason": "",
+      "scenario_execution_allowed": true,
+      "scenario_id": "transformer-single-gpu1-long",
+      "scheduler": "k8s",
+      "sequence": 4
+    },
+    {
+      "command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "dry-run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "transformer-single-gpu4-long",
+        "--run-token",
+        "o45106494-c005-r01"
+      ],
+      "dry_run_command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "dry-run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "transformer-single-gpu4-long",
+        "--run-token",
+        "o45106494-c005-r01"
+      ],
+      "gpu_number": 4,
+      "model": "transformer",
+      "pod_mode": "single",
+      "repetition": 1,
+      "result": {
+        "completed_at": "2026-08-04T01:43:48.746Z",
+        "duration_seconds": 3.908247,
+        "returncode": 0,
+        "started_at": "2026-08-04T01:43:44.837Z",
+        "status": "succeeded",
+        "stderr_path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/orchestration/khalil-long-scaling-dryrun-20260804/005-k8s-transformer-single-gpu4-long-r01.stderr.txt",
+        "stdout_path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/orchestration/khalil-long-scaling-dryrun-20260804/005-k8s-transformer-single-gpu4-long-r01.stdout.txt"
+      },
+      "run_command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "transformer-single-gpu4-long",
+        "--run-token",
+        "o45106494-c005-r01",
+        "--execute"
+      ],
+      "run_token": "o45106494-c005-r01",
+      "scenario_blocked_reason": "",
+      "scenario_execution_allowed": true,
+      "scenario_id": "transformer-single-gpu4-long",
+      "scheduler": "k8s",
+      "sequence": 5
+    },
+    {
+      "command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "dry-run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "transformer-multipod-gpu4-long",
+        "--run-token",
+        "o45106494-c006-r01"
+      ],
+      "dry_run_command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "dry-run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "transformer-multipod-gpu4-long",
+        "--run-token",
+        "o45106494-c006-r01"
+      ],
+      "gpu_number": 4,
+      "model": "transformer",
+      "pod_mode": "multi",
+      "repetition": 1,
+      "result": {
+        "completed_at": "2026-08-04T01:43:53.507Z",
+        "duration_seconds": 4.759288,
+        "returncode": 0,
+        "started_at": "2026-08-04T01:43:48.747Z",
+        "status": "succeeded",
+        "stderr_path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/orchestration/khalil-long-scaling-dryrun-20260804/006-k8s-transformer-multipod-gpu4-long-r01.stderr.txt",
+        "stdout_path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/orchestration/khalil-long-scaling-dryrun-20260804/006-k8s-transformer-multipod-gpu4-long-r01.stdout.txt"
+      },
+      "run_command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/long-scaling-native-k8s-20260804.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime-long-scaling-native-k8s-20260804.json",
+        "--scenario",
+        "transformer-multipod-gpu4-long",
+        "--run-token",
+        "o45106494-c006-r01",
+        "--execute"
+      ],
+      "run_token": "o45106494-c006-r01",
+      "scenario_blocked_reason": "",
+      "scenario_execution_allowed": true,
+      "scenario_id": "transformer-multipod-gpu4-long",
+      "scheduler": "k8s",
+      "sequence": 6
+    }
+  ],
+  "totals": {
+    "attempted": 6,
+    "failed": 0,
+    "not_attempted": 0,
+    "planned": 6,
+    "succeeded": 6
+  }
+}

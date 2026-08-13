@@ -1,0 +1,2 @@
+NAME         READY   UNSCHEDULABLE   GPU   CPU   MEMORY        ACCELERATOR   HOSTNAME     ZONE     REGION
+gpu-dev-01   True    <none>          8     64    528002100Ki   nvidia        gpu-dev-01   <none>   <none>

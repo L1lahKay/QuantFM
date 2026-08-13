@@ -1,0 +1,2 @@
+job.batch "khalil-nccl-probe" deleted from gpu-dev namespace
+job/khalil-nccl-probe: verified absent

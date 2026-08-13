@@ -1,0 +1,1 @@
+transformer-single-gpu4-long k8s: dry-run-complete evidence=/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-eb2791-transform-o45106494-c005-r01

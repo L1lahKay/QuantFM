@@ -1,0 +1,2 @@
+pvc_namespace	pvc_name	pvc_uid	pv_name	pv_uid	local_path	mount_target	mount_source	mount_fstype
+gpu-dev	quantfm-data	dcfc08ba-7c57-466e-abeb-e60897855a39	pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580	8d66d1f8-7a0a-48ff-ae7b-e49a4e3e59fa	/data/k3s/storage/pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580_khalil_quantfm-data	/data/k3s	/dev/mapper/data--vg-k3s	xfs

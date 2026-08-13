@@ -5,8 +5,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MANIFEST="$ROOT/k8s/scheduler-evaluation/gpu-dev/kueue-probe.yaml"
 RESULT_DIR="${RESULT_DIR:-$ROOT/docs/assets/gpu-scheduler-evaluation/raw/current}"
-KUBECONFIG_PATH=/home/khalil/.kube/config-gpu
-KUBE_CONTEXT=gpu-dev-khalil@k3s-gpu
+KUBECONFIG_PATH=/etc/rancher/k3s/k3s.yaml
+KUBE_CONTEXT=default
 NAMESPACE=gpu-dev
 POLL_ATTEMPTS="${PROBE_POLL_ATTEMPTS:-10}"
 

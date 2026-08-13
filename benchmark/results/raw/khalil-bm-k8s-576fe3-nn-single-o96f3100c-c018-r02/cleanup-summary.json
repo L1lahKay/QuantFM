@@ -1,0 +1,6 @@
+{
+  "cleanup_status": "verified",
+  "exact_created_objects_absent": true,
+  "gpu_quota_restored": true,
+  "owner_uid_dependants_absent": true
+}

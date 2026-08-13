@@ -1,0 +1,14 @@
+{
+  "authorization_id": "2026-08-03-current-safe-synthetic-benchmark",
+  "checkpoints_allowed": false,
+  "downloads_allowed": false,
+  "durable_output_allowed": false,
+  "input_mode": "deterministic_synthetic_in_memory",
+  "matrix": "current-safe",
+  "medium": "Memory",
+  "mode": "synthetic_ephemeral",
+  "persistent_cache_allowed": false,
+  "pvc_lookup_skipped": true,
+  "scenario": "transformer-single-gpu1",
+  "size_limit": "512Mi"
+}

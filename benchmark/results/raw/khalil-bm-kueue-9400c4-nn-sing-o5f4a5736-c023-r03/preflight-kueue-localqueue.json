@@ -1,0 +1,73 @@
+{
+  "apiVersion": "kueue.x-k8s.io/v1beta2",
+  "kind": "LocalQueue",
+  "metadata": {
+    "creationTimestamp": "2026-08-06T05:45:38Z",
+    "generation": 1,
+    "labels": {
+      "evaluation.quantfm/owner": "khalil",
+      "evaluation.quantfm/purpose": "scheduler-benchmark-runtime"
+    },
+    "name": "khalil-kueue-eval",
+    "namespace": "gpu-dev",
+    "resourceVersion": "29835314",
+    "uid": "666f899b-68bc-4949-8d29-74273fe822d4"
+  },
+  "spec": {
+    "clusterQueue": "khalil-kueue-eval",
+    "stopPolicy": "None"
+  },
+  "status": {
+    "admittedWorkloads": 0,
+    "conditions": [
+      {
+        "lastTransitionTime": "2026-08-06T05:45:38Z",
+        "message": "Can submit new workloads to localQueue",
+        "observedGeneration": 1,
+        "reason": "Ready",
+        "status": "True",
+        "type": "Active"
+      }
+    ],
+    "flavorsReservation": [
+      {
+        "name": "khalil-kueue-nvidia",
+        "resources": [
+          {
+            "name": "cpu",
+            "total": "0"
+          },
+          {
+            "name": "memory",
+            "total": "0"
+          },
+          {
+            "name": "nvidia.com/gpu",
+            "total": "0"
+          }
+        ]
+      }
+    ],
+    "flavorsUsage": [
+      {
+        "name": "khalil-kueue-nvidia",
+        "resources": [
+          {
+            "name": "cpu",
+            "total": "0"
+          },
+          {
+            "name": "memory",
+            "total": "0"
+          },
+          {
+            "name": "nvidia.com/gpu",
+            "total": "0"
+          }
+        ]
+      }
+    ],
+    "pendingWorkloads": 0,
+    "reservingWorkloads": 0
+  }
+}

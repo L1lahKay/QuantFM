@@ -1,0 +1,4 @@
+localqueues.kueue.x-k8s.io	khalil-kueue-eval	666f899b-68bc-4949-8d29-74273fe822d4
+clusterqueues.kueue.x-k8s.io	khalil-kueue-eval	bd579335-0a22-4499-b779-1457a95aa163
+resourceflavors.kueue.x-k8s.io	khalil-kueue-nvidia	43f2b4a8-b76b-4d39-9b65-ffc1345f262a
+queues.scheduling.volcano.sh	khalil-volcano-smoke	d93bc318-7755-40e1-913a-6afb10765707

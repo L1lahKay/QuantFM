@@ -1,0 +1,109 @@
+{
+  "action": "run",
+  "cluster_mutation_requested": true,
+  "completed_at": "2026-08-03T07:31:08.139Z",
+  "final_deliverable_blockers": [
+    {
+      "code": "monitoring_stack_evidence_not_confirmed",
+      "message": "GPU Operator/DCGM Exporter/Prometheus/Grafana runtime evidence and the required Grafana screenshot are not confirmed"
+    }
+  ],
+  "generated_at": "2026-08-03T07:30:00.113Z",
+  "global_execution_blockers": [],
+  "matrix": {
+    "name": "current-safe",
+    "path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/current-safe-matrix.json",
+    "sha256": "eb9f41067008490d3894dfa619f759f5e086d08df5bc24f5d6f0a8f3506d70df",
+    "storage_mode": "synthetic_ephemeral"
+  },
+  "orchestration_id": "khalil-k8s-tmp-shmfix-20260803",
+  "output_directory": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/orchestration/khalil-k8s-tmp-shmfix-20260803",
+  "release_ready_for_actual_run": true,
+  "runtime": {
+    "path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime.json",
+    "sha256": "7b3d662d2f84f2373e4a2e6d71932b83856840cc58c68b01c2e7a00534071e6b"
+  },
+  "schema_version": 1,
+  "selection": {
+    "order": "deterministic",
+    "repetitions": 1,
+    "scenarios": [
+      "transformer-multipod-gpu4"
+    ],
+    "schedulers": [
+      "k8s"
+    ],
+    "seed": null
+  },
+  "started_at": "2026-08-03T07:30:00.113Z",
+  "status": "succeeded",
+  "task_count": 1,
+  "tasks": [
+    {
+      "command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/current-safe-matrix.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime.json",
+        "--scenario",
+        "transformer-multipod-gpu4",
+        "--run-token",
+        "o1a62b6a7-c001-r01",
+        "--execute"
+      ],
+      "dry_run_command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "dry-run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/current-safe-matrix.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime.json",
+        "--scenario",
+        "transformer-multipod-gpu4",
+        "--run-token",
+        "o1a62b6a7-c001-r01"
+      ],
+      "gpu_number": 4,
+      "model": "transformer",
+      "pod_mode": "multi",
+      "repetition": 1,
+      "result": {
+        "completed_at": "2026-08-03T07:31:08.138Z",
+        "duration_seconds": 68.02389,
+        "returncode": 0,
+        "started_at": "2026-08-03T07:30:00.114Z",
+        "status": "succeeded",
+        "stderr_path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/orchestration/khalil-k8s-tmp-shmfix-20260803/001-k8s-transformer-multipod-gpu4-r01.stderr.txt",
+        "stdout_path": "/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/orchestration/khalil-k8s-tmp-shmfix-20260803/001-k8s-transformer-multipod-gpu4-r01.stdout.txt"
+      },
+      "run_command": [
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/scripts/run_k8s.sh",
+        "run",
+        "--matrix",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/current-safe-matrix.json",
+        "--runtime",
+        "/home/khalil/DataCleaning7.3/QuantFM/benchmark/config/runtime.json",
+        "--scenario",
+        "transformer-multipod-gpu4",
+        "--run-token",
+        "o1a62b6a7-c001-r01",
+        "--execute"
+      ],
+      "run_token": "o1a62b6a7-c001-r01",
+      "scenario_blocked_reason": "",
+      "scenario_execution_allowed": true,
+      "scenario_id": "transformer-multipod-gpu4",
+      "scheduler": "k8s",
+      "sequence": 1
+    }
+  ],
+  "totals": {
+    "attempted": 1,
+    "failed": 0,
+    "not_attempted": 0,
+    "planned": 1,
+    "succeeded": 1
+  }
+}

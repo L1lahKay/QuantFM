@@ -1,0 +1,11 @@
+{
+  "checkpoint_bytes": 67108864,
+  "completed_at": "2026-08-06T09:13:48.440Z",
+  "error": "Job khalil-pvc-write-stor260806b ended as Failed",
+  "error_type": "RuntimeError",
+  "experiment": "single-node-pvc-checkpoint-persistence-smoke",
+  "run_token": "stor260806b",
+  "schema_version": 1,
+  "started_at": "2026-08-06T09:13:42.235Z",
+  "status": "failed"
+}

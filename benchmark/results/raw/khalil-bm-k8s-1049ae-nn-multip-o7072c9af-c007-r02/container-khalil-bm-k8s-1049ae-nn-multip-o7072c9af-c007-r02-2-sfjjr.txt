@@ -1,0 +1,55 @@
+node_rank is only used for static rdzv_backend. It will be ignored for rdzv_backend=c10d.
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO cudaDriverVersion 13020
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Bootstrap: Using eth0:10.52.0.149<0>
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO NCCL version 2.29.7+cuda13.2
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO NCCL git version stable b81d6a5a3
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Comm config Blocking set to 1
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Failed to open libibverbs.so[.1]
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO transport/net_ib/init.cc:396 -> 3
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Failed to initialize NET plugin IB
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO NET/Socket : Using [0]eth0:10.52.0.149<0>
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Initialized NET plugin Socket
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Assigned NET plugin Socket to comm
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+
+[2026-08-03 07:26:01] khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] misc/ibvwrap.cc:173 NCCL WARN lib wrapper not initialized.
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO transport/net_ib/gdr.cc:56 -> 3
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Failed to initialize any GIN plugin
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Using network Socket
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO [Rank 2] ncclCommInitRankConfig comm 0x263b6890 rank 2 nranks 4 cudaDev 0 nvmlDev 0 busId 5a000 commId 0xfed1c8fd96259d5b - Init START
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO RAS client listening socket at ::1<28028>
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Bootstrap timings total 0.154042 (create 0.000068, send 0.000408, recv 0.152043, ring 0.000749, delay 0.000002)
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 0 is 16-31. (GPU affinity = 16-31 ; CPU affinity = 0-63).
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO comm 0x263b6890 rank 2 nRanks 4 nNodes 4 localRanks 1 localRank 0 MNNVL 0
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Trees [0] 1/3/-1->2->0 [1] -1/-1/-1->2->1
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO P2P Chunksize set to 131072
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0 isAllCudaP2p 1
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:194 [0] NCCL INFO [Proxy Service] Device 0 CPU core 17
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:195 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 21
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO 2 coll channels, 2 collnet channels, 0 nvls channels, 2 p2p channels, 1 p2p channels per peer
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Symmetric VA size=32GB
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Symmetric memory is not supported. cuMemEnable 1, globalGinSupport 0, globalNicFused 0 cuMemGdrSupport 0
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO ncclCommInitRankConfig comm 0x263b6890 rank 2 nranks 4 cudaDev 0 nvmlDev 0 busId 5a000 commId 0xfed1c8fd96259d5b - Init COMPLETE
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Init timings - ncclCommInitRankConfig: rank 2 nranks 4 total 0.62 (kernels 0.40, alloc 0.05, bootstrap 0.15, allgathers 0.01, topo 0.01, graphs 0.00, connections 0.01, rest 0.00)
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:196 [0] NCCL INFO [Proxy Progress] Device 0 CPU core 25
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Channel 00/0 : 1[0] -> 2[0] [receive] via NET/Socket/0
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Channel 01/0 : 1[0] -> 2[0] [receive] via NET/Socket/0
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Channel 00/0 : 2[0] -> 3[0] [send] via NET/Socket/0
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Channel 01/0 : 2[0] -> 3[0] [send] via NET/Socket/0
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Connected all rings, use ring PXN 0 GDR 0
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Channel 00/0 : 0[0] -> 2[0] [receive] via NET/Socket/0
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Channel 00/0 : 2[0] -> 0[0] [send] via NET/Socket/0
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Channel 00/0 : 3[0] -> 2[0] [receive] via NET/Socket/0
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Channel 00/0 : 2[0] -> 1[0] [send] via NET/Socket/0
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Channel 01/0 : 2[0] -> 1[0] [send] via NET/Socket/0
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO Connected all trees
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":83.0,"gpu_uuid":"GPU-b1e8e147-6f36-3444-3732-1069ebeaa0ab","memory_used_mib":1084.0,"power_watts":86.32,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:0","timestamp":"2026-08-03T07:26:03.367Z"}
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":100.0,"gpu_uuid":"GPU-b1e8e147-6f36-3444-3732-1069ebeaa0ab","memory_used_mib":1084.0,"power_watts":117.42,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:1","timestamp":"2026-08-03T07:26:03.985Z"}
+GPU_METRIC_SUMMARY_JSON={"gpu_utilization_percent_max":100.0,"gpu_utilization_percent_mean":91.5,"memory_used_mib_max":1084.0,"memory_used_mib_mean":1084.0,"power_watts_max":117.42,"power_watts_mean":101.87,"sample_count":2,"sampling_finished_at_utc":"2026-08-03T07:26:04.543Z","sampling_scope":"timed_training_window","sampling_started_at_utc":"2026-08-03T07:26:03.366Z","timestamp":"2026-08-03T07:26:04.543Z"}
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO comm 0x263b6890 rank 2 nranks 4 cudaDev 0 busId 5a000 - Destroy COMPLETE
+khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c007-r02-2:122:122 [0] NCCL INFO ENV/Plugin: Closing env plugin ncclEnvDefault

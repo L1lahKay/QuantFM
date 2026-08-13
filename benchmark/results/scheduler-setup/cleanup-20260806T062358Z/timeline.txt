@@ -1,0 +1,18 @@
+2026-08-06T06:23:58Z	BEGIN action=cleanup context=default namespace=gpu-dev
+2026-08-06T06:24:06Z	HOST_GPU_PROCESS_QUERY suffix=initial success=true count=0
+2026-08-06T06:24:08Z	OWNED_OBJECT_RECONCILE_ALLOWED resourceflavors.kueue.x-k8s.io/khalil-kueue-nvidia
+2026-08-06T06:24:09Z	OWNED_OBJECT_RECONCILE_ALLOWED clusterqueues.kueue.x-k8s.io/khalil-kueue-eval
+2026-08-06T06:24:09Z	OWNED_OBJECT_RECONCILE_ALLOWED localqueues.kueue.x-k8s.io/khalil-kueue-eval
+2026-08-06T06:24:10Z	OWNED_OBJECT_RECONCILE_ALLOWED queues.scheduling.volcano.sh/khalil-volcano-smoke
+2026-08-06T06:24:12Z	NO_BENCHMARK_OBJECTS_CONFIRMED
+2026-08-06T06:24:13Z	DEDICATED_QUEUES_UNUSED_CONFIRMED
+2026-08-06T06:24:14Z	OWNED_OBJECT_RECONCILE_ALLOWED localqueues.kueue.x-k8s.io/khalil-kueue-eval
+2026-08-06T06:24:14Z	EXACT_OBJECT_ABSENT_AFTER_CLEANUP localqueues.kueue.x-k8s.io/khalil-kueue-eval uid=666f899b-68bc-4949-8d29-74273fe822d4
+2026-08-06T06:24:15Z	OWNED_OBJECT_RECONCILE_ALLOWED clusterqueues.kueue.x-k8s.io/khalil-kueue-eval
+2026-08-06T06:24:16Z	EXACT_OBJECT_ABSENT_AFTER_CLEANUP clusterqueues.kueue.x-k8s.io/khalil-kueue-eval uid=bd579335-0a22-4499-b779-1457a95aa163
+2026-08-06T06:24:17Z	OWNED_OBJECT_RECONCILE_ALLOWED resourceflavors.kueue.x-k8s.io/khalil-kueue-nvidia
+2026-08-06T06:24:18Z	EXACT_OBJECT_ABSENT_AFTER_CLEANUP resourceflavors.kueue.x-k8s.io/khalil-kueue-nvidia uid=43f2b4a8-b76b-4d39-9b65-ffc1345f262a
+2026-08-06T06:24:19Z	OWNED_OBJECT_RECONCILE_ALLOWED queues.scheduling.volcano.sh/khalil-volcano-smoke
+2026-08-06T06:24:20Z	EXACT_OBJECT_ABSENT_AFTER_CLEANUP queues.scheduling.volcano.sh/khalil-volcano-smoke uid=d93bc318-7755-40e1-913a-6afb10765707
+2026-08-06T06:24:22Z	NO_BENCHMARK_OBJECTS_CONFIRMED
+2026-08-06T06:24:22Z	COMPLETE action=cleanup

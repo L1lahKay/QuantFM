@@ -1,0 +1,173 @@
+{
+  "run_id": "nccl-probe-20260803T022505Z",
+  "status": "success_with_contamination_cleanup_unknown",
+  "communication_status": "pass",
+  "scope": "single-node four-GPU NCCL collective probe; not model training",
+  "reason": "the per-run evidence marks this capture as affected by an external host compute process; communication passed but complete cleanup evidence is unavailable",
+  "job_uid": "8edefb7d-17fe-4953-800a-14e391f62bfe",
+  "pod_uid": "fd027c02-b7db-47eb-860c-d91f788b7456",
+  "node": "gpu-dev-01",
+  "scheduler": "default-scheduler",
+  "scheduled_event_component": "default-scheduler",
+  "scheduled_event_components": [
+    "default-scheduler"
+  ],
+  "scheduler_binding_verified": true,
+  "world_size": 4,
+  "visible_gpu_count": 4,
+  "backend": "nccl",
+  "nccl_version": "2.29.7",
+  "torch_version": "2.13.0+cu130",
+  "torch_cuda_build": "13.0",
+  "validation_value": 1.0,
+  "iterations": 50,
+  "payload_bytes_per_rank": 67108864,
+  "max_rank_elapsed_seconds": 0.8358874917030334,
+  "mean_collective_milliseconds": 16.71774983406067,
+  "payload_gigabytes_per_second": 4.014228270318575,
+  "wall_clock": {
+    "queue_seconds": 0.285763,
+    "api_job_seconds": 18.0,
+    "client_submit_to_completion_observed_seconds": 17.796,
+    "container_runtime_seconds": 12.0
+  },
+  "gpu_summary": {
+    "sample_count": 20,
+    "avg_gpu_utilization_percent": 53.95,
+    "peak_memory_used_mib": 14987.0,
+    "avg_power_watts": 77.1725
+  },
+  "gpu_samples": [
+    {
+      "timestamp": "2026-08-03T02:25:17.382Z",
+      "gpu_index": 0,
+      "gpu_utilization": 1.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:17.382Z",
+      "gpu_index": 1,
+      "gpu_utilization": 0.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:17.383Z",
+      "gpu_index": 2,
+      "gpu_utilization": 0.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:17.383Z",
+      "gpu_index": 3,
+      "gpu_utilization": 12.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:17.799Z",
+      "gpu_index": 0,
+      "gpu_utilization": 4.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:17.799Z",
+      "gpu_index": 1,
+      "gpu_utilization": 1.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:17.799Z",
+      "gpu_index": 2,
+      "gpu_utilization": 4.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:17.800Z",
+      "gpu_index": 3,
+      "gpu_utilization": 39.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:18.195Z",
+      "gpu_index": 0,
+      "gpu_utilization": 56.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:18.195Z",
+      "gpu_index": 1,
+      "gpu_utilization": 9.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:18.195Z",
+      "gpu_index": 2,
+      "gpu_utilization": 91.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:18.195Z",
+      "gpu_index": 3,
+      "gpu_utilization": 62.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:18.563Z",
+      "gpu_index": 0,
+      "gpu_utilization": 100.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:18.563Z",
+      "gpu_index": 1,
+      "gpu_utilization": 100.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:18.563Z",
+      "gpu_index": 2,
+      "gpu_utilization": 100.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:18.563Z",
+      "gpu_index": 3,
+      "gpu_utilization": 100.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:18.946Z",
+      "gpu_index": 0,
+      "gpu_utilization": 100.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:18.946Z",
+      "gpu_index": 1,
+      "gpu_utilization": 100.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:18.947Z",
+      "gpu_index": 2,
+      "gpu_utilization": 100.0
+    },
+    {
+      "timestamp": "2026-08-03T02:25:18.947Z",
+      "gpu_index": 3,
+      "gpu_utilization": 100.0
+    }
+  ],
+  "cleanup": {
+    "exact_job_absent": true,
+    "owned_pods_absent": null,
+    "namespace_gpu_quota_used_after": 0,
+    "gpu_quota_restored": null,
+    "cleanup_verified": null,
+    "explicit_failure": false,
+    "source": "raw cleanup.txt + cleanup-summary.json + full pre/post ResourceQuota maps; conflicts fail closed"
+  },
+  "data_quality": {
+    "performance_baseline_valid": false,
+    "quality_state": "contaminated",
+    "quality_evidence": "legacy captured summary; timestamped per-run preflight unavailable",
+    "preflight_snapshot_present": false,
+    "preflight_snapshot_observed_at": null,
+    "preflight_timestamp_source": null,
+    "preflight_snapshot_contemporaneous": false,
+    "preflight_query_success": null,
+    "preflight_declared_process_count": null,
+    "preflight_parsed_line_count": 0,
+    "external_host_process_detected": true,
+    "affected_gpu_index": null,
+    "affected_gpu_uuid_prefix": null,
+    "external_memory_used_mib": null,
+    "external_gpu_utilization_percent": null,
+    "kubernetes_running_gpu_requests": 0,
+    "affected_gpu_selected_by_probe": true,
+    "legacy_invalid_baseline_reason": "One allocated physical GPU was concurrently used by an external host process that was invisible to Kubernetes GPU-request accounting.",
+    "action": "parser performed no mutation; external processes were not targeted"
+  },
+  "evidence_dir": "benchmark/results/raw/nccl-probe-20260803T022505Z"
+}

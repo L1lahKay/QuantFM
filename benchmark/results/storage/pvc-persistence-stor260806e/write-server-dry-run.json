@@ -1,0 +1,129 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "creationTimestamp": "2026-08-06T09:15:36Z",
+        "generation": 1,
+        "labels": {
+            "app.kubernetes.io/name": "khalil-pvc-persistence-smoke",
+            "benchmark.quantfm.io/role": "write",
+            "benchmark.quantfm.io/run-token": "stor260806e"
+        },
+        "name": "khalil-pvc-write-stor260806e",
+        "namespace": "gpu-dev",
+        "uid": "e5d8d209-f4bd-4f65-b6ca-53f0ba184c02"
+    },
+    "spec": {
+        "activeDeadlineSeconds": 300,
+        "backoffLimit": 0,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "selector": {
+            "matchLabels": {
+                "batch.kubernetes.io/controller-uid": "e5d8d209-f4bd-4f65-b6ca-53f0ba184c02"
+            }
+        },
+        "suspend": false,
+        "template": {
+            "metadata": {
+                "labels": {
+                    "app.kubernetes.io/name": "khalil-pvc-persistence-smoke",
+                    "batch.kubernetes.io/controller-uid": "e5d8d209-f4bd-4f65-b6ca-53f0ba184c02",
+                    "batch.kubernetes.io/job-name": "khalil-pvc-write-stor260806e",
+                    "benchmark.quantfm.io/role": "write",
+                    "benchmark.quantfm.io/run-token": "stor260806e",
+                    "controller-uid": "e5d8d209-f4bd-4f65-b6ca-53f0ba184c02",
+                    "job-name": "khalil-pvc-write-stor260806e"
+                }
+            },
+            "spec": {
+                "automountServiceAccountToken": false,
+                "containers": [
+                    {
+                        "args": [
+                            "python -u - \u003c\u003c'PY'\n\nimport hashlib\nimport json\nimport os\nimport pathlib\nimport re\nimport time\n\ntoken = os.environ[\"RUN_TOKEN\"]\nif re.fullmatch(r\"[a-z0-9]{8,16}\", token) is None:\n    raise SystemExit(\"invalid run token\")\ntotal_bytes = int(os.environ[\"CHECKPOINT_BYTES\"])\nroot = pathlib.Path(\"/mnt/quantfm/benchmark-storage-smoke\")\ntarget = root / token\nif target.exists():\n    raise SystemExit(f\"refusing existing target: {target}\")\ntarget.mkdir(parents=True, exist_ok=False)\ntemporary = target / \"checkpoint.bin.partial\"\ncheckpoint = target / \"checkpoint.bin\"\nmanifest = target / \"manifest.json\"\nblock_seed = hashlib.sha256((\"quantfm-storage-smoke:\" + token).encode()).digest()\nblock = (block_seed * ((1024 * 1024 + len(block_seed) - 1) // len(block_seed)))[:1024 * 1024]\ndigest = hashlib.sha256()\nwritten = 0\nstarted = time.monotonic()\nwith temporary.open(\"xb\", buffering=0) as handle:\n    while written \u003c total_bytes:\n        payload = block[: min(len(block), total_bytes - written)]\n        handle.write(payload)\n        digest.update(payload)\n        written += len(payload)\n    os.fsync(handle.fileno())\nos.replace(temporary, checkpoint)\ndirectory_fd = os.open(target, os.O_RDONLY | os.O_DIRECTORY)\ntry:\n    os.fsync(directory_fd)\nfinally:\n    os.close(directory_fd)\nelapsed = time.monotonic() - started\nrecord = {\n    \"schema_version\": 1,\n    \"status\": \"success\",\n    \"run_token\": token,\n    \"pod_name\": os.environ.get(\"HOSTNAME\", \"unknown\"),\n    \"checkpoint_bytes\": written,\n    \"checkpoint_sha256\": digest.hexdigest(),\n    \"write_fsync_seconds\": elapsed,\n    \"write_mib_per_second\": written / 1048576 / elapsed,\n}\nmanifest_temporary = target / \"manifest.json.partial\"\nwith manifest_temporary.open(\"x\", encoding=\"utf-8\") as handle:\n    json.dump(record, handle, sort_keys=True)\n    handle.write(\"\\n\")\n    handle.flush()\n    os.fsync(handle.fileno())\nos.replace(manifest_temporary, manifest)\ndirectory_fd = os.open(target, os.O_RDONLY | os.O_DIRECTORY)\ntry:\n    os.fsync(directory_fd)\nfinally:\n    os.close(directory_fd)\nprint(\"PVC_CHECKPOINT_WRITE_JSON=\" + json.dumps(record, sort_keys=True), flush=True)\n\nPY\n"
+                        ],
+                        "command": [
+                            "/bin/sh",
+                            "-ceu"
+                        ],
+                        "env": [
+                            {
+                                "name": "RUN_TOKEN",
+                                "value": "stor260806e"
+                            },
+                            {
+                                "name": "CHECKPOINT_BYTES",
+                                "value": "67108864"
+                            }
+                        ],
+                        "image": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "write",
+                        "resources": {
+                            "limits": {
+                                "cpu": "1",
+                                "memory": "1Gi"
+                            },
+                            "requests": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        },
+                        "securityContext": {
+                            "allowPrivilegeEscalation": false,
+                            "capabilities": {
+                                "drop": [
+                                    "ALL"
+                                ]
+                            }
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/mnt/quantfm",
+                                "name": "quantfm-data"
+                            }
+                        ]
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "nodeSelector": {
+                    "accelerator": "nvidia",
+                    "kubernetes.io/hostname": "gpu-dev-01"
+                },
+                "restartPolicy": "Never",
+                "schedulerName": "default-scheduler",
+                "securityContext": {
+                    "fsGroup": 1009,
+                    "fsGroupChangePolicy": "OnRootMismatch",
+                    "seccompProfile": {
+                        "type": "RuntimeDefault"
+                    }
+                },
+                "terminationGracePeriodSeconds": 30,
+                "tolerations": [
+                    {
+                        "effect": "NoSchedule",
+                        "key": "nvidia.com/gpu",
+                        "operator": "Exists"
+                    }
+                ],
+                "volumes": [
+                    {
+                        "name": "quantfm-data",
+                        "persistentVolumeClaim": {
+                            "claimName": "quantfm-data"
+                        }
+                    }
+                ]
+            }
+        },
+        "ttlSecondsAfterFinished": 3600
+    },
+    "status": {}
+}

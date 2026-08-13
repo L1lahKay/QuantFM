@@ -1,0 +1,173 @@
+
+*****************************************
+Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+*****************************************
+/benchmark-ephemeral/tmp/khalil_benchmark_workload.py:328: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  torch.nn.TransformerEncoder(encoder_layer, num_layers=layer_count),
+/benchmark-ephemeral/tmp/khalil_benchmark_workload.py:328: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  torch.nn.TransformerEncoder(encoder_layer, num_layers=layer_count),
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Bootstrap: Using eth0:10.52.0.152<0>
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO cudaDriverVersion 13020
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO NCCL version 2.29.7+cuda13.2
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO NCCL git version stable b81d6a5a3
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO cudaDriverVersion 13020
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO Bootstrap: Using eth0:10.52.0.152<0>
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO NCCL version 2.29.7+cuda13.2
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO NCCL git version stable b81d6a5a3
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Comm config Blocking set to 1
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO Comm config Blocking set to 1
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Failed to open libibverbs.so[.1]
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO transport/net_ib/init.cc:396 -> 3
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Failed to initialize NET plugin IB
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO NET/Socket : Using [0]eth0:10.52.0.152<0>
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Initialized NET plugin Socket
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Assigned NET plugin Socket to comm
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+
+[2026-08-03 07:26:33] khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] misc/ibvwrap.cc:173 NCCL WARN lib wrapper not initialized.
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO transport/net_ib/gdr.cc:56 -> 3
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Failed to initialize any GIN plugin
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Using network Socket
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO [Rank 0] ncclCommInitRankConfig comm 0x14906540 rank 0 nranks 4 cudaDev 0 nvmlDev 0 busId 27000 commId 0x1990c3836174c038 - Init START
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO Failed to open libibverbs.so[.1]
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO transport/net_ib/init.cc:396 -> 3
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO Failed to initialize NET plugin IB
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO NET/Socket : Using [0]eth0:10.52.0.152<0>
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO Initialized NET plugin Socket
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO Assigned NET plugin Socket to comm
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+
+[2026-08-03 07:26:33] khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] misc/ibvwrap.cc:173 NCCL WARN lib wrapper not initialized.
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO transport/net_ib/gdr.cc:56 -> 3
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO Failed to initialize any GIN plugin
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO Using network Socket
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO [Rank 1] ncclCommInitRankConfig comm 0x400bc4f0 rank 1 nranks 4 cudaDev 1 nvmlDev 1 busId 38000 commId 0x1990c3836174c038 - Init START
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO RAS client listening socket at ::1<28028>
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO RAS client listening socket at ::1<28028>
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Bootstrap timings total 0.371611 (create 0.000090, send 0.000224, recv 0.057106, ring 0.002120, delay 0.000002)
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO Bootstrap timings total 0.314825 (create 0.000085, send 0.000197, recv 0.000451, ring 0.312985, delay 0.000002)
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 0 is 0-15. (GPU affinity = 0-15 ; CPU affinity = 0-63).
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO NVLS multicast support is not available on dev 0 (NVLS_NCHANNELS 0)
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 1 is 0-15. (GPU affinity = 0-15 ; CPU affinity = 0-63).
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO NVLS multicast support is not available on dev 1 (NVLS_NCHANNELS 0)
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO comm 0x400bc4f0 rank 1 nRanks 4 nNodes 2 localRanks 2 localRank 1 MNNVL 0
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO Trees [0] -1/-1/-1->1->0 [1] -1/-1/-1->1->0
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO P2P Chunksize set to 131072
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO comm 0x14906540 rank 0 nRanks 4 nNodes 2 localRanks 2 localRank 0 MNNVL 0
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Channel 00/02 : 0 1 2 3
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Channel 01/02 : 0 1 2 3
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Trees [0] 1/2/-1->0->-1 [1] 1/-1/-1->0->2
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO P2P Chunksize set to 131072
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO Check P2P Type isAllDirectP2p 0 directMode 0 isAllCudaP2p 0
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Check P2P Type isAllDirectP2p 0 directMode 0 isAllCudaP2p 0
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:150 [0] NCCL INFO [Proxy Service] Device 1 CPU core 5
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:151 [0] NCCL INFO [Proxy Service] Device 0 CPU core 14
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:152 [0] NCCL INFO [Proxy Service UDS] Device 1 CPU core 15
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:153 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 2
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO 2 coll channels, 2 collnet channels, 0 nvls channels, 2 p2p channels, 1 p2p channels per peer
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO Symmetric memory is not supported. cuMemEnable 1, globalGinSupport 0, globalNicFused 0 cuMemGdrSupport 0
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO 2 coll channels, 2 collnet channels, 0 nvls channels, 2 p2p channels, 1 p2p channels per peer
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Symmetric memory is not supported. cuMemEnable 1, globalGinSupport 0, globalNicFused 0 cuMemGdrSupport 0
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO CC Off, workFifoBytes 1048576
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO ncclCommInitRankConfig comm 0x14906540 rank 0 nranks 4 cudaDev 0 nvmlDev 0 busId 27000 commId 0x1990c3836174c038 - Init COMPLETE
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Init timings - ncclCommInitRankConfig: rank 0 nranks 4 total 0.95 (kernels 0.43, alloc 0.06, bootstrap 0.37, allgathers 0.04, topo 0.05, graphs 0.00, connections 0.01, rest 0.00)
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO ncclCommInitRankConfig comm 0x400bc4f0 rank 1 nranks 4 cudaDev 1 nvmlDev 1 busId 38000 commId 0x1990c3836174c038 - Init COMPLETE
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO Init timings - ncclCommInitRankConfig: rank 1 nranks 4 total 0.95 (kernels 0.49, alloc 0.06, bootstrap 0.31, allgathers 0.03, topo 0.05, graphs 0.00, connections 0.01, rest 0.00)
+
+[2026-08-03 07:26:34] khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:150 [1] misc/shmutils.cc:88 NCCL WARN Error: failed to extend /dev/shm/nccl-Hqw8cZ to 34210180 bytes, error: No space left on device (28)
+
+[2026-08-03 07:26:34] khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:150 [1] misc/shmutils.cc:133 NCCL WARN Error while creating shared memory segment /dev/shm/nccl-Hqw8cZ (size 34210176), error: No space left on device (28)
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:150 [1] NCCL INFO proxy.cc:1393 -> 2
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:150 [1] NCCL INFO proxy.cc:1451 -> 2
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO proxy.cc:1166 -> 2
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO transport/net.cc:310 -> 2
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO transport.cc:36 -> 2
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO transport.cc:171 -> 2
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO transport/generic.cc:28 -> 2
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO group.cc:153 -> 2
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO group.cc:213 -> 2
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO group.cc:80 -> 2 [Async thread]
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO group.cc:650 -> 2
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO group.cc:833 -> 2
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO enqueue.cc:3016 -> 2
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/benchmark-ephemeral/tmp/khalil_benchmark_workload.py", line 439, in <module>
+[rank1]:     main()
+[rank1]:   File "/benchmark-ephemeral/tmp/khalil_benchmark_workload.py", line 408, in main
+[rank1]:     result = run_transformer(spec, sampler)
+[rank1]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/benchmark-ephemeral/tmp/khalil_benchmark_workload.py", line 332, in run_transformer
+[rank1]:     model = DistributedDataParallel(model, device_ids=[local_rank])
+[rank1]:             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/app/.venv/lib/python3.12/site-packages/torch/nn/parallel/distributed.py", line 1064, in __init__
+[rank1]:     _verify_param_shape_across_processes(self.process_group, parameters)
+[rank1]:   File "/app/.venv/lib/python3.12/site-packages/torch/distributed/utils.py", line 286, in _verify_param_shape_across_processes
+[rank1]:     return dist._verify_params_across_processes(process_group, tensors, logger)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]: torch.distributed.DistBackendError: NCCL error in: /__w/pytorch/pytorch/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp:3866, unhandled system error (run with NCCL_DEBUG=INFO for details), NCCL version 2.29.7
+[rank1]: ncclSystemError: System call (e.g. socket, malloc) or external library call failed or device error. 
+[rank1]: Last error:
+[rank1]: Error while creating shared memory segment /dev/shm/nccl-Hqw8cZ (size 34210176), error: No space left on device (28)
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:154 [0] NCCL INFO [Proxy Progress] Device 0 CPU core 4
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Channel 00/0 : 3[1] -> 0[0] [receive] via NET/Socket/0
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Channel 01/0 : 3[1] -> 0[0] [receive] via NET/Socket/0
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Channel 00 : 0[0] -> 1[1] via SHM/direct/direct
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:131:131 [0] NCCL INFO Channel 01 : 0[0] -> 1[1] via SHM/direct/direct
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:155 [1] NCCL INFO comm 0x400bc4f0 rank 1 nRanks 4 cudaDev 1 busId 38000 - Abort START
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:155 [1] NCCL INFO misc/socket.cc:28 -> 3
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:155 [1] NCCL INFO misc/socket.cc:45 -> 3
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:155 [1] NCCL INFO misc/socket.cc:584 -> 3
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:150 [1] NCCL INFO misc/socket.cc:659 -> 3
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:155 [1] NCCL INFO comm 0x400bc4f0 rank 1 nranks 4 cudaDev 1 busId 38000 - Abort COMPLETE
+khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0:132:132 [1] NCCL INFO ENV/Plugin: Closing env plugin ncclEnvDefault
+W0803 07:26:35.932000 62 .venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/api.py:1028] Sending process 131 closing signal SIGTERM
+E0803 07:26:36.247000 62 .venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/api.py:1002] failed (exitcode: 1) local_rank: 1 (pid: 132) of binary: /app/.venv/bin/python
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/.venv/lib/python3.12/site-packages/torch/distributed/run.py", line 1032, in <module>
+    main()
+  File "/app/.venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 367, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.12/site-packages/torch/distributed/run.py", line 1028, in main
+    run(args)
+  File "/app/.venv/lib/python3.12/site-packages/torch/distributed/run.py", line 1019, in run
+    elastic_launch(
+  File "/app/.venv/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 194, in __call__
+    return launch_agent(
+           ^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 383, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/benchmark-ephemeral/tmp/khalil_benchmark_workload.py FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-08-03_07:26:36
+  host      : khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0.khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-rdzv.gpu-dev.svc.cluster.local
+  rank      : 0 (local_rank: 0)
+  exitcode  : -15 (pid: 131)  (SIGTERM)
+  error_file: <N/A>
+  traceback : Signal 15 (SIGTERM) received by PID 131
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-08-03_07:26:35
+  host      : khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-0.khalil-bm-k8s-0635c1-transform-o7072c9af-c008-r01-rdzv.gpu-dev.svc.cluster.local
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 132) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

@@ -1,0 +1,47 @@
+[
+  {
+    "allowed": "yes",
+    "resource": "jobs.batch",
+    "verb": "create"
+  },
+  {
+    "allowed": "yes",
+    "resource": "jobs.batch",
+    "verb": "get"
+  },
+  {
+    "allowed": "yes",
+    "resource": "jobs.batch",
+    "verb": "delete"
+  },
+  {
+    "allowed": "yes",
+    "resource": "pods",
+    "verb": "get"
+  },
+  {
+    "allowed": "yes",
+    "resource": "pods",
+    "verb": "list"
+  },
+  {
+    "allowed": "yes",
+    "resource": "pods/log",
+    "verb": "get"
+  },
+  {
+    "allowed": "yes",
+    "resource": "events",
+    "verb": "list"
+  },
+  {
+    "allowed": "yes",
+    "resource": "persistentvolumeclaims",
+    "verb": "get"
+  },
+  {
+    "allowed": "yes",
+    "resource": "persistentvolumes",
+    "verb": "get"
+  }
+]

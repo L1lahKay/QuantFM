@@ -1,0 +1,1 @@
+transformer-multipod-gpu4 k8s: dry-run-complete evidence=/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-0635c1-transform-o1fe23f08-c005-r01

@@ -1,0 +1,28 @@
+{
+  "items": [
+    {
+      "gpu_requests": 1,
+      "name": "khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-0-fxv9l",
+      "namespace": "gpu-dev",
+      "uid": "4748a8a2-ff17-4a54-b6a6-27638288518b"
+    },
+    {
+      "gpu_requests": 1,
+      "name": "khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-1-t6qsz",
+      "namespace": "gpu-dev",
+      "uid": "7e25e388-3726-4cd8-9b94-796b28be0400"
+    },
+    {
+      "gpu_requests": 1,
+      "name": "khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-2-29sk8",
+      "namespace": "gpu-dev",
+      "uid": "630af596-2023-4f8b-b23e-219274083d28"
+    },
+    {
+      "gpu_requests": 1,
+      "name": "khalil-bm-k8s-1049ae-nn-multip-o7072c9af-c002-r03-3-bnwr8",
+      "namespace": "gpu-dev",
+      "uid": "f9c6ee95-a3a6-4ec5-93a7-32fcb6a9d4d7"
+    }
+  ]
+}

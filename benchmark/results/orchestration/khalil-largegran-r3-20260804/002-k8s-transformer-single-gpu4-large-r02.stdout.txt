@@ -1,0 +1,1 @@
+transformer-single-gpu4-large k8s: succeeded evidence=/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-2143b4-transform-o721a2a2d-c002-r02

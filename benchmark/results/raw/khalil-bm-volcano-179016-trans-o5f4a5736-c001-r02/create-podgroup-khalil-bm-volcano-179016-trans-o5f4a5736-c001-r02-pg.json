@@ -1,0 +1,41 @@
+{
+    "apiVersion": "scheduling.volcano.sh/v1beta1",
+    "kind": "PodGroup",
+    "metadata": {
+        "annotations": {
+            "benchmark.quantfm.io/checkpoints-allowed": "false",
+            "benchmark.quantfm.io/downloads-allowed": "false",
+            "benchmark.quantfm.io/durable-output-allowed": "false",
+            "benchmark.quantfm.io/input-mode": "deterministic_synthetic_in_memory",
+            "benchmark.quantfm.io/ownership-token": "55c4d8f9958041b48d05e96f41d8c93c",
+            "benchmark.quantfm.io/persistent-cache-allowed": "false",
+            "benchmark.quantfm.io/runtime-image": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+            "benchmark.quantfm.io/scaling-fingerprint": "sha256:d32a2c4974695a57eb120d6e73bacb57422bb14f7a7bbc88ab9f56c069781f4f",
+            "benchmark.quantfm.io/shm-mode": "shared-memory-emptydir",
+            "benchmark.quantfm.io/storage-mode": "synthetic_ephemeral",
+            "benchmark.quantfm.io/workload-implementation": "embedded-workload-entry-v1",
+            "benchmark.quantfm.io/workload-payload-sha256": "987b026bdbc499620e37cf77d725d75250a2ad05827da220b4fd08255d71ff6c"
+        },
+        "creationTimestamp": "2026-08-06T05:47:54Z",
+        "generation": 1,
+        "labels": {
+            "app.kubernetes.io/name": "khalil-scheduler-benchmark",
+            "benchmark.quantfm.io/model": "transformer",
+            "benchmark.quantfm.io/run-id": "khalil-bm-volcano-179016-trans-o5f4a5736-c001-r02",
+            "benchmark.quantfm.io/scheduler": "volcano"
+        },
+        "name": "khalil-bm-volcano-179016-trans-o5f4a5736-c001-r02-pg",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29830786",
+        "uid": "a9922dac-9a36-4b2b-ad78-6eb714b24fdd"
+    },
+    "spec": {
+        "minMember": 1,
+        "minResources": {
+            "cpu": "4",
+            "memory": "12Gi",
+            "nvidia.com/gpu": "1"
+        },
+        "queue": "khalil-volcano-smoke"
+    }
+}

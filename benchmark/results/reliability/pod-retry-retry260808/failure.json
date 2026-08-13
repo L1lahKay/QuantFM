@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "experiment": "pod-process-failure-job-retry",
+  "status": "failed",
+  "run_token": "retry260808",
+  "job_name": "khalil-pod-retry-retry260808",
+  "job_uid": "0fd3f269-ce4b-4a16-8096-40c434e3cf5d",
+  "error_type": "ExperimentError",
+  "error": "timeout waiting for second Pod retry attempt; last=None",
+  "failed_at": "2026-08-06T07:51:58.938Z"
+}

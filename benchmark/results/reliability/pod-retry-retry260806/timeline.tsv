@@ -1,0 +1,5 @@
+2026-08-06T07:44:58.996Z	experiment-start	run_token=retry260806
+2026-08-06T07:44:58.997Z	preflight-start
+2026-08-06T07:45:01.655Z	preflight-complete
+2026-08-06T07:45:01.926Z	job-created	name=khalil-pod-retry-retry260806	uid=91bc154d-0dde-4f94-86af-8c59e8a6cd80
+2026-08-06T07:47:03.562Z	cleanup-complete	job_absent=true	pods_absent=true	gpu_requests=0

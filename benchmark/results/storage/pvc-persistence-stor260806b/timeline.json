@@ -1,0 +1,16 @@
+[
+  {
+    "at": "2026-08-06T09:13:42.465Z",
+    "event": "write_create_begin"
+  },
+  {
+    "at": "2026-08-06T09:13:42.740Z",
+    "event": "write_create_return",
+    "job_uid": "a119dcde-2257-43f2-a7a3-169e0ecdffb8"
+  },
+  {
+    "at": "2026-08-06T09:13:47.472Z",
+    "event": "write_terminal_observed",
+    "terminal": "Failed"
+  }
+]

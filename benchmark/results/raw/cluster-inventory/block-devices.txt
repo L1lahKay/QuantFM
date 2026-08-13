@@ -1,0 +1,20 @@
+observed_at_utc=2026-08-03
+command=lsblk -o NAME,TYPE,SIZE,FSTYPE,MOUNTPOINTS,MODEL,ROTA
+
+NAME        TYPE   SIZE FSTYPE      MOUNTPOINTS       MODEL                   ROTA
+nvme1n1     disk   1.8T                               Samsung SSD 990 PRO 2TB    0
+|-nvme1n1p1 part     1G vfat        /boot/efi                                    0
+|-nvme1n1p2 part     2G ext4        /boot                                        0
+`-nvme1n1p3 part   1.8T LVM2_member                                              0
+nvme0n1     disk     7T                               INTEL SSDPF2KX076T9N       0
+|-nvme0n1p1 part   200M vfat                                                     0
+|-nvme0n1p2 part     1G xfs                                                      0
+`-nvme0n1p3 part     7T LVM2_member                                              0
+
+interpretation:
+- / and /data currently resolve to the same root logical volume (see storage-mounts.txt).
+- A separate-looking 7T block device exists but is not mounted in this view.
+- LVM metadata could not be inspected as the current account lacks the required
+  host privilege; sudo requested a password. Its ownership, data contents, and
+  suitability for a PVC are therefore unknown and must be confirmed by a human
+  storage administrator before any mutation.

@@ -1,0 +1,9 @@
+{
+  "items": [
+    "host nvidia-smi reports active compute processes; refusing to kill, preempt, or overlap them",
+    "training storage gate is closed: The exact claim gpu-dev/quantfm-data is local-path storage and /data resolves to the same /dev/mapper/ubuntu--vg-ubuntu--lv filesystem as /; it is root-disk-backed and therefore ineligible for training even with an approval marker.",
+    "training storage hard block: the configured PVC is not backed by a verified non-root-disk filesystem",
+    "Kueue execution is blocked: the previous one-time exception has ended; The 2026-07-31 one-time exceptions have ended. gpu-dev currently has no LocalQueue, the dedicated Volcano administrator kubeconfig is absent, and a new bounded AGENTS.md authorization plus active maintenance window are required before execution.",
+    "required Kueue LocalQueue gpu-dev/khalil-kueue-eval is absent or unreadable: kubectl get localqueue.kueue.x-k8s.io khalil-kueue-eval -o failed: Error from server (NotFound): localqueues.kueue.x-k8s.io \"khalil-kueue-eval\" not found"
+  ]
+}

@@ -1,0 +1,87 @@
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ResourceFlavor
+metadata:
+  creationTimestamp: "2026-08-03T07:16:17Z"
+  finalizers:
+  - kueue.x-k8s.io/resource-in-use
+  generation: 1
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/purpose: scheduler-benchmark-runtime
+  name: khalil-kueue-nvidia
+  uid: f734c324-b5e8-4ba1-9ac9-4c0b494c5a35
+spec:
+  nodeLabels:
+    accelerator: nvidia
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ClusterQueue
+metadata:
+  creationTimestamp: "2026-08-03T07:16:17Z"
+  finalizers:
+  - kueue.x-k8s.io/resource-in-use
+  generation: 1
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/purpose: scheduler-benchmark-runtime
+  name: khalil-kueue-eval
+  uid: 49e32910-86b1-4d93-af3c-a4b87c68f61a
+spec:
+  flavorFungibility:
+    whenCanBorrow: MayStopSearch
+    whenCanPreempt: TryNextFlavor
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: gpu-dev
+  preemption:
+    borrowWithinCohort:
+      policy: Never
+    reclaimWithinCohort: Never
+    withinClusterQueue: Never
+  queueingStrategy: StrictFIFO
+  resourceGroups:
+  - coveredResources:
+    - cpu
+    - memory
+    - nvidia.com/gpu
+    flavors:
+    - name: khalil-kueue-nvidia
+      resources:
+      - name: cpu
+        nominalQuota: "8"
+      - name: memory
+        nominalQuota: 16Gi
+      - name: nvidia.com/gpu
+        nominalQuota: "4"
+  stopPolicy: None
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: LocalQueue
+metadata:
+  creationTimestamp: "2026-08-03T07:16:18Z"
+  generation: 1
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/purpose: scheduler-benchmark-runtime
+  name: khalil-kueue-eval
+  namespace: gpu-dev
+  uid: 2fb02e92-8445-4735-9d65-159d3a42d132
+spec:
+  clusterQueue: khalil-kueue-eval
+  stopPolicy: None
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+  creationTimestamp: "2026-08-03T07:16:18Z"
+  generation: 1
+  labels:
+    evaluation.quantfm/owner: khalil
+    evaluation.quantfm/purpose: scheduler-benchmark-runtime
+  name: khalil-volcano-smoke
+  uid: 6c9251e2-d620-4ff6-a31f-ef838e7ef381
+spec:
+  capability:
+    cpu: "8"
+    memory: 16Gi
+    nvidia.com/gpu: "4"
+  dequeueStrategy: traverse
+  reclaimable: false
+  weight: 1

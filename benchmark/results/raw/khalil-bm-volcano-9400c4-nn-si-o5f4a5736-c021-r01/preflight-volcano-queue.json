@@ -1,0 +1,34 @@
+{
+  "apiVersion": "scheduling.volcano.sh/v1beta1",
+  "kind": "Queue",
+  "metadata": {
+    "creationTimestamp": "2026-08-06T05:45:38Z",
+    "generation": 2,
+    "labels": {
+      "evaluation.quantfm/owner": "khalil",
+      "evaluation.quantfm/purpose": "scheduler-benchmark-runtime"
+    },
+    "name": "khalil-volcano-smoke",
+    "resourceVersion": "29834307",
+    "uid": "d93bc318-7755-40e1-913a-6afb10765707"
+  },
+  "spec": {
+    "capability": {
+      "cpu": "8",
+      "memory": "16Gi",
+      "nvidia.com/gpu": "4"
+    },
+    "dequeueStrategy": "traverse",
+    "parent": "root",
+    "reclaimable": false,
+    "weight": 1
+  },
+  "status": {
+    "allocated": {
+      "cpu": "0",
+      "memory": "0"
+    },
+    "reservation": {},
+    "state": "Open"
+  }
+}

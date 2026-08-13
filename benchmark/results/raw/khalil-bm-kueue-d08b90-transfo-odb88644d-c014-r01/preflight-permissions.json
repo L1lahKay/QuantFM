@@ -1,0 +1,82 @@
+{
+  "items": [
+    {
+      "allowed": false,
+      "resource": "jobs.batch",
+      "scope": "gpu-dev",
+      "verb": "create"
+    },
+    {
+      "allowed": false,
+      "resource": "jobs.batch",
+      "scope": "gpu-dev",
+      "verb": "get"
+    },
+    {
+      "allowed": false,
+      "resource": "jobs.batch",
+      "scope": "gpu-dev",
+      "verb": "delete"
+    },
+    {
+      "allowed": false,
+      "resource": "pods",
+      "scope": "gpu-dev",
+      "verb": "get"
+    },
+    {
+      "allowed": false,
+      "resource": "pods",
+      "scope": "gpu-dev",
+      "verb": "list"
+    },
+    {
+      "allowed": false,
+      "resource": "pods/log",
+      "scope": "gpu-dev",
+      "verb": "get"
+    },
+    {
+      "allowed": false,
+      "resource": "events",
+      "scope": "gpu-dev",
+      "verb": "list"
+    },
+    {
+      "allowed": false,
+      "resource": "resourcequotas",
+      "scope": "gpu-dev",
+      "verb": "list"
+    },
+    {
+      "allowed": false,
+      "resource": "pods",
+      "scope": "all-namespaces",
+      "verb": "list"
+    },
+    {
+      "allowed": false,
+      "resource": "localqueues.kueue.x-k8s.io",
+      "scope": "gpu-dev",
+      "verb": "get"
+    },
+    {
+      "allowed": false,
+      "resource": "clusterqueues.kueue.x-k8s.io",
+      "scope": "cluster",
+      "verb": "get"
+    },
+    {
+      "allowed": false,
+      "resource": "workloads.kueue.x-k8s.io",
+      "scope": "gpu-dev",
+      "verb": "get"
+    },
+    {
+      "allowed": false,
+      "resource": "workloads.kueue.x-k8s.io",
+      "scope": "gpu-dev",
+      "verb": "list"
+    }
+  ]
+}

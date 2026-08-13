@@ -1,0 +1,244 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: khalil-dense-v2-230m-4gpu-template
+  namespace: gpu-dev
+  labels:
+    app.kubernetes.io/name: quantfm
+    app.kubernetes.io/component: training
+    app.kubernetes.io/part-of: khalil-quantfm
+    quantfm.zs/model: dense-v2-230m
+    owner: khalil
+spec:
+  # This repository artifact is deliberately inert.  The dedicated submitter
+  # renders an immutable image digest, repeats live safety gates, removes this
+  # field, performs a server-side dry-run, and only then creates the Job.
+  suspend: true
+  activeDeadlineSeconds: 604800
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: quantfm
+        app.kubernetes.io/component: training
+        app.kubernetes.io/part-of: khalil-quantfm
+        quantfm.zs/model: dense-v2-230m
+        owner: khalil
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 120
+      runtimeClassName: nvidia
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      nodeSelector:
+        accelerator: nvidia
+        kubernetes.io/hostname: gpu-dev-01
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1006
+        runAsGroup: 1009
+        fsGroup: 1009
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: trainer
+          image: REPLACE_IMAGE
+          imagePullPolicy: IfNotPresent
+          workingDir: /workspace/QuantFM
+          command: ["/bin/sh", "-ceu"]
+          args:
+            - |
+              test -d /mnt/quantfm/runs
+              test -f quant_fm/runs/v2_shared/data/manifest.json
+              test -f quant_fm/runs/v2_shared/data/vocab_v2.json
+              test -f quant_fm/runs/v2_shared/artifact_audit.json
+              test -d quant_fm/runs/v2_shared/tokens
+
+              available_kib="$(df -Pk /mnt/quantfm | awk 'NR == 2 {print $4}')"
+              test -n "$available_kib"
+              test "$available_kib" -ge 104857600
+
+              mkdir -p \
+                /mnt/quantfm/cache/home \
+                /mnt/quantfm/cache/huggingface \
+                /mnt/quantfm/cache/torch \
+                /mnt/quantfm/cache/triton \
+                /mnt/quantfm/cache/cuda \
+                /mnt/quantfm/tmp \
+                /mnt/quantfm/runs/v2_dense_230m/run
+
+              python - <<'PY'
+              import json
+              from pathlib import Path
+
+              root = Path("quant_fm/runs/v2_shared")
+              audit = json.loads((root / "artifact_audit.json").read_text())
+              if audit.get("contract_ready") is not True:
+                  raise SystemExit("V2 artifact audit is not an explicit PASS")
+              if audit.get("checked_all_paths") is not True:
+                  raise SystemExit("V2 artifact audit did not check every shard path")
+              if audit.get("failed_symbol_gaps"):
+                  raise SystemExit("V2 artifact audit records failed symbols")
+              critical = [
+                  issue
+                  for issue in audit.get("issues", [])
+                  if issue.get("severity") == "critical"
+              ]
+              if critical:
+                  raise SystemExit(f"V2 artifact audit has critical issues: {critical[:3]}")
+
+              manifest = json.loads((root / "data/manifest.json").read_text())
+              shards = manifest["shards"]
+              actual_dates = sorted({str(shard["date"]) for shard in shards})
+              expected_dates = sorted(
+                  line.strip()
+                  for line in Path("quant_fm/data/medium_60_dates.txt")
+                  .read_text()
+                  .splitlines()
+                  if line.strip()
+              )
+              if len(expected_dates) != 60 or len(set(expected_dates)) != 60:
+                  raise SystemExit("frozen full-market date plan is not exactly 60 days")
+              if actual_dates != expected_dates:
+                  raise SystemExit(
+                      "manifest dates do not match the frozen 60-day full-market plan"
+                  )
+
+              symbol_files = {
+                  "SZ": Path("quant_fm/data/medium_symbols_sz.txt"),
+                  "SH": Path("quant_fm/data/medium_symbols_sh.txt"),
+              }
+              expected_symbols = {
+                  market: [
+                      line.strip()
+                      for line in path.read_text().splitlines()
+                      if line.strip()
+                  ]
+                  for market, path in symbol_files.items()
+              }
+              expected_symbol_counts = {"SZ": 2836, "SH": 2269}
+              for market, symbols in expected_symbols.items():
+                  if (
+                      len(symbols) != expected_symbol_counts[market]
+                      or len(symbols) != len(set(symbols))
+                  ):
+                      raise SystemExit(f"invalid frozen {market} symbol universe")
+                  if any(len(symbol) != 6 or not symbol.isdigit() for symbol in symbols):
+                      raise SystemExit(f"invalid symbol in frozen {market} universe")
+
+              allowed_keys = {
+                  (date, market, symbol)
+                  for date in expected_dates
+                  for market, symbols in expected_symbols.items()
+                  for symbol in symbols
+              }
+              actual_keys = [
+                  (
+                      str(shard["date"]),
+                      str(shard["market"]).upper(),
+                      str(shard["symbol"]),
+                  )
+                  for shard in shards
+              ]
+              if len(actual_keys) != len(set(actual_keys)):
+                  raise SystemExit("manifest contains duplicate date/market/symbol shards")
+              actual_key_set = set(actual_keys)
+              unexpected = actual_key_set - allowed_keys
+              if unexpected:
+                  raise SystemExit(
+                      "manifest contains shards outside the frozen date/universe plan: "
+                      f"count={len(unexpected)} sample={sorted(unexpected)[:5]}"
+                  )
+              expected_symbol_keys = {
+                  (market, symbol)
+                  for market, symbols in expected_symbols.items()
+                  for symbol in symbols
+              }
+              actual_symbol_keys = {
+                  (market, symbol) for _, market, symbol in actual_key_set
+              }
+              missing_symbols = expected_symbol_keys - actual_symbol_keys
+              unexpected_symbols = actual_symbol_keys - expected_symbol_keys
+              if missing_symbols or unexpected_symbols:
+                  raise SystemExit(
+                      "manifest market/symbol union does not match the frozen universe: "
+                      f"missing={len(missing_symbols)} "
+                      f"sample={sorted(missing_symbols)[:5]}, "
+                      f"unexpected={len(unexpected_symbols)} "
+                      f"sample={sorted(unexpected_symbols)[:5]}"
+                  )
+              missing_symbol_days = len(allowed_keys - actual_key_set)
+              coverage = len(actual_key_set) / len(allowed_keys)
+              print(
+                  "V2_FULL_MARKET_PREFLIGHT_PASS "
+                  f"dates={len(actual_dates)} "
+                  f"symbols={sum(len(v) for v in expected_symbols.values())} "
+                  f"symbol_day_shards={len(shards)}/{len(allowed_keys)} "
+                  f"missing_symbol_days={missing_symbol_days} "
+                  f"coverage={coverage:.6f}",
+                  flush=True,
+              )
+              PY
+
+              exec python -m torch.distributed.run \
+                --standalone \
+                --nproc_per_node=4 \
+                -m quant_fm.pretrain.train \
+                --config quant_fm/pretrain/config_v2_230m_4gpu.yaml \
+                --resume auto
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: OMP_NUM_THREADS
+              value: "2"
+            - name: TORCH_NCCL_ASYNC_ERROR_HANDLING
+              value: "1"
+            - name: NCCL_DEBUG
+              value: WARN
+            - name: HOME
+              value: /mnt/quantfm/cache/home
+            - name: TMPDIR
+              value: /mnt/quantfm/tmp
+            - name: XDG_CACHE_HOME
+              value: /mnt/quantfm/cache
+            - name: HF_HOME
+              value: /mnt/quantfm/cache/huggingface
+            - name: TORCH_HOME
+              value: /mnt/quantfm/cache/torch
+            - name: TRITON_CACHE_DIR
+              value: /mnt/quantfm/cache/triton
+            - name: CUDA_CACHE_PATH
+              value: /mnt/quantfm/cache/cuda
+          resources:
+            requests:
+              nvidia.com/gpu: "4"
+              cpu: "32"
+              memory: 64Gi
+            limits:
+              nvidia.com/gpu: "4"
+              cpu: "48"
+              memory: 128Gi
+          volumeMounts:
+            - name: training-data
+              mountPath: /mnt/quantfm
+            - name: dshm
+              mountPath: /dev/shm
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: training-data
+          persistentVolumeClaim:
+            claimName: quantfm-data
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 8Gi

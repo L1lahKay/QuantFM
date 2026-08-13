@@ -1,0 +1,245 @@
+
+*****************************************
+Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+*****************************************
+/benchmark-ephemeral/tmp/khalil_benchmark_workload.py:342: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  torch.nn.TransformerEncoder(encoder_layer, num_layers=layer_count),
+/benchmark-ephemeral/tmp/khalil_benchmark_workload.py:342: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  torch.nn.TransformerEncoder(encoder_layer, num_layers=layer_count),
+/benchmark-ephemeral/tmp/khalil_benchmark_workload.py:342: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  torch.nn.TransformerEncoder(encoder_layer, num_layers=layer_count),
+/benchmark-ephemeral/tmp/khalil_benchmark_workload.py:342: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  torch.nn.TransformerEncoder(encoder_layer, num_layers=layer_count),
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Bootstrap: Using eth0:10.52.0.128<0>
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO cudaDriverVersion 13020
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO NCCL version 2.29.7+cuda13.2
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO NCCL git version stable b81d6a5a3
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Comm config Blocking set to 1
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO cudaDriverVersion 13020
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO Bootstrap: Using eth0:10.52.0.128<0>
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO NCCL version 2.29.7+cuda13.2
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO NCCL git version stable b81d6a5a3
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO Comm config Blocking set to 1
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO cudaDriverVersion 13020
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO Bootstrap: Using eth0:10.52.0.128<0>
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO NCCL version 2.29.7+cuda13.2
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO NCCL git version stable b81d6a5a3
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO Comm config Blocking set to 1
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO cudaDriverVersion 13020
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO Bootstrap: Using eth0:10.52.0.128<0>
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO NCCL version 2.29.7+cuda13.2
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO NCCL git version stable b81d6a5a3
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO Comm config Blocking set to 1
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Failed to open libibverbs.so[.1]
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO transport/net_ib/init.cc:396 -> 3
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Failed to initialize NET plugin IB
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO NET/Socket : Using [0]eth0:10.52.0.128<0>
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Initialized NET plugin Socket
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Assigned NET plugin Socket to comm
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+
+[2026-08-06 06:16:54] khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] misc/ibvwrap.cc:173 NCCL WARN lib wrapper not initialized.
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO transport/net_ib/gdr.cc:56 -> 3
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Failed to initialize any GIN plugin
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Using network Socket
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO Failed to open libibverbs.so[.1]
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO transport/net_ib/init.cc:396 -> 3
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO Failed to initialize NET plugin IB
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO NET/Socket : Using [0]eth0:10.52.0.128<0>
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO Initialized NET plugin Socket
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO Assigned NET plugin Socket to comm
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+
+[2026-08-06 06:16:54] khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] misc/ibvwrap.cc:173 NCCL WARN lib wrapper not initialized.
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO transport/net_ib/gdr.cc:56 -> 3
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO Failed to initialize any GIN plugin
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO Using network Socket
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO [Rank 0] ncclCommInitRankConfig comm 0x3dbbb420 rank 0 nranks 4 cudaDev 0 nvmlDev 0 busId 16000 commId 0x98c55edc20eb3d58 - Init START
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO Failed to open libibverbs.so[.1]
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO transport/net_ib/init.cc:396 -> 3
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO Failed to initialize NET plugin IB
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO NET/Socket : Using [0]eth0:10.52.0.128<0>
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO Initialized NET plugin Socket
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO Assigned NET plugin Socket to comm
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+
+[2026-08-06 06:16:54] khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] misc/ibvwrap.cc:173 NCCL WARN lib wrapper not initialized.
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO transport/net_ib/gdr.cc:56 -> 3
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO Failed to initialize any GIN plugin
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO Using network Socket
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO Failed to open libibverbs.so[.1]
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO transport/net_ib/init.cc:396 -> 3
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO Failed to initialize NET plugin IB
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO NET/Socket : Using [0]eth0:10.52.0.128<0>
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO Initialized NET plugin Socket
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO Assigned NET plugin Socket to comm
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+
+[2026-08-06 06:16:54] khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] misc/ibvwrap.cc:173 NCCL WARN lib wrapper not initialized.
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO transport/net_ib/gdr.cc:56 -> 3
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO Failed to initialize any GIN plugin
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO Using network Socket
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO [Rank 3] ncclCommInitRankConfig comm 0x290ab980 rank 3 nranks 4 cudaDev 3 nvmlDev 3 busId 4a000 commId 0x98c55edc20eb3d58 - Init START
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO [Rank 1] ncclCommInitRankConfig comm 0x1e5c0b10 rank 1 nranks 4 cudaDev 1 nvmlDev 1 busId 27000 commId 0x98c55edc20eb3d58 - Init START
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO RAS client listening socket at ::1<28028>
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO [Rank 2] ncclCommInitRankConfig comm 0x10f4db60 rank 2 nranks 4 cudaDev 2 nvmlDev 2 busId 38000 commId 0x98c55edc20eb3d58 - Init START
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO RAS client listening socket at ::1<28028>
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO RAS client listening socket at ::1<28028>
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO RAS client listening socket at ::1<28028>
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO Bootstrap timings total 0.022654 (create 0.000065, send 0.000155, recv 0.017935, ring 0.003666, delay 0.000001)
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Bootstrap timings total 0.077147 (create 0.000094, send 0.000212, recv 0.054740, ring 0.021274, delay 0.000002)
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO Bootstrap timings total 0.037238 (create 0.000069, send 0.000253, recv 0.000160, ring 0.000285, delay 0.000001)
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO Bootstrap timings total 0.004996 (create 0.000070, send 0.000192, recv 0.000231, ring 0.003725, delay 0.000001)
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 3 is 16-31. (GPU affinity = 16-31 ; CPU affinity = 0-63).
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO NVLS multicast support is not available on dev 3 (NVLS_NCHANNELS 0)
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 2 is 0-15. (GPU affinity = 0-15 ; CPU affinity = 0-63).
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO NVLS multicast support is not available on dev 2 (NVLS_NCHANNELS 0)
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 1 is 0-15. (GPU affinity = 0-15 ; CPU affinity = 0-63).
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO NVLS multicast support is not available on dev 1 (NVLS_NCHANNELS 0)
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 0 is 0-15. (GPU affinity = 0-15 ; CPU affinity = 0-63).
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO NVLS multicast support is not available on dev 0 (NVLS_NCHANNELS 0)
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO comm 0x10f4db60 rank 2 nRanks 4 nNodes 1 localRanks 4 localRank 2 MNNVL 0
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO comm 0x1e5c0b10 rank 1 nRanks 4 nNodes 1 localRanks 4 localRank 1 MNNVL 0
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO comm 0x3dbbb420 rank 0 nRanks 4 nNodes 1 localRanks 4 localRank 0 MNNVL 0
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO Trees [0] 3/-1/-1->2->1 [1] 3/-1/-1->2->1
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO P2P Chunksize set to 131072
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Channel 00/02 : 0 1 2 3
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO Trees [0] 2/-1/-1->1->0 [1] 2/-1/-1->1->0
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Channel 01/02 : 0 1 2 3
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO P2P Chunksize set to 131072
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Trees [0] 1/-1/-1->0->-1 [1] 1/-1/-1->0->-1
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO P2P Chunksize set to 131072
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO comm 0x290ab980 rank 3 nRanks 4 nNodes 1 localRanks 4 localRank 3 MNNVL 0
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO Trees [0] -1/-1/-1->3->2 [1] -1/-1/-1->3->2
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO P2P Chunksize set to 131072
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO Check P2P Type isAllDirectP2p 0 directMode 0 isAllCudaP2p 0
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Check P2P Type isAllDirectP2p 0 directMode 0 isAllCudaP2p 0
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO Check P2P Type isAllDirectP2p 0 directMode 0 isAllCudaP2p 0
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO Check P2P Type isAllDirectP2p 0 directMode 0 isAllCudaP2p 0
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:183 [0] NCCL INFO [Proxy Service] Device 0 CPU core 8
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:182 [0] NCCL INFO [Proxy Service] Device 2 CPU core 4
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:186 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 10
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:184 [0] NCCL INFO [Proxy Service] Device 1 CPU core 5
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:185 [0] NCCL INFO [Proxy Service UDS] Device 2 CPU core 6
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:187 [0] NCCL INFO [Proxy Service UDS] Device 1 CPU core 11
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:188 [0] NCCL INFO [Proxy Service] Device 3 CPU core 17
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:189 [0] NCCL INFO [Proxy Service UDS] Device 3 CPU core 18
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO 2 coll channels, 2 collnet channels, 0 nvls channels, 2 p2p channels, 2 p2p channels per peer
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO Symmetric memory is not supported. cuMemEnable 1, globalGinSupport 0, globalNicFused 0 cuMemGdrSupport 0
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO 2 coll channels, 2 collnet channels, 0 nvls channels, 2 p2p channels, 2 p2p channels per peer
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO Symmetric memory is not supported. cuMemEnable 1, globalGinSupport 0, globalNicFused 0 cuMemGdrSupport 0
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO 2 coll channels, 2 collnet channels, 0 nvls channels, 2 p2p channels, 2 p2p channels per peer
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Symmetric memory is not supported. cuMemEnable 1, globalGinSupport 0, globalNicFused 0 cuMemGdrSupport 0
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO 2 coll channels, 2 collnet channels, 0 nvls channels, 2 p2p channels, 2 p2p channels per peer
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO Symmetric memory is not supported. cuMemEnable 1, globalGinSupport 0, globalNicFused 0 cuMemGdrSupport 0
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO CC Off, workFifoBytes 1048576
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO ncclCommInitRankConfig comm 0x10f4db60 rank 2 nranks 4 cudaDev 2 nvmlDev 2 busId 38000 commId 0x98c55edc20eb3d58 - Init COMPLETE
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO ncclCommInitRankConfig comm 0x3dbbb420 rank 0 nranks 4 cudaDev 0 nvmlDev 0 busId 16000 commId 0x98c55edc20eb3d58 - Init COMPLETE
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO Init timings - ncclCommInitRankConfig: rank 2 nranks 4 total 0.52 (kernels 0.42, alloc 0.04, bootstrap 0.01, allgathers 0.00, topo 0.04, graphs 0.00, connections 0.01, rest 0.00)
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Init timings - ncclCommInitRankConfig: rank 0 nranks 4 total 0.63 (kernels 0.43, alloc 0.07, bootstrap 0.08, allgathers 0.00, topo 0.04, graphs 0.00, connections 0.01, rest 0.00)
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO ncclCommInitRankConfig comm 0x1e5c0b10 rank 1 nranks 4 cudaDev 1 nvmlDev 1 busId 27000 commId 0x98c55edc20eb3d58 - Init COMPLETE
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO ncclCommInitRankConfig comm 0x290ab980 rank 3 nranks 4 cudaDev 3 nvmlDev 3 busId 4a000 commId 0x98c55edc20eb3d58 - Init COMPLETE
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO Init timings - ncclCommInitRankConfig: rank 1 nranks 4 total 0.55 (kernels 0.42, alloc 0.04, bootstrap 0.02, allgathers 0.00, topo 0.04, graphs 0.00, connections 0.01, rest 0.00)
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO Init timings - ncclCommInitRankConfig: rank 3 nranks 4 total 0.62 (kernels 0.46, alloc 0.07, bootstrap 0.04, allgathers 0.00, topo 0.04, graphs 0.01, connections 0.01, rest 0.00)
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Channel 00 : 0[0] -> 1[1] via SHM/direct/direct
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO Channel 00 : 3[3] -> 0[0] via SHM/direct/direct
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO Channel 00 : 2[2] -> 3[3] via SHM/direct/direct
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO Channel 00 : 1[1] -> 2[2] via SHM/direct/direct
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO Channel 01 : 3[3] -> 0[0] via SHM/direct/direct
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Channel 01 : 0[0] -> 1[1] via SHM/direct/direct
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO Channel 01 : 2[2] -> 3[3] via SHM/direct/direct
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO Channel 01 : 1[1] -> 2[2] via SHM/direct/direct
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+/app/.venv/lib/python3.12/site-packages/torch/distributed/c10d_logger.py:83: UserWarning: barrier(): using the device under current context. You can specify `device_id` in `init_process_group` to mute this warning.
+  return func(*args, **kwargs)
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":71.0,"gpu_uuid":"GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce","memory_used_mib":3674.0,"power_watts":97.54,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:0","timestamp":"2026-08-06T06:16:56.677Z"}
+GPU_METRIC_JSON={"gpu_index":1,"gpu_utilization_percent":59.0,"gpu_uuid":"GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8","memory_used_mib":3674.0,"power_watts":112.38,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:0","timestamp":"2026-08-06T06:16:56.677Z"}
+GPU_METRIC_JSON={"gpu_index":2,"gpu_utilization_percent":9.0,"gpu_uuid":"GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651","memory_used_mib":3674.0,"power_watts":116.66,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:0","timestamp":"2026-08-06T06:16:56.677Z"}
+GPU_METRIC_JSON={"gpu_index":3,"gpu_utilization_percent":47.0,"gpu_uuid":"GPU-0849f450-d650-f9ec-058a-70cd2f3c2977","memory_used_mib":3674.0,"power_watts":106.34,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:0","timestamp":"2026-08-06T06:16:56.677Z"}
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":10.0,"gpu_uuid":"GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce","memory_used_mib":3674.0,"power_watts":100.93,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:1","timestamp":"2026-08-06T06:16:57.355Z"}
+GPU_METRIC_JSON={"gpu_index":1,"gpu_utilization_percent":9.0,"gpu_uuid":"GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8","memory_used_mib":3674.0,"power_watts":116.59,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:1","timestamp":"2026-08-06T06:16:57.355Z"}
+GPU_METRIC_JSON={"gpu_index":2,"gpu_utilization_percent":12.0,"gpu_uuid":"GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651","memory_used_mib":3674.0,"power_watts":120.55,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:1","timestamp":"2026-08-06T06:16:57.355Z"}
+GPU_METRIC_JSON={"gpu_index":3,"gpu_utilization_percent":9.0,"gpu_uuid":"GPU-0849f450-d650-f9ec-058a-70cd2f3c2977","memory_used_mib":3674.0,"power_watts":111.76,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:1","timestamp":"2026-08-06T06:16:57.355Z"}
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":75.0,"gpu_uuid":"GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce","memory_used_mib":3674.0,"power_watts":101.89,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:2","timestamp":"2026-08-06T06:16:57.982Z"}
+GPU_METRIC_JSON={"gpu_index":1,"gpu_utilization_percent":100.0,"gpu_uuid":"GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8","memory_used_mib":3674.0,"power_watts":118.45,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:2","timestamp":"2026-08-06T06:16:57.982Z"}
+GPU_METRIC_JSON={"gpu_index":2,"gpu_utilization_percent":96.0,"gpu_uuid":"GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651","memory_used_mib":3674.0,"power_watts":124.51,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:2","timestamp":"2026-08-06T06:16:57.982Z"}
+GPU_METRIC_JSON={"gpu_index":3,"gpu_utilization_percent":78.0,"gpu_uuid":"GPU-0849f450-d650-f9ec-058a-70cd2f3c2977","memory_used_mib":3674.0,"power_watts":116.25,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:2","timestamp":"2026-08-06T06:16:57.982Z"}
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":9.0,"gpu_uuid":"GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce","memory_used_mib":3674.0,"power_watts":100.55,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:3","timestamp":"2026-08-06T06:16:58.622Z"}
+GPU_METRIC_JSON={"gpu_index":1,"gpu_utilization_percent":10.0,"gpu_uuid":"GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8","memory_used_mib":3674.0,"power_watts":117.6,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:3","timestamp":"2026-08-06T06:16:58.622Z"}
+GPU_METRIC_JSON={"gpu_index":2,"gpu_utilization_percent":10.0,"gpu_uuid":"GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651","memory_used_mib":3674.0,"power_watts":120.99,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:3","timestamp":"2026-08-06T06:16:58.622Z"}
+GPU_METRIC_JSON={"gpu_index":3,"gpu_utilization_percent":9.0,"gpu_uuid":"GPU-0849f450-d650-f9ec-058a-70cd2f3c2977","memory_used_mib":3674.0,"power_watts":112.71,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:3","timestamp":"2026-08-06T06:16:58.622Z"}
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":40.0,"gpu_uuid":"GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce","memory_used_mib":3674.0,"power_watts":100.87,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:4","timestamp":"2026-08-06T06:16:59.285Z"}
+GPU_METRIC_JSON={"gpu_index":1,"gpu_utilization_percent":100.0,"gpu_uuid":"GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8","memory_used_mib":3674.0,"power_watts":118.07,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:4","timestamp":"2026-08-06T06:16:59.285Z"}
+GPU_METRIC_JSON={"gpu_index":2,"gpu_utilization_percent":56.0,"gpu_uuid":"GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651","memory_used_mib":3674.0,"power_watts":125.03,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:4","timestamp":"2026-08-06T06:16:59.285Z"}
+GPU_METRIC_JSON={"gpu_index":3,"gpu_utilization_percent":73.0,"gpu_uuid":"GPU-0849f450-d650-f9ec-058a-70cd2f3c2977","memory_used_mib":3674.0,"power_watts":114.46,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:4","timestamp":"2026-08-06T06:16:59.285Z"}
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":10.0,"gpu_uuid":"GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce","memory_used_mib":3674.0,"power_watts":102.36,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:5","timestamp":"2026-08-06T06:16:59.944Z"}
+GPU_METRIC_JSON={"gpu_index":1,"gpu_utilization_percent":9.0,"gpu_uuid":"GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8","memory_used_mib":3674.0,"power_watts":119.68,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:5","timestamp":"2026-08-06T06:16:59.944Z"}
+GPU_METRIC_JSON={"gpu_index":2,"gpu_utilization_percent":10.0,"gpu_uuid":"GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651","memory_used_mib":3674.0,"power_watts":123.85,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:5","timestamp":"2026-08-06T06:16:59.944Z"}
+GPU_METRIC_JSON={"gpu_index":3,"gpu_utilization_percent":9.0,"gpu_uuid":"GPU-0849f450-d650-f9ec-058a-70cd2f3c2977","memory_used_mib":3674.0,"power_watts":114.32,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:5","timestamp":"2026-08-06T06:16:59.944Z"}
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":13.0,"gpu_uuid":"GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce","memory_used_mib":3674.0,"power_watts":101.22,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:6","timestamp":"2026-08-06T06:17:00.586Z"}
+GPU_METRIC_JSON={"gpu_index":1,"gpu_utilization_percent":65.0,"gpu_uuid":"GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8","memory_used_mib":3674.0,"power_watts":119.26,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:6","timestamp":"2026-08-06T06:17:00.586Z"}
+GPU_METRIC_JSON={"gpu_index":2,"gpu_utilization_percent":83.0,"gpu_uuid":"GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651","memory_used_mib":3674.0,"power_watts":125.39,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:6","timestamp":"2026-08-06T06:17:00.586Z"}
+GPU_METRIC_JSON={"gpu_index":3,"gpu_utilization_percent":67.0,"gpu_uuid":"GPU-0849f450-d650-f9ec-058a-70cd2f3c2977","memory_used_mib":3674.0,"power_watts":115.02,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:6","timestamp":"2026-08-06T06:17:00.586Z"}
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":10.0,"gpu_uuid":"GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce","memory_used_mib":3674.0,"power_watts":101.77,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:7","timestamp":"2026-08-06T06:17:01.222Z"}
+GPU_METRIC_JSON={"gpu_index":1,"gpu_utilization_percent":9.0,"gpu_uuid":"GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8","memory_used_mib":3674.0,"power_watts":119.88,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:7","timestamp":"2026-08-06T06:17:01.222Z"}
+GPU_METRIC_JSON={"gpu_index":2,"gpu_utilization_percent":10.0,"gpu_uuid":"GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651","memory_used_mib":3674.0,"power_watts":122.11,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:7","timestamp":"2026-08-06T06:17:01.222Z"}
+GPU_METRIC_JSON={"gpu_index":3,"gpu_utilization_percent":9.0,"gpu_uuid":"GPU-0849f450-d650-f9ec-058a-70cd2f3c2977","memory_used_mib":3674.0,"power_watts":115.61,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:7","timestamp":"2026-08-06T06:17:01.222Z"}
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":9.0,"gpu_uuid":"GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce","memory_used_mib":3674.0,"power_watts":101.22,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:8","timestamp":"2026-08-06T06:17:01.871Z"}
+GPU_METRIC_JSON={"gpu_index":1,"gpu_utilization_percent":47.0,"gpu_uuid":"GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8","memory_used_mib":3674.0,"power_watts":117.69,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:8","timestamp":"2026-08-06T06:17:01.871Z"}
+GPU_METRIC_JSON={"gpu_index":2,"gpu_utilization_percent":34.0,"gpu_uuid":"GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651","memory_used_mib":3674.0,"power_watts":124.22,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:8","timestamp":"2026-08-06T06:17:01.871Z"}
+GPU_METRIC_JSON={"gpu_index":3,"gpu_utilization_percent":54.0,"gpu_uuid":"GPU-0849f450-d650-f9ec-058a-70cd2f3c2977","memory_used_mib":3674.0,"power_watts":114.97,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:8","timestamp":"2026-08-06T06:17:01.871Z"}
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":9.0,"gpu_uuid":"GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce","memory_used_mib":3674.0,"power_watts":103.3,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:9","timestamp":"2026-08-06T06:17:02.519Z"}
+GPU_METRIC_JSON={"gpu_index":1,"gpu_utilization_percent":9.0,"gpu_uuid":"GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8","memory_used_mib":3674.0,"power_watts":117.38,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:9","timestamp":"2026-08-06T06:17:02.519Z"}
+GPU_METRIC_JSON={"gpu_index":2,"gpu_utilization_percent":9.0,"gpu_uuid":"GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651","memory_used_mib":3674.0,"power_watts":124.26,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:9","timestamp":"2026-08-06T06:17:02.519Z"}
+GPU_METRIC_JSON={"gpu_index":3,"gpu_utilization_percent":9.0,"gpu_uuid":"GPU-0849f450-d650-f9ec-058a-70cd2f3c2977","memory_used_mib":3674.0,"power_watts":114.84,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:9","timestamp":"2026-08-06T06:17:02.519Z"}
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":9.0,"gpu_uuid":"GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce","memory_used_mib":3674.0,"power_watts":101.68,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:10","timestamp":"2026-08-06T06:17:03.180Z"}
+GPU_METRIC_JSON={"gpu_index":1,"gpu_utilization_percent":24.0,"gpu_uuid":"GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8","memory_used_mib":3674.0,"power_watts":117.9,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:10","timestamp":"2026-08-06T06:17:03.180Z"}
+GPU_METRIC_JSON={"gpu_index":2,"gpu_utilization_percent":10.0,"gpu_uuid":"GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651","memory_used_mib":3674.0,"power_watts":122.18,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:10","timestamp":"2026-08-06T06:17:03.180Z"}
+GPU_METRIC_JSON={"gpu_index":3,"gpu_utilization_percent":30.0,"gpu_uuid":"GPU-0849f450-d650-f9ec-058a-70cd2f3c2977","memory_used_mib":3674.0,"power_watts":115.01,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:10","timestamp":"2026-08-06T06:17:03.180Z"}
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":57.0,"gpu_uuid":"GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce","memory_used_mib":3674.0,"power_watts":103.65,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:11","timestamp":"2026-08-06T06:17:03.802Z"}
+GPU_METRIC_JSON={"gpu_index":1,"gpu_utilization_percent":46.0,"gpu_uuid":"GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8","memory_used_mib":3674.0,"power_watts":121.15,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:11","timestamp":"2026-08-06T06:17:03.802Z"}
+GPU_METRIC_JSON={"gpu_index":2,"gpu_utilization_percent":10.0,"gpu_uuid":"GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651","memory_used_mib":3674.0,"power_watts":125.02,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:11","timestamp":"2026-08-06T06:17:03.802Z"}
+GPU_METRIC_JSON={"gpu_index":3,"gpu_utilization_percent":34.0,"gpu_uuid":"GPU-0849f450-d650-f9ec-058a-70cd2f3c2977","memory_used_mib":3674.0,"power_watts":117.12,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:11","timestamp":"2026-08-06T06:17:03.802Z"}
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":10.0,"gpu_uuid":"GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce","memory_used_mib":3674.0,"power_watts":102.21,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:12","timestamp":"2026-08-06T06:17:04.448Z"}
+GPU_METRIC_JSON={"gpu_index":1,"gpu_utilization_percent":18.0,"gpu_uuid":"GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8","memory_used_mib":3674.0,"power_watts":117.54,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:12","timestamp":"2026-08-06T06:17:04.448Z"}
+GPU_METRIC_JSON={"gpu_index":2,"gpu_utilization_percent":9.0,"gpu_uuid":"GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651","memory_used_mib":3674.0,"power_watts":121.42,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:12","timestamp":"2026-08-06T06:17:04.448Z"}
+GPU_METRIC_JSON={"gpu_index":3,"gpu_utilization_percent":19.0,"gpu_uuid":"GPU-0849f450-d650-f9ec-058a-70cd2f3c2977","memory_used_mib":3674.0,"power_watts":115.12,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:12","timestamp":"2026-08-06T06:17:04.448Z"}
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":72.0,"gpu_uuid":"GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce","memory_used_mib":3674.0,"power_watts":104.03,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:13","timestamp":"2026-08-06T06:17:05.097Z"}
+GPU_METRIC_JSON={"gpu_index":1,"gpu_utilization_percent":60.0,"gpu_uuid":"GPU-b2a70ff4-afe2-8dab-ec46-607f18f98da8","memory_used_mib":3674.0,"power_watts":120.43,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:13","timestamp":"2026-08-06T06:17:05.097Z"}
+GPU_METRIC_JSON={"gpu_index":2,"gpu_utilization_percent":10.0,"gpu_uuid":"GPU-f6c1853b-576e-2a68-fd09-e8b3c3c2f651","memory_used_mib":3674.0,"power_watts":124.64,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:13","timestamp":"2026-08-06T06:17:05.097Z"}
+GPU_METRIC_JSON={"gpu_index":3,"gpu_utilization_percent":49.0,"gpu_uuid":"GPU-0849f450-d650-f9ec-058a-70cd2f3c2977","memory_used_mib":3674.0,"power_watts":117.76,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:13","timestamp":"2026-08-06T06:17:05.097Z"}
+/app/.venv/lib/python3.12/site-packages/torch/distributed/c10d_logger.py:83: UserWarning: barrier(): using the device under current context. You can specify `device_id` in `init_process_group` to mute this warning.
+  return func(*args, **kwargs)
+GPU_METRIC_SUMMARY_JSON={"gpu_utilization_percent_max":100.0,"gpu_utilization_percent_mean":32.732142857142854,"memory_used_mib_max":3674.0,"memory_used_mib_mean":3674.0,"power_watts_max":125.39,"power_watts_mean":114.27392857142857,"sample_count":56,"sampling_finished_at_utc":"2026-08-06T06:17:05.497Z","sampling_scope":"timed_training_window","sampling_started_at_utc":"2026-08-06T06:16:56.676Z","timestamp":"2026-08-06T06:17:05.497Z"}
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO comm 0x10f4db60 rank 2 nranks 4 cudaDev 2 busId 38000 - Destroy COMPLETE
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO comm 0x3dbbb420 rank 0 nranks 4 cudaDev 0 busId 16000 - Destroy COMPLETE
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO comm 0x1e5c0b10 rank 1 nranks 4 cudaDev 1 busId 27000 - Destroy COMPLETE
+BENCHMARK_RESULT_JSON={"batch_per_rank":2,"config":{"architecture":"bert-base-like-encoder","attention_heads":12,"global_batch_size":64,"gpu_number":4,"gpus_per_pod":4,"gradient_accumulation_steps":8,"hidden_size":768,"intermediate_size":3072,"layers":12,"micro_batch_size_per_rank":2,"model":"transformer","optimizer_steps":20,"pod_mode":"single","replicas":1,"sequence_length":64,"warmup_steps":2},"config_semantics_version":"quantfm.scheduler-benchmark.v1","distributed_backend":"nccl","finished_at_utc":"2026-08-06T06:17:05.525Z","global_effective_batch_size":64,"gpu_number":4,"gradient_accumulation":8,"max_memory_allocated_mib":2552.1435546875,"model":"transformer","nccl_version":[2,29,7],"pod_mode":"single","rank":0,"result_scope":"global","run_id":"khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01","runtime_image":"registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574","samples":1280,"scaling_fingerprint":"sha256:d32a2c4974695a57eb120d6e73bacb57422bb14f7a7bbc88ab9f56c069781f4f","scaling_fingerprint_config":{"aggregate_cpu":"4","aggregate_memory":"12Gi","architecture":"bert-base-like-encoder","attention_heads":12,"config_semantics_version":"quantfm.scheduler-benchmark.v1","fingerprint_semantics":"strong-scaling-global-work-image-resources.v3","global_batch_size":64,"hidden_size":768,"intermediate_size":3072,"layers":12,"learning_rate":0.0002,"loss":"squared-output-mean","model":"transformer","optimizer":"AdamW","optimizer_steps":20,"precision":"bfloat16","runtime_image":"registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574","seed":20260803,"sequence_length":64,"warmup_steps":2,"workload_implementation":"embedded-workload-entry-v1","workload_payload_sha256":"987b026bdbc499620e37cf77d725d75250a2ad05827da220b4fd08255d71ff6c"},"scaling_fingerprint_semantics":"strong-scaling-global-work-image-resources.v3","scheduler":"k8s","started_at_utc":"2026-08-06T06:16:49.398Z","status":"success","steps":20,"throughput":145.13585969604458,"throughput_samples_per_second":145.13585969604458,"throughput_unit":"samples_per_second","timestamp":"2026-08-06T06:17:05.525Z","tokens_per_second":9288.695020546853,"training_time_seconds":8.819322824012488,"workload_implementation":"embedded-workload-entry-v1","workload_payload_sha256":"987b026bdbc499620e37cf77d725d75250a2ad05827da220b4fd08255d71ff6c","world_size":4}
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO comm 0x290ab980 rank 3 nranks 4 cudaDev 3 busId 4a000 - Destroy COMPLETE
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:147:147 [2] NCCL INFO ENV/Plugin: Closing env plugin ncclEnvDefault
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:146:146 [1] NCCL INFO ENV/Plugin: Closing env plugin ncclEnvDefault
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:145:145 [0] NCCL INFO ENV/Plugin: Closing env plugin ncclEnvDefault
+khalil-bm-k8s-d08b90-transform-o36604f7b-c005-r01-74sb7:148:148 [3] NCCL INFO ENV/Plugin: Closing env plugin ncclEnvDefault

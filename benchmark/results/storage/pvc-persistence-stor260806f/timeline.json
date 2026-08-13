@@ -1,0 +1,30 @@
+[
+  {
+    "at": "2026-08-06T09:15:41.312Z",
+    "event": "write_create_begin"
+  },
+  {
+    "at": "2026-08-06T09:15:41.603Z",
+    "event": "write_create_return",
+    "job_uid": "63f1f7b0-4c26-4180-9159-abec286128bd"
+  },
+  {
+    "at": "2026-08-06T09:15:46.369Z",
+    "event": "write_terminal_observed",
+    "terminal": "Complete"
+  },
+  {
+    "at": "2026-08-06T09:15:47.631Z",
+    "event": "read_create_begin"
+  },
+  {
+    "at": "2026-08-06T09:15:47.902Z",
+    "event": "read_create_return",
+    "job_uid": "41097481-f01a-4826-815d-357bae0b4d9d"
+  },
+  {
+    "at": "2026-08-06T09:15:52.653Z",
+    "event": "read_terminal_observed",
+    "terminal": "Complete"
+  }
+]

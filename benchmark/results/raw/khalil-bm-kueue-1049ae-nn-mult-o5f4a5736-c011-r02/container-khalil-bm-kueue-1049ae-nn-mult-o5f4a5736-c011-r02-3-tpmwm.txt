@@ -1,0 +1,75 @@
+node_rank is only used for static rdzv_backend. It will be ignored for rdzv_backend=c10d.
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO cudaDriverVersion 13020
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Bootstrap: Using eth0:10.52.0.80<0>
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO NCCL version 2.29.7+cuda13.2
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO NCCL git version stable b81d6a5a3
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Comm config Blocking set to 1
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Failed to open libibverbs.so[.1]
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO transport/net_ib/init.cc:396 -> 3
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Failed to initialize NET plugin IB
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO NET/Socket : Using [0]eth0:10.52.0.80<0>
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Initialized NET plugin Socket
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Assigned NET plugin Socket to comm
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+
+[2026-08-06 05:54:27] khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] misc/ibvwrap.cc:173 NCCL WARN lib wrapper not initialized.
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO transport/net_ib/gdr.cc:56 -> 3
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Failed to initialize any GIN plugin
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Using network Socket
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO [Rank 3] ncclCommInitRankConfig comm 0x34035a20 rank 3 nranks 4 cudaDev 0 nvmlDev 0 busId 16000 commId 0x2ba62da0b600e8c0 - Init START
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO RAS client listening socket at ::1<28028>
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Bootstrap timings total 0.181905 (create 0.000074, send 0.000440, recv 0.000462, ring 0.107096, delay 0.000002)
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 0 is 0-15. (GPU affinity = 0-15 ; CPU affinity = 0-63).
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO comm 0x34035a20 rank 3 nRanks 4 nNodes 4 localRanks 1 localRank 0 MNNVL 0
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Trees [0] -1/-1/-1->3->2 [1] 1/-1/-1->3->-1
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO P2P Chunksize set to 131072
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0 isAllCudaP2p 1
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:197 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 2
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:196 [0] NCCL INFO [Proxy Service] Device 0 CPU core 3
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO threadThresholds 8/8/64 | 32/8/64 | 512 | 512
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO 2 coll channels, 2 collnet channels, 0 nvls channels, 2 p2p channels, 1 p2p channels per peer
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Symmetric VA size=32GB
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Symmetric memory is not supported. cuMemEnable 1, globalGinSupport 0, globalNicFused 0 cuMemGdrSupport 0
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO ncclCommInitRankConfig comm 0x34035a20 rank 3 nranks 4 cudaDev 0 nvmlDev 0 busId 16000 commId 0x2ba62da0b600e8c0 - Init COMPLETE
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Init timings - ncclCommInitRankConfig: rank 3 nranks 4 total 0.66 (kernels 0.39, alloc 0.05, bootstrap 0.18, allgathers 0.02, topo 0.01, graphs 0.00, connections 0.01, rest 0.00)
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:198 [0] NCCL INFO [Proxy Progress] Device 0 CPU core 7
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Channel 00/0 : 2[0] -> 3[0] [receive] via NET/Socket/0
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Channel 01/0 : 2[0] -> 3[0] [receive] via NET/Socket/0
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Channel 00/0 : 3[0] -> 0[0] [send] via NET/Socket/0
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Channel 01/0 : 3[0] -> 0[0] [send] via NET/Socket/0
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Connected all rings, use ring PXN 0 GDR 0
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Channel 01/0 : 1[0] -> 3[0] [receive] via NET/Socket/0
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Channel 01/0 : 3[0] -> 1[0] [send] via NET/Socket/0
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Channel 00/0 : 3[0] -> 2[0] [send] via NET/Socket/0
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO Connected all trees
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":42.0,"gpu_uuid":"GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce","memory_used_mib":1084.0,"power_watts":73.66,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:0","timestamp":"2026-08-06T05:54:29.007Z"}
+GPU_METRIC_JSON={"gpu_index":0,"gpu_utilization_percent":100.0,"gpu_uuid":"GPU-a7537d9d-4342-fa29-8b1f-c6bcbfdd0fce","memory_used_mib":1084.0,"power_watts":90.88,"sampling_scope":"timed_training_window","snapshot_id":"khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:1","timestamp":"2026-08-06T05:54:29.581Z"}
+GPU_METRIC_SUMMARY_JSON={"gpu_utilization_percent_max":100.0,"gpu_utilization_percent_mean":71.0,"memory_used_mib_max":1084.0,"memory_used_mib_mean":1084.0,"power_watts_max":90.88,"power_watts_mean":82.27,"sample_count":2,"sampling_finished_at_utc":"2026-08-06T05:54:30.155Z","sampling_scope":"timed_training_window","sampling_started_at_utc":"2026-08-06T05:54:29.006Z","timestamp":"2026-08-06T05:54:30.156Z"}
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO comm 0x34035a20 rank 3 nranks 4 cudaDev 0 busId 16000 - Destroy COMPLETE
+khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3:124:124 [0] NCCL INFO ENV/Plugin: Closing env plugin ncclEnvDefault
+[W806 05:54:31.969893894 TCPStore.cpp:106] [c10d] sendBytes failed on SocketImpl(fd=24, addr=[khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3.khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-rdzv.gpu-dev.svc.cluster.local]:54564, remote=[khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-0.khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-rdzv.gpu-dev.svc.cluster.local]:29500): Broken pipe
+Exception raised from sendBytes at /__w/pytorch/pytorch/torch/csrc/distributed/c10d/Utils.hpp:758 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x7f4d28363bfd in /app/.venv/lib/python3.12/site-packages/torch/lib/libc10.so)
+frame #1: c10::DistError::DistError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f4d28364bd2 in /app/.venv/lib/python3.12/site-packages/torch/lib/libc10.so)
+frame #2: c10::DistNetworkError::DistNetworkError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x7f4d28365092 in /app/.venv/lib/python3.12/site-packages/torch/lib/libc10.so)
+frame #3: <unknown function> + 0x66ac332 (0x7f4c920f8332 in /app/.venv/lib/python3.12/site-packages/torch/lib/libtorch_cpu.so)
+frame #4: c10d::TCPStore::compareSet(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<unsigned char, std::allocator<unsigned char> > const&, std::vector<unsigned char, std::allocator<unsigned char> > const&) + 0x148 (0x7f4c920f6e78 in /app/.venv/lib/python3.12/site-packages/torch/lib/libtorch_cpu.so)
+frame #5: <unknown function> + 0xed5fd3 (0x7f4ca172afd3 in /app/.venv/lib/python3.12/site-packages/torch/lib/libtorch_python.so)
+frame #6: <unknown function> + 0x3f2bb2 (0x7f4ca0c47bb2 in /app/.venv/lib/python3.12/site-packages/torch/lib/libtorch_python.so)
+frame #7: python() [0x180830f]
+frame #8: python() [0x1a83519]
+<omitting python frames>
+frame #11: python() [0x189cfee]
+frame #14: python() [0x1899e4c]
+frame #15: python() [0x180830f]
+frame #17: python() [0x194dd62]
+frame #19: python() [0x194d25f]
+frame #20: python() [0x194d06c]
+frame #21: <unknown function> + 0x29d90 (0x7f4d290b8d90 in /lib/x86_64-linux-gnu/libc.so.6)
+frame #22: __libc_start_main + 0x80 (0x7f4d290b8e40 in /lib/x86_64-linux-gnu/libc.so.6)
+
+W0806 05:54:31.730000 57 .venv/lib/python3.12/site-packages/torch/distributed/elastic/rendezvous/dynamic_rendezvous.py:1298] The node 'khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-3.khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02-rdzv.gpu-dev.svc.cluster.local_57_0' has failed to shutdown the rendezvous 'khalil-bm-kueue-1049ae-nn-mult-o5f4a5736-c011-r02' due to an error of type RendezvousConnectionError.

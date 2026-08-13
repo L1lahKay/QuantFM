@@ -1,0 +1,5 @@
+observed_at_utc	2026-08-06T05:45:31Z
+query_success	true
+returncode	0
+process_count	0
+fields_recorded	gpu_uuid,used_memory_mib

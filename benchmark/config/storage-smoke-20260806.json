@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "experiment": "single-node-pvc-checkpoint-persistence-smoke",
+  "namespace": "gpu-dev",
+  "claim": {
+    "name": "quantfm-data",
+    "uid": "dcfc08ba-7c57-466e-abeb-e60897855a39",
+    "volume_name": "pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580",
+    "volume_uid": "8d66d1f8-7a0a-48ff-ae7b-e49a4e3e59fa",
+    "local_path": "/data/k3s/storage/pvc-792a789f-ebf3-4a57-9c32-58f23c0c9580_khalil_quantfm-data",
+    "mount_target": "/data/k3s",
+    "mount_source": "/dev/mapper/data--vg-k3s",
+    "filesystem": "xfs",
+    "reclaim_policy": "Retain",
+    "access_modes": ["ReadWriteOnce"],
+    "node": "gpu-dev-01"
+  },
+  "physical_backend": {
+    "root_mount_source": "/dev/mapper/ubuntu--vg-ubuntu--lv",
+    "non_root_disk_confirmed": true,
+    "disk_model": "INTEL SSDPF2KX076T9N",
+    "disk_size": "7T"
+  },
+  "confirmation_evidence": [
+    "docs/operations/GPU-PVC-申请与迁移-khalil.md",
+    "k8s/storage/README.md",
+    "benchmark/results/follow-up-baseline/20260806T090745Z/quantfm-pvc-backing.tsv",
+    "benchmark/results/follow-up-baseline/20260806T090745Z/block-devices.json"
+  ],
+  "image": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+  "limits": {
+    "checkpoint_bytes_default": 67108864,
+    "checkpoint_bytes_max": 1073741824,
+    "active_deadline_seconds": 300,
+    "wait_timeout_seconds": 360,
+    "ttl_seconds_after_finished": 3600
+  },
+  "scope": {
+    "single_node_persistence_allowed": true,
+    "multi_node_reattach_proven": false,
+    "node_failure_recovery_proven": false,
+    "filesystem_quota_enforcement_proven": false
+  }
+}

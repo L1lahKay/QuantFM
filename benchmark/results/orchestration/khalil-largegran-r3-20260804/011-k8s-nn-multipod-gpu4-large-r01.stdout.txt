@@ -1,0 +1,1 @@
+nn-multipod-gpu4-large k8s: succeeded evidence=/home/khalil/DataCleaning7.3/QuantFM/benchmark/results/raw/khalil-bm-k8s-8cc099-nn-multip-o721a2a2d-c011-r01

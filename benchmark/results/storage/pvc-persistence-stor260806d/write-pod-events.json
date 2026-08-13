@@ -1,0 +1,137 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "action": "Binding",
+      "apiVersion": "v1",
+      "eventTime": "2026-08-06T09:14:40.772566Z",
+      "firstTimestamp": null,
+      "involvedObject": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "name": "khalil-pvc-write-stor260806d-p47qs",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29880942",
+        "uid": "46b5a49a-d4a3-462a-8aa3-7006b4f4e397"
+      },
+      "kind": "Event",
+      "lastTimestamp": null,
+      "message": "Successfully assigned gpu-dev/khalil-pvc-write-stor260806d-p47qs to gpu-dev-01",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T09:14:40Z",
+        "name": "khalil-pvc-write-stor260806d-p47qs.18c92c85e291a796",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29880946",
+        "uid": "4f0711b4-0258-49ac-b673-927ddb5040f6"
+      },
+      "reason": "Scheduled",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "default-scheduler-zhisui",
+      "source": {},
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-06T09:14:41Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{write}",
+        "kind": "Pod",
+        "name": "khalil-pvc-write-stor260806d-p47qs",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29880944",
+        "uid": "46b5a49a-d4a3-462a-8aa3-7006b4f4e397"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-06T09:14:41Z",
+      "message": "Container image \"registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574\" already present on machine and can be accessed by the pod",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T09:14:41Z",
+        "name": "khalil-pvc-write-stor260806d-p47qs.18c92c86051ae6e2",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29880953",
+        "uid": "851648f7-7d84-4b88-98b1-0aaf2c79e327"
+      },
+      "reason": "Pulled",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "gpu-dev-01",
+      "source": {
+        "component": "kubelet",
+        "host": "gpu-dev-01"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-06T09:14:41Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{write}",
+        "kind": "Pod",
+        "name": "khalil-pvc-write-stor260806d-p47qs",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29880944",
+        "uid": "46b5a49a-d4a3-462a-8aa3-7006b4f4e397"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-06T09:14:41Z",
+      "message": "Container created",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T09:14:41Z",
+        "name": "khalil-pvc-write-stor260806d-p47qs.18c92c86067666a7",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29880954",
+        "uid": "64622ac9-ab05-4931-927e-3925ecc71956"
+      },
+      "reason": "Created",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "gpu-dev-01",
+      "source": {
+        "component": "kubelet",
+        "host": "gpu-dev-01"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-08-06T09:14:41Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{write}",
+        "kind": "Pod",
+        "name": "khalil-pvc-write-stor260806d-p47qs",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29880944",
+        "uid": "46b5a49a-d4a3-462a-8aa3-7006b4f4e397"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-08-06T09:14:41Z",
+      "message": "Container started",
+      "metadata": {
+        "creationTimestamp": "2026-08-06T09:14:41Z",
+        "name": "khalil-pvc-write-stor260806d-p47qs.18c92c860f708fde",
+        "namespace": "gpu-dev",
+        "resourceVersion": "29880955",
+        "uid": "7afb8de9-1965-44a3-97cd-315a669f2592"
+      },
+      "reason": "Started",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "gpu-dev-01",
+      "source": {
+        "component": "kubelet",
+        "host": "gpu-dev-01"
+      },
+      "type": "Normal"
+    }
+  ],
+  "kind": "List",
+  "metadata": {
+    "resourceVersion": ""
+  }
+}

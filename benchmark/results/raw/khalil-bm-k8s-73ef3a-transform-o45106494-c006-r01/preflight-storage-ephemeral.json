@@ -1,0 +1,14 @@
+{
+  "authorization_id": null,
+  "checkpoints_allowed": false,
+  "downloads_allowed": false,
+  "durable_output_allowed": false,
+  "input_mode": "deterministic_synthetic_in_memory",
+  "matrix": "long-scaling-native-k8s-20260804",
+  "medium": "Memory",
+  "mode": "synthetic_ephemeral",
+  "persistent_cache_allowed": false,
+  "pvc_lookup_skipped": true,
+  "scenario": "transformer-multipod-gpu4-long",
+  "size_limit": "512Mi"
+}

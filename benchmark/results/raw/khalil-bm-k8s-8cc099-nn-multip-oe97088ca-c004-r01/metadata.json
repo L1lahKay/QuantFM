@@ -1,0 +1,96 @@
+{
+  "attempted_resource_keys": [
+    "job",
+    "service"
+  ],
+  "benchmark_role": "performance",
+  "cleanup_status": "verified",
+  "config_semantics_version": "quantfm.scheduler-benchmark.v1",
+  "created_at": "2026-08-04T05:17:40.491Z",
+  "created_uids": {
+    "job": "96e6a424-8cac-482b-8744-38c823adae24",
+    "service": "c57b5566-1dd9-4e67-ae2f-0c690b707f90"
+  },
+  "execution_blockers": [],
+  "gpu_number": 4,
+  "gpus_per_pod": 1,
+  "image": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+  "image_status": "observed_digest_pinned",
+  "kube_context": "default",
+  "matrix_authorization_id": "2026-08-04-large-granularity-native-k8s",
+  "matrix_contract_sha256": "66605b03390b674293635a92e0674e9357ea10214bd652dda12fc78ebfaa40a5",
+  "matrix_name": "large-granularity-native-k8s-20260804",
+  "model": "nn",
+  "namespace": "gpu-dev",
+  "normalized_config": {
+    "architecture": "mlp",
+    "global_batch_size": 32768,
+    "gpu_number": 4,
+    "gpus_per_pod": 1,
+    "hidden_layers": [
+      4096,
+      4096,
+      2048
+    ],
+    "input_features": 1024,
+    "model": "nn",
+    "optimizer_steps": 1000,
+    "per_rank_batch_size": 8192,
+    "pod_mode": "multi",
+    "replicas": 4,
+    "warmup_steps": 50
+  },
+  "pod_mode": "multi",
+  "replicas": 4,
+  "resource_names": {
+    "job": "khalil-bm-k8s-8cc099-nn-multip-oe97088ca-c004-r01",
+    "ownership_token": "d59401205a544492ad33c09639b7d8b7",
+    "podgroup": "",
+    "runtime_image": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+    "scaling_fingerprint": "sha256:a3886ff1315a082ca1fec1e178aeae6331482c48390824ca1dfa14ec16d871e1",
+    "service": "khalil-bm-k8s-8cc099-nn-multip-oe97088ca-c004-r01-rdzv",
+    "workload_payload_sha256": "7ea3aaa8cc9a35a8e9d5731c68891552610955d27a046b84896cd2a0622091a3"
+  },
+  "run_id": "khalil-bm-k8s-8cc099-nn-multip-oe97088ca-c004-r01",
+  "scaling_fingerprint": "sha256:a3886ff1315a082ca1fec1e178aeae6331482c48390824ca1dfa14ec16d871e1",
+  "scaling_fingerprint_config": {
+    "aggregate_cpu": "16",
+    "aggregate_memory": "64Gi",
+    "architecture": "mlp",
+    "config_semantics_version": "quantfm.scheduler-benchmark.v1",
+    "fingerprint_semantics": "strong-scaling-global-work-image-resources.v3",
+    "global_batch_size": 32768,
+    "hidden_layers": [
+      4096,
+      4096,
+      2048
+    ],
+    "input_features": 1024,
+    "learning_rate": 0.001,
+    "loss": "mse",
+    "model": "nn",
+    "optimizer": "AdamW",
+    "optimizer_steps": 1000,
+    "precision": "bfloat16",
+    "runtime_image": "registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574",
+    "seed": 20260803,
+    "warmup_steps": 50,
+    "workload_implementation": "embedded-workload-entry-v1",
+    "workload_payload_sha256": "7ea3aaa8cc9a35a8e9d5731c68891552610955d27a046b84896cd2a0622091a3"
+  },
+  "scaling_fingerprint_semantics": "strong-scaling-global-work-image-resources.v3",
+  "scenario_id": "nn-multipod-gpu4-large",
+  "scheduler": "k8s",
+  "schema_version": 1,
+  "status": "succeeded",
+  "storage": {
+    "durable_output_allowed": false,
+    "medium": "Memory",
+    "mode": "synthetic_ephemeral",
+    "mount_path": "/benchmark-ephemeral",
+    "size_limit": "512Mi"
+  },
+  "updated_at": "2026-08-04T05:20:08.500Z",
+  "workload_implementation": "embedded-workload-entry-v1",
+  "workload_payload_sha256": "7ea3aaa8cc9a35a8e9d5731c68891552610955d27a046b84896cd2a0622091a3"
+}

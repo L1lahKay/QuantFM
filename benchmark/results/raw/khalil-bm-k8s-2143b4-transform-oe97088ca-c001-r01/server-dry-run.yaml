@@ -1,0 +1,205 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    benchmark.quantfm.io/checkpoints-allowed: "false"
+    benchmark.quantfm.io/downloads-allowed: "false"
+    benchmark.quantfm.io/durable-output-allowed: "false"
+    benchmark.quantfm.io/input-mode: deterministic_synthetic_in_memory
+    benchmark.quantfm.io/ownership-token: c6fdf58a230a44ffa12e2e8fe1fd0454
+    benchmark.quantfm.io/persistent-cache-allowed: "false"
+    benchmark.quantfm.io/runtime-image: registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574
+    benchmark.quantfm.io/scaling-fingerprint: sha256:8595ce3331cf08ca3e9908926e1bea3ed458811c986607c8be8dfbaf4addaa91
+    benchmark.quantfm.io/shm-mode: shared-memory-emptydir
+    benchmark.quantfm.io/storage-mode: synthetic_ephemeral
+    benchmark.quantfm.io/workload-implementation: embedded-workload-entry-v1
+    benchmark.quantfm.io/workload-payload-sha256: 7ea3aaa8cc9a35a8e9d5731c68891552610955d27a046b84896cd2a0622091a3
+  creationTimestamp: "2026-08-04T05:15:22Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/name: khalil-scheduler-benchmark
+    benchmark.quantfm.io/model: transformer
+    benchmark.quantfm.io/run-id: khalil-bm-k8s-2143b4-transform-oe97088ca-c001-r01
+    benchmark.quantfm.io/scheduler: k8s
+  name: khalil-bm-k8s-2143b4-transform-oe97088ca-c001-r01
+  namespace: gpu-dev
+  uid: 4acbdb80-94a7-4d9d-a0b8-b25265f05dff
+spec:
+  activeDeadlineSeconds: 1800
+  backoffLimit: 0
+  completionMode: NonIndexed
+  completions: 1
+  manualSelector: false
+  parallelism: 1
+  podReplacementPolicy: TerminatingOrFailed
+  selector:
+    matchLabels:
+      batch.kubernetes.io/controller-uid: 4acbdb80-94a7-4d9d-a0b8-b25265f05dff
+  suspend: false
+  template:
+    metadata:
+      annotations:
+        benchmark.quantfm.io/checkpoints-allowed: "false"
+        benchmark.quantfm.io/downloads-allowed: "false"
+        benchmark.quantfm.io/durable-output-allowed: "false"
+        benchmark.quantfm.io/input-mode: deterministic_synthetic_in_memory
+        benchmark.quantfm.io/ownership-token: c6fdf58a230a44ffa12e2e8fe1fd0454
+        benchmark.quantfm.io/persistent-cache-allowed: "false"
+        benchmark.quantfm.io/runtime-image: registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574
+        benchmark.quantfm.io/scaling-fingerprint: sha256:8595ce3331cf08ca3e9908926e1bea3ed458811c986607c8be8dfbaf4addaa91
+        benchmark.quantfm.io/shm-mode: shared-memory-emptydir
+        benchmark.quantfm.io/storage-mode: synthetic_ephemeral
+        benchmark.quantfm.io/workload-implementation: embedded-workload-entry-v1
+        benchmark.quantfm.io/workload-payload-sha256: 7ea3aaa8cc9a35a8e9d5731c68891552610955d27a046b84896cd2a0622091a3
+      labels:
+        app.kubernetes.io/name: khalil-scheduler-benchmark
+        batch.kubernetes.io/controller-uid: 4acbdb80-94a7-4d9d-a0b8-b25265f05dff
+        batch.kubernetes.io/job-name: khalil-bm-k8s-2143b4-transform-oe97088ca-c001-r01
+        benchmark.quantfm.io/model: transformer
+        benchmark.quantfm.io/run-id: khalil-bm-k8s-2143b4-transform-oe97088ca-c001-r01
+        benchmark.quantfm.io/scheduler: k8s
+        controller-uid: 4acbdb80-94a7-4d9d-a0b8-b25265f05dff
+        job-name: khalil-bm-k8s-2143b4-transform-oe97088ca-c001-r01
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - args:
+        - |-
+          umask 077
+          mkdir -p "$HOME" "$XDG_CACHE_HOME" "$TORCH_HOME" "$TRITON_CACHE_DIR" "$HF_HOME" "$BENCHMARK_OUTPUT_DIR"
+          mkdir -p "${TMPDIR:-/tmp}"
+          printf '%s' 'IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwoiIiJTZWxmLWNvbnRhaW5lZCBiZW5jaG1hcmsgcGF5bG9hZCBlbWJlZGRlZCBpbnRvIHJlbmRlcmVkIEt1YmVybmV0ZXMgSm9icy4KClRoZSBydW5uZXIgdHJlYXRzIHN0ZG91dCBhcyBhbiBhcHBlbmQtb25seSBldmlkZW5jZSBzdHJlYW0uIEtlZXAgdGhlIHRocmVlCm1hcmtlciBwcmVmaXhlcyBzdGFibGUgYmVjYXVzZSByZXBvcnQgZ2VuZXJhdGlvbiBjb25zdW1lcyB0aGVtIGRpcmVjdGx5LgoiIiIKCmZyb20gX19mdXR1cmVfXyBpbXBvcnQgYW5ub3RhdGlvbnMKCmltcG9ydCBjb250ZXh0bGliCmltcG9ydCBqc29uCmltcG9ydCBvcwppbXBvcnQgc3RhdGlzdGljcwppbXBvcnQgc3VicHJvY2VzcwppbXBvcnQgdGhyZWFkaW5nCmltcG9ydCB0aW1lCmZyb20gZGF0ZXRpbWUgaW1wb3J0IGRhdGV0aW1lLCB0aW1lem9uZQpmcm9tIHR5cGluZyBpbXBvcnQgQW55CgoKZGVmIHV0Y19ub3coKSAtPiBzdHI6CiAgICByZXR1cm4gZGF0ZXRpbWUubm93KHRpbWV6b25lLnV0YykuaXNvZm9ybWF0KHRpbWVzcGVjPSJtaWxsaXNlY29uZHMiKS5yZXBsYWNlKCIrMDA6MDAiLCAiWiIpCgoKZGVmIGVtaXQobWFya2VyOiBzdHIsIHBheWxvYWQ6IGRpY3Rbc3RyLCBBbnldLCB0aW1lc3RhbXA6IHN0ciB8IE5vbmUgPSBOb25lKSAtPiBOb25lOgogICAgcGF5bG9hZCA9IHsidGltZXN0YW1wIjogdGltZXN0YW1wIG9yIHV0Y19ub3coKSwgKipwYXlsb2FkfQogICAgcHJpbnQoZiJ7bWFya2VyfT17anNvbi5kdW1wcyhwYXlsb2FkLCBzb3J0X2tleXM9VHJ1ZSwgc2VwYXJhdG9ycz0oJywnLCAnOicpKX0iLCBmbHVzaD1UcnVlKQoKCmNsYXNzIEdQVU1ldHJpY1NhbXBsZXI6CiAgICBkZWYgX19pbml0X18oc2VsZiwgaW50ZXJ2YWxfc2Vjb25kczogZmxvYXQgPSAwLjUpIC0+IE5vbmU6CiAgICAgICAgc2VsZi5pbnRlcnZhbF9zZWNvbmRzID0gaW50ZXJ2YWxfc2Vjb25kcwogICAgICAgIHNlbGYuc2FtcGxlczogbGlzdFtkaWN0W3N0ciwgQW55XV0gPSBbXQogICAgICAgIHNlbGYuc3RhcnRlZF9hdF91dGM6IHN0ciB8IE5vbmUgPSBOb25lCiAgICAgICAgc2VsZi5maW5pc2hlZF9hdF91dGM6IHN0ciB8IE5vbmUgPSBOb25lCiAgICAgICAgc2VsZi5fc25hcHNob3RfY291bnRlciA9IDAKICAgICAgICBzZWxmLl9zdGFydGVkID0gRmFsc2UKICAgICAgICBzZWxmLl9zdG9wcGVkID0gRmFsc2UKICAgICAgICBzZWxmLl9zdG9wID0gdGhyZWFkaW5nLkV2ZW50KCkKICAgICAgICBzZWxmLl90aHJlYWQgPSB0aHJlYWRpbmcuVGhyZWFkKHRhcmdldD1zZWxmLl9sb29wLCBkYWVtb249VHJ1ZSkKCiAgICBkZWYgc3RhcnQoc2VsZikgLT4gTm9uZToKICAgICAgICBpZiBzZWxmLl9zdGFydGVkOgogICAgICAgICAgICByYWlzZSBSdW50aW1lRXJyb3IoIkdQVSBtZXRyaWMgc2FtcGxlciBtYXkgYmUgc3RhcnRlZCBvbmx5IG9uY2UiKQogICAgICAgIHNlbGYuX3N0YXJ0ZWQgPSBUcnVlCiAgICAgICAgc2VsZi5zdGFydGVkX2F0X3V0YyA9IHV0Y19ub3coKQogICAgICAgIHNlbGYuX3RocmVhZC5zdGFydCgpCgogICAgZGVmIHN0b3Aoc2VsZikgLT4gTm9uZToKICAgICAgICBpZiBub3Qgc2VsZi5fc3RhcnRlZCBvciBzZWxmLl9zdG9wcGVkOgogICAgICAgICAgICByZXR1cm4KICAgICAgICBzZWxmLl9zdG9wcGVkID0gVHJ1ZQogICAgICAgIHNlbGYuX3N0b3Auc2V0KCkKICAgICAgICBzZWxmLl90aHJlYWQuam9pbih0aW1lb3V0PW1heCgyLjAsIHNlbGYuaW50ZXJ2YWxfc2Vjb25kcyAqIDMpKQogICAgICAgIHNlbGYuZmluaXNoZWRfYXRfdXRjID0gdXRjX25vdygpCiAgICAgICAgbnVtZXJpY19maWVsZHMgPSAoImdwdV91dGlsaXphdGlvbl9wZXJjZW50IiwgIm1lbW9yeV91c2VkX21pYiIsICJwb3dlcl93YXR0cyIpCiAgICAgICAgc3VtbWFyeTogZGljdFtzdHIsIEFueV0gPSB7CiAgICAgICAgICAgICJzYW1wbGVfY291bnQiOiBsZW4oc2VsZi5zYW1wbGVzKSwKICAgICAgICAgICAgInNhbXBsaW5nX3Njb3BlIjogInRpbWVkX3RyYWluaW5nX3dpbmRvdyIsCiAgICAgICAgICAgICJzYW1wbGluZ19zdGFydGVkX2F0X3V0YyI6IHNlbGYuc3RhcnRlZF9hdF91dGMsCiAgICAgICAgICAgICJzYW1wbGluZ19maW5pc2hlZF9hdF91dGMiOiBzZWxmLmZpbmlzaGVkX2F0X3V0YywKICAgICAgICB9CiAgICAgICAgZm9yIGZpZWxkIGluIG51bWVyaWNfZmllbGRzOgogICAgICAgICAgICB2YWx1ZXMgPSBbZmxvYXQoc2FtcGxlW2ZpZWxkXSkgZm9yIHNhbXBsZSBpbiBzZWxmLnNhbXBsZXMgaWYgc2FtcGxlLmdldChmaWVsZCkgaXMgbm90IE5vbmVdCiAgICAgICAgICAgIHN1bW1hcnlbZiJ7ZmllbGR9X21lYW4iXSA9IHN0YXRpc3RpY3MuZm1lYW4odmFsdWVzKSBpZiB2YWx1ZXMgZWxzZSBOb25lCiAgICAgICAgICAgIHN1bW1hcnlbZiJ7ZmllbGR9X21heCJdID0gbWF4KHZhbHVlcykgaWYgdmFsdWVzIGVsc2UgTm9uZQogICAgICAgIGVtaXQoIkdQVV9NRVRSSUNfU1VNTUFSWV9KU09OIiwgc3VtbWFyeSkKCiAgICBkZWYgX2xvb3Aoc2VsZikgLT4gTm9uZToKICAgICAgICBxdWVyeSA9ICgKICAgICAgICAgICAgImluZGV4LHV1aWQsdXRpbGl6YXRpb24uZ3B1LG1lbW9yeS51c2VkLHBvd2VyLmRyYXciCiAgICAgICAgKQogICAgICAgIHdoaWxlIG5vdCBzZWxmLl9zdG9wLmlzX3NldCgpOgogICAgICAgICAgICBzbmFwc2hvdF90aW1lc3RhbXAgPSB1dGNfbm93KCkKICAgICAgICAgICAgc25hcHNob3RfaWQgPSBmIntvcy5lbnZpcm9uLmdldCgnSE9TVE5BTUUnLCAncG9kJyl9OntzZWxmLl9zbmFwc2hvdF9jb3VudGVyfSIKICAgICAgICAgICAgc2VsZi5fc25hcHNob3RfY291bnRlciArPSAxCiAgICAgICAgICAgIHRyeToKICAgICAgICAgICAgICAgIGNvbXBsZXRlZCA9IHN1YnByb2Nlc3MucnVuKAogICAgICAgICAgICAgICAgICAgIFsKICAgICAgICAgICAgICAgICAgICAgICAgIm52aWRpYS1zbWkiLAogICAgICAgICAgICAgICAgICAgICAgICBmIi0tcXVlcnktZ3B1PXtxdWVyeX0iLAogICAgICAgICAgICAgICAgICAgICAgICAiLS1mb3JtYXQ9Y3N2LG5vaGVhZGVyLG5vdW5pdHMiLAogICAgICAgICAgICAgICAgICAgIF0sCiAgICAgICAgICAgICAgICAgICAgY2hlY2s9VHJ1ZSwKICAgICAgICAgICAgICAgICAgICBjYXB0dXJlX291dHB1dD1UcnVlLAogICAgICAgICAgICAgICAgICAgIHRleHQ9VHJ1ZSwKICAgICAgICAgICAgICAgICAgICB0aW1lb3V0PTUsCiAgICAgICAgICAgICAgICApCiAgICAgICAgICAgICAgICBmb3IgbGluZSBpbiBjb21wbGV0ZWQuc3Rkb3V0LnNwbGl0bGluZXMoKToKICAgICAgICAgICAgICAgICAgICBmaWVsZHMgPSBbZmllbGQuc3RyaXAoKSBmb3IgZmllbGQgaW4gbGluZS5zcGxpdCgiLCIpXQogICAgICAgICAgICAgICAgICAgIGlmIGxlbihmaWVsZHMpICE9IDU6CiAgICAgICAgICAgICAgICAgICAgICAgIGNvbnRpbnVlCiAgICAgICAgICAgICAgICAgICAgc2FtcGxlID0gewogICAgICAgICAgICAgICAgICAgICAgICAic25hcHNob3RfaWQiOiBzbmFwc2hvdF9pZCwKICAgICAgICAgICAgICAgICAgICAgICAgInNhbXBsaW5nX3Njb3BlIjogInRpbWVkX3RyYWluaW5nX3dpbmRvdyIsCiAgICAgICAgICAgICAgICAgICAgICAgICJncHVfaW5kZXgiOiBpbnQoZmllbGRzWzBdKSwKICAgICAgICAgICAgICAgICAgICAgICAgImdwdV91dWlkIjogZmllbGRzWzFdLAogICAgICAgICAgICAgICAgICAgICAgICAiZ3B1X3V0aWxpemF0aW9uX3BlcmNlbnQiOiBfbnVtYmVyKGZpZWxkc1syXSksCiAgICAgICAgICAgICAgICAgICAgICAgICJtZW1vcnlfdXNlZF9taWIiOiBfbnVtYmVyKGZpZWxkc1szXSksCiAgICAgICAgICAgICAgICAgICAgICAgICJwb3dlcl93YXR0cyI6IF9udW1iZXIoZmllbGRzWzRdKSwKICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgc2VsZi5zYW1wbGVzLmFwcGVuZChzYW1wbGUpCiAgICAgICAgICAgICAgICAgICAgZW1pdCgiR1BVX01FVFJJQ19KU09OIiwgc2FtcGxlLCB0aW1lc3RhbXA9c25hcHNob3RfdGltZXN0YW1wKQogICAgICAgICAgICBleGNlcHQgRXhjZXB0aW9uIGFzIGV4YzogICMgZXZpZGVuY2Ugc2hvdWxkIHN1cnZpdmUgdHJhbnNpZW50IG52aWRpYS1zbWkgZXJyb3JzCiAgICAgICAgICAgICAgICBlbWl0KAogICAgICAgICAgICAgICAgICAgICJHUFVfTUVUUklDX0pTT04iLAogICAgICAgICAgICAgICAgICAgIHsKICAgICAgICAgICAgICAgICAgICAgICAgInNuYXBzaG90X2lkIjogc25hcHNob3RfaWQsCiAgICAgICAgICAgICAgICAgICAgICAgICJzYW1wbGluZ19zY29wZSI6ICJ0aW1lZF90cmFpbmluZ193aW5kb3ciLAogICAgICAgICAgICAgICAgICAgICAgICAic2FtcGxlX2Vycm9yIjogdHlwZShleGMpLl9fbmFtZV9fLAogICAgICAgICAgICAgICAgICAgICAgICAibWVzc2FnZSI6IHN0cihleGMpWzoyMDBdLAogICAgICAgICAgICAgICAgICAgIH0sCiAgICAgICAgICAgICAgICAgICAgdGltZXN0YW1wPXNuYXBzaG90X3RpbWVzdGFtcCwKICAgICAgICAgICAgICAgICkKICAgICAgICAgICAgc2VsZi5fc3RvcC53YWl0KHNlbGYuaW50ZXJ2YWxfc2Vjb25kcykKCgpkZWYgX251bWJlcih2YWx1ZTogc3RyKSAtPiBmbG9hdCB8IE5vbmU6CiAgICBpZiB2YWx1ZSBpbiB7IiIsICJOL0EiLCAiW05vdCBTdXBwb3J0ZWRdIn06CiAgICAgICAgcmV0dXJuIE5vbmUKICAgIHRyeToKICAgICAgICByZXR1cm4gZmxvYXQodmFsdWUpCiAgICBleGNlcHQgVmFsdWVFcnJvcjoKICAgICAgICByZXR1cm4gTm9uZQoKCmRlZiBkaXN0cmlidXRlZF9jb250ZXh0KCkgLT4gdHVwbGVbQW55LCBpbnQsIGludCwgaW50XToKICAgIGltcG9ydCB0b3JjaAogICAgaW1wb3J0IHRvcmNoLmRpc3RyaWJ1dGVkIGFzIGRpc3QKCiAgICBsb2NhbF9yYW5rID0gaW50KG9zLmVudmlyb24uZ2V0KCJMT0NBTF9SQU5LIiwgIjAiKSkKICAgIHJhbmsgPSBpbnQob3MuZW52aXJvbi5nZXQoIlJBTksiLCAiMCIpKQogICAgd29ybGRfc2l6ZSA9IGludChvcy5lbnZpcm9uLmdldCgiV09STERfU0laRSIsICIxIikpCiAgICB0b3JjaC5jdWRhLnNldF9kZXZpY2UobG9jYWxfcmFuaykKICAgIGlmIHdvcmxkX3NpemUgPiAxOgogICAgICAgIGRpc3QuaW5pdF9wcm9jZXNzX2dyb3VwKGJhY2tlbmQ9Im5jY2wiLCBpbml0X21ldGhvZD0iZW52Oi8vIikKICAgIHJldHVybiBkaXN0LCBsb2NhbF9yYW5rLCByYW5rLCB3b3JsZF9zaXplCgoKZGVmIGZpbmlzaF9kaXN0cmlidXRlZChkaXN0OiBBbnksIHdvcmxkX3NpemU6IGludCkgLT4gTm9uZToKICAgIGlmIHdvcmxkX3NpemUgPiAxOgogICAgICAgIGRpc3QuYmFycmllcigpCiAgICAgICAgZGlzdC5kZXN0cm95X3Byb2Nlc3NfZ3JvdXAoKQoKCmRlZiBydW5fbGdiKHNwZWM6IGRpY3Rbc3RyLCBBbnldLCBzYW1wbGVyOiBHUFVNZXRyaWNTYW1wbGVyIHwgTm9uZSkgLT4gZGljdFtzdHIsIEFueV06CiAgICBpbXBvcnQgbGlnaHRnYm0gYXMgbGdiCiAgICBpbXBvcnQgbnVtcHkgYXMgbnAKCiAgICBwYXJhbXMgPSBzcGVjWyJwYXJhbWV0ZXJzIl0KICAgIHJvd3MgPSBpbnQocGFyYW1zWyJyb3dzIl0pCiAgICBmZWF0dXJlcyA9IGludChwYXJhbXMuZ2V0KCJmZWF0dXJlcyIsIDEwMCkpCiAgICByb3VuZHMgPSBpbnQocGFyYW1zLmdldCgiYm9vc3Rfcm91bmRzIiwgMTAwKSkKICAgIGRldmljZSA9IHN0cihwYXJhbXMuZ2V0KCJsZ2JfZGV2aWNlIiwgImNwdSIpKQogICAgcm5nID0gbnAucmFuZG9tLmRlZmF1bHRfcm5nKDIwMjYwODAzKQogICAgeCA9IHJuZy5zdGFuZGFyZF9ub3JtYWwoKHJvd3MsIGZlYXR1cmVzKSwgZHR5cGU9bnAuZmxvYXQzMikKICAgIHdlaWdodHMgPSBybmcuc3RhbmRhcmRfbm9ybWFsKGZlYXR1cmVzLCBkdHlwZT1ucC5mbG9hdDMyKQogICAgeSA9ICh4IEAgd2VpZ2h0cyArIHJuZy5zdGFuZGFyZF9ub3JtYWwocm93cywgZHR5cGU9bnAuZmxvYXQzMikgKiAwLjEgPiAwKS5hc3R5cGUobnAuaW50OCkKICAgIHRyYWluID0gbGdiLkRhdGFzZXQoeCwgbGFiZWw9eSwgZnJlZV9yYXdfZGF0YT1GYWxzZSkKICAgIHRyYWluX3BhcmFtcyA9IHsKICAgICAgICAib2JqZWN0aXZlIjogImJpbmFyeSIsCiAgICAgICAgIm1ldHJpYyI6ICJiaW5hcnlfbG9nbG9zcyIsCiAgICAgICAgIm51bV9sZWF2ZXMiOiA2MywKICAgICAgICAibGVhcm5pbmdfcmF0ZSI6IDAuMDUsCiAgICAgICAgInZlcmJvc2l0eSI6IC0xLAogICAgICAgICJudW1fdGhyZWFkcyI6IGludChvcy5lbnZpcm9uLmdldCgiQkVOQ0hNQVJLX0NQVV9DT1VOVCIsICIyIikpLAogICAgICAgICJkZXZpY2VfdHlwZSI6IGRldmljZSwKICAgICAgICAic2VlZCI6IDIwMjYwODAzLAogICAgICAgICJkZXRlcm1pbmlzdGljIjogVHJ1ZSwKICAgIH0KICAgIGlmIHNhbXBsZXI6CiAgICAgICAgc2FtcGxlci5zdGFydCgpCiAgICB0cnk6CiAgICAgICAgc3RhcnRlZCA9IHRpbWUucGVyZl9jb3VudGVyKCkKICAgICAgICBib29zdGVyID0gbGdiLnRyYWluKHRyYWluX3BhcmFtcywgdHJhaW4sIG51bV9ib29zdF9yb3VuZD1yb3VuZHMpCiAgICAgICAgZWxhcHNlZCA9IHRpbWUucGVyZl9jb3VudGVyKCkgLSBzdGFydGVkCiAgICBmaW5hbGx5OgogICAgICAgIGlmIHNhbXBsZXI6CiAgICAgICAgICAgIHNhbXBsZXIuc3RvcCgpCiAgICBwcmVkaWN0aW9uID0gYm9vc3Rlci5wcmVkaWN0KHhbOjQwOTZdKQogICAgcmV0dXJuIHsKICAgICAgICAidHJhaW5pbmdfdGltZV9zZWNvbmRzIjogZWxhcHNlZCwKICAgICAgICAidGhyb3VnaHB1dCI6IHJvd3MgLyBlbGFwc2VkLAogICAgICAgICJ0aHJvdWdocHV0X3VuaXQiOiAicm93c19wZXJfc2Vjb25kIiwKICAgICAgICAidGhyb3VnaHB1dF9zYW1wbGVzX3Blcl9zZWNvbmQiOiByb3dzIC8gZWxhcHNlZCwKICAgICAgICAicm93X3JvdW5kc19wZXJfc2Vjb25kIjogcm93cyAqIHJvdW5kcyAvIGVsYXBzZWQsCiAgICAgICAgInNhbXBsZXMiOiByb3dzLAogICAgICAgICJzdGVwcyI6IHJvdW5kcywKICAgICAgICAibGdiX2RldmljZSI6IGRldmljZSwKICAgICAgICAicHJlZGljdGlvbl9tZWFuIjogZmxvYXQocHJlZGljdGlvbi5tZWFuKCkpLAogICAgICAgICJ3b3JsZF9zaXplIjogMSwKICAgICAgICAicmVzdWx0X3Njb3BlIjogImdsb2JhbCIsCiAgICAgICAgImdwdV9udW1iZXIiOiBpbnQoc3BlY1siZ3B1X251bWJlciJdKSwKICAgICAgICAiZGlzdHJpYnV0ZWRfYmFja2VuZCI6ICJub25lIiwKICAgICAgICAibmNjbF92ZXJzaW9uIjogTm9uZSwKICAgIH0KCgpkZWYgYnVpbGRfbWxwKHRvcmNoOiBBbnksIGZlYXR1cmVzOiBpbnQsIGxheWVyczogbGlzdFtpbnRdKSAtPiBBbnk6CiAgICBtb2R1bGVzOiBsaXN0W0FueV0gPSBbXQogICAgd2lkdGggPSBmZWF0dXJlcwogICAgZm9yIG5leHRfd2lkdGggaW4gbGF5ZXJzOgogICAgICAgIG1vZHVsZXMuZXh0ZW5kKCh0b3JjaC5ubi5MaW5lYXIod2lkdGgsIG5leHRfd2lkdGgpLCB0b3JjaC5ubi5HRUxVKCkpKQogICAgICAgIHdpZHRoID0gbmV4dF93aWR0aAogICAgbW9kdWxlcy5hcHBlbmQodG9yY2gubm4uTGluZWFyKHdpZHRoLCAxKSkKICAgIHJldHVybiB0b3JjaC5ubi5TZXF1ZW50aWFsKCptb2R1bGVzKQoKCmRlZiBydW5fbm4oc3BlYzogZGljdFtzdHIsIEFueV0sIHNhbXBsZXI6IEdQVU1ldHJpY1NhbXBsZXIgfCBOb25lKSAtPiBkaWN0W3N0ciwgQW55XToKICAgIGltcG9ydCB0b3JjaAogICAgZnJvbSB0b3JjaC5ubi5wYXJhbGxlbCBpbXBvcnQgRGlzdHJpYnV0ZWREYXRhUGFyYWxsZWwKCiAgICBkaXN0LCBsb2NhbF9yYW5rLCByYW5rLCB3b3JsZF9zaXplID0gZGlzdHJpYnV0ZWRfY29udGV4dCgpCiAgICBwYXJhbXMgPSBzcGVjWyJwYXJhbWV0ZXJzIl0KICAgIGZlYXR1cmVzID0gaW50KHBhcmFtcy5nZXQoImZlYXR1cmVzIiwgMTAwKSkKICAgIGxheWVycyA9IFtpbnQodmFsdWUpIGZvciB2YWx1ZSBpbiBwYXJhbXMuZ2V0KCJsYXllcnMiLCBbMTAyNCwgMTAyNCwgNTEyXSldCiAgICBiYXRjaCA9IGludChwYXJhbXMuZ2V0KCJiYXRjaF9wZXJfcmFuayIsIDQwOTYpKQogICAgZ2xvYmFsX2JhdGNoID0gaW50KHBhcmFtcy5nZXQoImdsb2JhbF9iYXRjaF9zaXplIiwgYmF0Y2ggKiB3b3JsZF9zaXplKSkKICAgIGlmIGdsb2JhbF9iYXRjaCAhPSBiYXRjaCAqIHdvcmxkX3NpemU6CiAgICAgICAgcmFpc2UgVmFsdWVFcnJvcigKICAgICAgICAgICAgZiJnbG9iYWxfYmF0Y2hfc2l6ZSBtdXN0IGVxdWFsIGJhdGNoX3Blcl9yYW5rKndvcmxkX3NpemU6ICIKICAgICAgICAgICAgZiJ7Z2xvYmFsX2JhdGNofSE9e2JhdGNofSp7d29ybGRfc2l6ZX0iCiAgICAgICAgKQogICAgaWYgd29ybGRfc2l6ZSAhPSBpbnQoc3BlY1siZ3B1X251bWJlciJdKToKICAgICAgICByYWlzZSBWYWx1ZUVycm9yKAogICAgICAgICAgICBmInRvcmNocnVuIFdPUkxEX1NJWkUgbXVzdCBlcXVhbCByZXF1ZXN0ZWQgZ3B1X251bWJlcjoge3dvcmxkX3NpemV9IT17c3BlY1snZ3B1X251bWJlciddfSIKICAgICAgICApCiAgICBpZiB3b3JsZF9zaXplID4gMSBhbmQgbm90IGRpc3QuaXNfbmNjbF9hdmFpbGFibGUoKToKICAgICAgICByYWlzZSBSdW50aW1lRXJyb3IoIm11bHRpLUdQVSBOTiByZXF1aXJlcyBhbiBhdmFpbGFibGUgTkNDTCBiYWNrZW5kIikKICAgIHN0ZXBzID0gaW50KHBhcmFtcy5nZXQoInN0ZXBzIiwgODApKQogICAgd2FybXVwID0gaW50KHBhcmFtcy5nZXQoIndhcm11cF9zdGVwcyIsIDEwKSkKICAgIHRvcmNoLm1hbnVhbF9zZWVkKDIwMjYwODAzICsgcmFuaykKICAgIG1vZGVsID0gYnVpbGRfbWxwKHRvcmNoLCBmZWF0dXJlcywgbGF5ZXJzKS5jdWRhKGxvY2FsX3JhbmspCiAgICBpZiB3b3JsZF9zaXplID4gMToKICAgICAgICBtb2RlbCA9IERpc3RyaWJ1dGVkRGF0YVBhcmFsbGVsKG1vZGVsLCBkZXZpY2VfaWRzPVtsb2NhbF9yYW5rXSkKICAgIG9wdGltaXplciA9IHRvcmNoLm9wdGltLkFkYW1XKG1vZGVsLnBhcmFtZXRlcnMoKSwgbHI9MWUtMykKICAgIHggPSB0b3JjaC5yYW5kbihiYXRjaCwgZmVhdHVyZXMsIGRldmljZT1sb2NhbF9yYW5rKQogICAgdGFyZ2V0ID0gdG9yY2gucmFuZG4oYmF0Y2gsIDEsIGRldmljZT1sb2NhbF9yYW5rKQoKICAgIGRlZiBzdGVwKCkgLT4gTm9uZToKICAgICAgICBvcHRpbWl6ZXIuemVyb19ncmFkKHNldF90b19ub25lPVRydWUpCiAgICAgICAgd2l0aCB0b3JjaC5hdXRvY2FzdChkZXZpY2VfdHlwZT0iY3VkYSIsIGR0eXBlPXRvcmNoLmJmbG9hdDE2KToKICAgICAgICAgICAgbG9zcyA9IHRvcmNoLm5uLmZ1bmN0aW9uYWwubXNlX2xvc3MobW9kZWwoeCksIHRhcmdldCkKICAgICAgICBsb3NzLmJhY2t3YXJkKCkKICAgICAgICBvcHRpbWl6ZXIuc3RlcCgpCgogICAgZm9yIF8gaW4gcmFuZ2Uod2FybXVwKToKICAgICAgICBzdGVwKCkKICAgIHRvcmNoLmN1ZGEuc3luY2hyb25pemUobG9jYWxfcmFuaykKICAgIGlmIHdvcmxkX3NpemUgPiAxOgogICAgICAgIGRpc3QuYmFycmllcigpCiAgICBpZiBzYW1wbGVyOgogICAgICAgIHNhbXBsZXIuc3RhcnQoKQogICAgdHJ5OgogICAgICAgIHN0YXJ0ZWQgPSB0aW1lLnBlcmZfY291bnRlcigpCiAgICAgICAgZm9yIF8gaW4gcmFuZ2Uoc3RlcHMpOgogICAgICAgICAgICBzdGVwKCkKICAgICAgICB0b3JjaC5jdWRhLnN5bmNocm9uaXplKGxvY2FsX3JhbmspCiAgICAgICAgaWYgd29ybGRfc2l6ZSA+IDE6CiAgICAgICAgICAgIGRpc3QuYmFycmllcigpCiAgICAgICAgZWxhcHNlZCA9IHRpbWUucGVyZl9jb3VudGVyKCkgLSBzdGFydGVkCiAgICBmaW5hbGx5OgogICAgICAgIGlmIHNhbXBsZXI6CiAgICAgICAgICAgIHNhbXBsZXIuc3RvcCgpCiAgICBtYXhfbWVtb3J5ID0gdG9yY2guY3VkYS5tYXhfbWVtb3J5X2FsbG9jYXRlZChsb2NhbF9yYW5rKSAvICgxMDI0ICogMTAyNCkKICAgIHJlc3VsdCA9IHsKICAgICAgICAidHJhaW5pbmdfdGltZV9zZWNvbmRzIjogZWxhcHNlZCwKICAgICAgICAidGhyb3VnaHB1dCI6IGJhdGNoICogd29ybGRfc2l6ZSAqIHN0ZXBzIC8gZWxhcHNlZCwKICAgICAgICAidGhyb3VnaHB1dF91bml0IjogInNhbXBsZXNfcGVyX3NlY29uZCIsCiAgICAgICAgInRocm91Z2hwdXRfc2FtcGxlc19wZXJfc2Vjb25kIjogYmF0Y2ggKiB3b3JsZF9zaXplICogc3RlcHMgLyBlbGFwc2VkLAogICAgICAgICJzYW1wbGVzIjogYmF0Y2ggKiB3b3JsZF9zaXplICogc3RlcHMsCiAgICAgICAgInN0ZXBzIjogc3RlcHMsCiAgICAgICAgImJhdGNoX3Blcl9yYW5rIjogYmF0Y2gsCiAgICAgICAgImdsb2JhbF9iYXRjaF9zaXplIjogZ2xvYmFsX2JhdGNoLAogICAgICAgICJyYW5rIjogcmFuaywKICAgICAgICAid29ybGRfc2l6ZSI6IHdvcmxkX3NpemUsCiAgICAgICAgIm1heF9tZW1vcnlfYWxsb2NhdGVkX21pYiI6IG1heF9tZW1vcnksCiAgICAgICAgInJlc3VsdF9zY29wZSI6ICJnbG9iYWwiLAogICAgICAgICJncHVfbnVtYmVyIjogaW50KHNwZWNbImdwdV9udW1iZXIiXSksCiAgICAgICAgImRpc3RyaWJ1dGVkX2JhY2tlbmQiOiBkaXN0LmdldF9iYWNrZW5kKCkgaWYgd29ybGRfc2l6ZSA+IDEgZWxzZSAibm9uZSIsCiAgICAgICAgIm5jY2xfdmVyc2lvbiI6IGxpc3QodG9yY2guY3VkYS5uY2NsLnZlcnNpb24oKSksCiAgICB9CiAgICBmaW5pc2hfZGlzdHJpYnV0ZWQoZGlzdCwgd29ybGRfc2l6ZSkKICAgIHJldHVybiByZXN1bHQKCgpkZWYgcnVuX3RyYW5zZm9ybWVyKHNwZWM6IGRpY3Rbc3RyLCBBbnldLCBzYW1wbGVyOiBHUFVNZXRyaWNTYW1wbGVyIHwgTm9uZSkgLT4gZGljdFtzdHIsIEFueV06CiAgICBpbXBvcnQgdG9yY2gKICAgIGZyb20gdG9yY2gubm4ucGFyYWxsZWwgaW1wb3J0IERpc3RyaWJ1dGVkRGF0YVBhcmFsbGVsCgogICAgZGlzdCwgbG9jYWxfcmFuaywgcmFuaywgd29ybGRfc2l6ZSA9IGRpc3RyaWJ1dGVkX2NvbnRleHQoKQogICAgcGFyYW1zID0gc3BlY1sicGFyYW1ldGVycyJdCiAgICBsYXllcl9jb3VudCA9IGludChwYXJhbXMuZ2V0KCJsYXllcnMiLCAxMikpCiAgICBoaWRkZW4gPSBpbnQocGFyYW1zLmdldCgiaGlkZGVuIiwgNzY4KSkKICAgIGhlYWRzID0gaW50KHBhcmFtcy5nZXQoImF0dGVudGlvbl9oZWFkcyIsIDEyKSkKICAgIHNlcXVlbmNlX2xlbmd0aCA9IGludChwYXJhbXMuZ2V0KCJzZXF1ZW5jZV9sZW5ndGgiLCA2NCkpCiAgICBiYXRjaCA9IGludChwYXJhbXMuZ2V0KCJiYXRjaF9wZXJfcmFuayIsIDIpKQogICAgYWNjdW11bGF0aW9uID0gaW50KHBhcmFtcy5nZXQoImdyYWRpZW50X2FjY3VtdWxhdGlvbiIsIDgpKQogICAgZ2xvYmFsX2VmZmVjdGl2ZV9iYXRjaCA9IGludCgKICAgICAgICBwYXJhbXMuZ2V0KCJnbG9iYWxfZWZmZWN0aXZlX2JhdGNoX3NpemUiLCBiYXRjaCAqIGFjY3VtdWxhdGlvbiAqIHdvcmxkX3NpemUpCiAgICApCiAgICBpZiBnbG9iYWxfZWZmZWN0aXZlX2JhdGNoICE9IGJhdGNoICogYWNjdW11bGF0aW9uICogd29ybGRfc2l6ZToKICAgICAgICByYWlzZSBWYWx1ZUVycm9yKAogICAgICAgICAgICAiZ2xvYmFsX2VmZmVjdGl2ZV9iYXRjaF9zaXplIG11c3QgZXF1YWwgIgogICAgICAgICAgICBmImJhdGNoX3Blcl9yYW5rKmdyYWRpZW50X2FjY3VtdWxhdGlvbip3b3JsZF9zaXplOiAiCiAgICAgICAgICAgIGYie2dsb2JhbF9lZmZlY3RpdmVfYmF0Y2h9IT17YmF0Y2h9KnthY2N1bXVsYXRpb259Knt3b3JsZF9zaXplfSIKICAgICAgICApCiAgICBpZiB3b3JsZF9zaXplICE9IGludChzcGVjWyJncHVfbnVtYmVyIl0pOgogICAgICAgIHJhaXNlIFZhbHVlRXJyb3IoCiAgICAgICAgICAgIGYidG9yY2hydW4gV09STERfU0laRSBtdXN0IGVxdWFsIHJlcXVlc3RlZCBncHVfbnVtYmVyOiB7d29ybGRfc2l6ZX0hPXtzcGVjWydncHVfbnVtYmVyJ119IgogICAgICAgICkKICAgIGlmIHdvcmxkX3NpemUgPiAxIGFuZCBub3QgZGlzdC5pc19uY2NsX2F2YWlsYWJsZSgpOgogICAgICAgIHJhaXNlIFJ1bnRpbWVFcnJvcigibXVsdGktR1BVIFRyYW5zZm9ybWVyIHJlcXVpcmVzIGFuIGF2YWlsYWJsZSBOQ0NMIGJhY2tlbmQiKQogICAgc3RlcHMgPSBpbnQocGFyYW1zLmdldCgic3RlcHMiLCAyMCkpCiAgICB3YXJtdXAgPSBpbnQocGFyYW1zLmdldCgid2FybXVwX3N0ZXBzIiwgMikpCiAgICB0b3JjaC5tYW51YWxfc2VlZCgyMDI2MDgwMyArIHJhbmspCiAgICBlbmNvZGVyX2xheWVyID0gdG9yY2gubm4uVHJhbnNmb3JtZXJFbmNvZGVyTGF5ZXIoCiAgICAgICAgZF9tb2RlbD1oaWRkZW4sCiAgICAgICAgbmhlYWQ9aGVhZHMsCiAgICAgICAgZGltX2ZlZWRmb3J3YXJkPWhpZGRlbiAqIDQsCiAgICAgICAgZHJvcG91dD0wLjAsCiAgICAgICAgYWN0aXZhdGlvbj0iZ2VsdSIsCiAgICAgICAgYmF0Y2hfZmlyc3Q9VHJ1ZSwKICAgICAgICBub3JtX2ZpcnN0PVRydWUsCiAgICApCiAgICBtb2RlbCA9IHRvcmNoLm5uLlNlcXVlbnRpYWwoCiAgICAgICAgdG9yY2gubm4uRW1iZWRkaW5nKDMwNTIyLCBoaWRkZW4pLAogICAgICAgIHRvcmNoLm5uLlRyYW5zZm9ybWVyRW5jb2RlcihlbmNvZGVyX2xheWVyLCBudW1fbGF5ZXJzPWxheWVyX2NvdW50KSwKICAgICAgICB0b3JjaC5ubi5MaW5lYXIoaGlkZGVuLCAyKSwKICAgICkuY3VkYShsb2NhbF9yYW5rKQogICAgaWYgd29ybGRfc2l6ZSA+IDE6CiAgICAgICAgbW9kZWwgPSBEaXN0cmlidXRlZERhdGFQYXJhbGxlbChtb2RlbCwgZGV2aWNlX2lkcz1bbG9jYWxfcmFua10pCiAgICBvcHRpbWl6ZXIgPSB0b3JjaC5vcHRpbS5BZGFtVyhtb2RlbC5wYXJhbWV0ZXJzKCksIGxyPTJlLTQpCiAgICB0b2tlbnMgPSB0b3JjaC5yYW5kaW50KDAsIDMwNTIyLCAoYmF0Y2gsIHNlcXVlbmNlX2xlbmd0aCksIGRldmljZT1sb2NhbF9yYW5rKQoKICAgIGRlZiB0cmFpbl9zdGVwKCkgLT4gTm9uZToKICAgICAgICBvcHRpbWl6ZXIuemVyb19ncmFkKHNldF90b19ub25lPVRydWUpCiAgICAgICAgZm9yIG1pY3JvX3N0ZXAgaW4gcmFuZ2UoYWNjdW11bGF0aW9uKToKICAgICAgICAgICAgc3luY19jb250ZXh0ID0gKAogICAgICAgICAgICAgICAgbW9kZWwubm9fc3luYygpCiAgICAgICAgICAgICAgICBpZiB3b3JsZF9zaXplID4gMSBhbmQgbWljcm9fc3RlcCArIDEgPCBhY2N1bXVsYXRpb24KICAgICAgICAgICAgICAgIGVsc2UgY29udGV4dGxpYi5udWxsY29udGV4dCgpCiAgICAgICAgICAgICkKICAgICAgICAgICAgd2l0aCBzeW5jX2NvbnRleHQ6CiAgICAgICAgICAgICAgICB3aXRoIHRvcmNoLmF1dG9jYXN0KGRldmljZV90eXBlPSJjdWRhIiwgZHR5cGU9dG9yY2guYmZsb2F0MTYpOgogICAgICAgICAgICAgICAgICAgIG91dHB1dCA9IG1vZGVsKHRva2VucykKICAgICAgICAgICAgICAgICAgICBsb3NzID0gb3V0cHV0LmZsb2F0KCkuc3F1YXJlKCkubWVhbigpIC8gYWNjdW11bGF0aW9uCiAgICAgICAgICAgICAgICBsb3NzLmJhY2t3YXJkKCkKICAgICAgICBvcHRpbWl6ZXIuc3RlcCgpCgogICAgZm9yIF8gaW4gcmFuZ2Uod2FybXVwKToKICAgICAgICB0cmFpbl9zdGVwKCkKICAgIHRvcmNoLmN1ZGEuc3luY2hyb25pemUobG9jYWxfcmFuaykKICAgIGlmIHdvcmxkX3NpemUgPiAxOgogICAgICAgIGRpc3QuYmFycmllcigpCiAgICBpZiBzYW1wbGVyOgogICAgICAgIHNhbXBsZXIuc3RhcnQoKQogICAgdHJ5OgogICAgICAgIHN0YXJ0ZWQgPSB0aW1lLnBlcmZfY291bnRlcigpCiAgICAgICAgZm9yIF8gaW4gcmFuZ2Uoc3RlcHMpOgogICAgICAgICAgICB0cmFpbl9zdGVwKCkKICAgICAgICB0b3JjaC5jdWRhLnN5bmNocm9uaXplKGxvY2FsX3JhbmspCiAgICAgICAgaWYgd29ybGRfc2l6ZSA+IDE6CiAgICAgICAgICAgIGRpc3QuYmFycmllcigpCiAgICAgICAgZWxhcHNlZCA9IHRpbWUucGVyZl9jb3VudGVyKCkgLSBzdGFydGVkCiAgICBmaW5hbGx5OgogICAgICAgIGlmIHNhbXBsZXI6CiAgICAgICAgICAgIHNhbXBsZXIuc3RvcCgpCiAgICBzYW1wbGVzID0gYmF0Y2ggKiBhY2N1bXVsYXRpb24gKiB3b3JsZF9zaXplICogc3RlcHMKICAgIHJlc3VsdCA9IHsKICAgICAgICAidHJhaW5pbmdfdGltZV9zZWNvbmRzIjogZWxhcHNlZCwKICAgICAgICAidGhyb3VnaHB1dCI6IHNhbXBsZXMgLyBlbGFwc2VkLAogICAgICAgICJ0aHJvdWdocHV0X3VuaXQiOiAic2FtcGxlc19wZXJfc2Vjb25kIiwKICAgICAgICAidGhyb3VnaHB1dF9zYW1wbGVzX3Blcl9zZWNvbmQiOiBzYW1wbGVzIC8gZWxhcHNlZCwKICAgICAgICAidG9rZW5zX3Blcl9zZWNvbmQiOiBzYW1wbGVzICogc2VxdWVuY2VfbGVuZ3RoIC8gZWxhcHNlZCwKICAgICAgICAic2FtcGxlcyI6IHNhbXBsZXMsCiAgICAgICAgInN0ZXBzIjogc3RlcHMsCiAgICAgICAgImJhdGNoX3Blcl9yYW5rIjogYmF0Y2gsCiAgICAgICAgImdyYWRpZW50X2FjY3VtdWxhdGlvbiI6IGFjY3VtdWxhdGlvbiwKICAgICAgICAiZ2xvYmFsX2VmZmVjdGl2ZV9iYXRjaF9zaXplIjogZ2xvYmFsX2VmZmVjdGl2ZV9iYXRjaCwKICAgICAgICAicmFuayI6IHJhbmssCiAgICAgICAgIndvcmxkX3NpemUiOiB3b3JsZF9zaXplLAogICAgICAgICJtYXhfbWVtb3J5X2FsbG9jYXRlZF9taWIiOiB0b3JjaC5jdWRhLm1heF9tZW1vcnlfYWxsb2NhdGVkKGxvY2FsX3JhbmspIC8gKDEwMjQgKiAxMDI0KSwKICAgICAgICAicmVzdWx0X3Njb3BlIjogImdsb2JhbCIsCiAgICAgICAgImdwdV9udW1iZXIiOiBpbnQoc3BlY1siZ3B1X251bWJlciJdKSwKICAgICAgICAiZGlzdHJpYnV0ZWRfYmFja2VuZCI6IGRpc3QuZ2V0X2JhY2tlbmQoKSBpZiB3b3JsZF9zaXplID4gMSBlbHNlICJub25lIiwKICAgICAgICAibmNjbF92ZXJzaW9uIjogbGlzdCh0b3JjaC5jdWRhLm5jY2wudmVyc2lvbigpKSwKICAgIH0KICAgIGZpbmlzaF9kaXN0cmlidXRlZChkaXN0LCB3b3JsZF9zaXplKQogICAgcmV0dXJuIHJlc3VsdAoKCmRlZiBtYWluKCkgLT4gTm9uZToKICAgIHNwZWMgPSBqc29uLmxvYWRzKG9zLmVudmlyb25bIkJFTkNITUFSS19TUEVDX0pTT04iXSkKICAgIG1vZGVsID0gc3BlY1sibW9kZWwiXQogICAgc3RhcnRlZF9hdCA9IHV0Y19ub3coKQogICAgbG9jYWxfcmFuayA9IGludChvcy5lbnZpcm9uLmdldCgiTE9DQUxfUkFOSyIsICIwIikpCiAgICBzYW1wbGVyID0gKAogICAgICAgIEdQVU1ldHJpY1NhbXBsZXIoZmxvYXQob3MuZW52aXJvbi5nZXQoIkdQVV9NRVRSSUNfSU5URVJWQUxfU0VDT05EUyIsICIwLjUiKSkpCiAgICAgICAgaWYgbG9jYWxfcmFuayA9PSAwIGFuZCBpbnQoc3BlYy5nZXQoImdwdV9udW1iZXIiLCAwKSkgPiAwCiAgICAgICAgZWxzZSBOb25lCiAgICApCiAgICBpZiBtb2RlbCA9PSAibGdiIjoKICAgICAgICByZXN1bHQgPSBydW5fbGdiKHNwZWMsIHNhbXBsZXIpCiAgICBlbGlmIG1vZGVsID09ICJubiI6CiAgICAgICAgcmVzdWx0ID0gcnVuX25uKHNwZWMsIHNhbXBsZXIpCiAgICBlbGlmIG1vZGVsID09ICJ0cmFuc2Zvcm1lciI6CiAgICAgICAgcmVzdWx0ID0gcnVuX3RyYW5zZm9ybWVyKHNwZWMsIHNhbXBsZXIpCiAgICBlbHNlOgogICAgICAgIHJhaXNlIFZhbHVlRXJyb3IoZiJ1bnN1cHBvcnRlZCBtb2RlbDoge21vZGVsfSIpCiAgICBpZiBpbnQocmVzdWx0LmdldCgicmFuayIsIDApKSA9PSAwOgogICAgICAgIGVtaXQoCiAgICAgICAgICAgICJCRU5DSE1BUktfUkVTVUxUX0pTT04iLAogICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAic3RhdHVzIjogInN1Y2Nlc3MiLAogICAgICAgICAgICAgICAgIm1vZGVsIjogbW9kZWwsCiAgICAgICAgICAgICAgICAic2NoZWR1bGVyIjogc3BlY1sic2NoZWR1bGVyIl0sCiAgICAgICAgICAgICAgICAicG9kX21vZGUiOiBzcGVjWyJwb2RfbW9kZSJdLAogICAgICAgICAgICAgICAgImdwdV9udW1iZXIiOiBzcGVjWyJncHVfbnVtYmVyIl0sCiAgICAgICAgICAgICAgICAicnVuX2lkIjogc3BlY1sicnVuX2lkIl0sCiAgICAgICAgICAgICAgICAic3RhcnRlZF9hdF91dGMiOiBzdGFydGVkX2F0LAogICAgICAgICAgICAgICAgImZpbmlzaGVkX2F0X3V0YyI6IHV0Y19ub3coKSwKICAgICAgICAgICAgICAgICJ3b3JrbG9hZF9pbXBsZW1lbnRhdGlvbiI6IHNwZWNbIndvcmtsb2FkX2ltcGxlbWVudGF0aW9uIl0sCiAgICAgICAgICAgICAgICAid29ya2xvYWRfcGF5bG9hZF9zaGEyNTYiOiBzcGVjWyJ3b3JrbG9hZF9wYXlsb2FkX3NoYTI1NiJdLAogICAgICAgICAgICAgICAgImNvbmZpZ19zZW1hbnRpY3NfdmVyc2lvbiI6IHNwZWNbImNvbmZpZ19zZW1hbnRpY3NfdmVyc2lvbiJdLAogICAgICAgICAgICAgICAgImNvbmZpZyI6IHNwZWNbIm5vcm1hbGl6ZWRfY29uZmlnIl0sCiAgICAgICAgICAgICAgICAicnVudGltZV9pbWFnZSI6IHNwZWNbInJ1bnRpbWVfaW1hZ2UiXSwKICAgICAgICAgICAgICAgICJzY2FsaW5nX2ZpbmdlcnByaW50Ijogc3BlY1sic2NhbGluZ19maW5nZXJwcmludCJdLAogICAgICAgICAgICAgICAgInNjYWxpbmdfZmluZ2VycHJpbnRfc2VtYW50aWNzIjogc3BlY1sKICAgICAgICAgICAgICAgICAgICAic2NhbGluZ19maW5nZXJwcmludF9zZW1hbnRpY3MiCiAgICAgICAgICAgICAgICBdLAogICAgICAgICAgICAgICAgInNjYWxpbmdfZmluZ2VycHJpbnRfY29uZmlnIjogc3BlY1sic2NhbGluZ19maW5nZXJwcmludF9jb25maWciXSwKICAgICAgICAgICAgICAgICoqcmVzdWx0LAogICAgICAgICAgICB9LAogICAgICAgICkKCgppZiBfX25hbWVfXyA9PSAiX19tYWluX18iOgogICAgbWFpbigpCg==' | base64 -d > /benchmark-ephemeral/tmp/khalil_benchmark_workload.py
+          export PYTHONUNBUFFERED=1
+          : "${BENCHMARK_STORAGE_MODE:?storage mode marker is required}"
+          test "$BENCHMARK_STORAGE_MODE" = "synthetic_ephemeral"
+          test "$BENCHMARK_INPUT_MODE" = "deterministic_synthetic_in_memory"
+          test "$BENCHMARK_DOWNLOADS_ALLOWED" = "false"
+          test "$BENCHMARK_CHECKPOINTS_ALLOWED" = "false"
+          test "$BENCHMARK_PERSISTENT_CACHE_ALLOWED" = "false"
+          test "$BENCHMARK_DURABLE_OUTPUT_ALLOWED" = "false"
+          test "$BENCHMARK_SHM_MODE" = "shared_memory_emptydir"
+          test "$(stat -c %d /dev/shm)" = "$(stat -c %d "$HOME")"
+          python -m torch.distributed.run --standalone --nnodes=1 --nproc-per-node=4 /benchmark-ephemeral/tmp/khalil_benchmark_workload.py
+          if find "$BENCHMARK_OUTPUT_DIR" -type f -print -quit | grep -q .; then echo "durable-output contract violation" >&2; exit 74; fi
+          if find "$HOME" "$XDG_CACHE_HOME" "$TORCH_HOME" "$TRITON_CACHE_DIR" "$HF_HOME" -type f -print -quit | grep -q .; then echo "persistent-cache contract violation" >&2; exit 75; fi
+          if find "${TMPDIR}" -type f \( -name "*.ckpt" -o -name "*.pt" -o -name "*.pth" -o -name "*.safetensors" \) -print -quit | grep -q .; then echo "checkpoint contract violation" >&2; exit 76; fi
+        command:
+        - /bin/sh
+        - -ceu
+        env:
+        - name: BENCHMARK_SPEC_JSON
+          value: '{"run_id":"khalil-bm-k8s-2143b4-transform-oe97088ca-c001-r01","scenario_id":"transformer-single-gpu4-large","model":"transformer","scheduler":"k8s","pod_mode":"single","gpu_number":4,"replicas":1,"gpus_per_pod":4,"parameters":{"layers":12,"hidden":768,"attention_heads":12,"sequence_length":512,"batch_per_rank":4,"gradient_accumulation":4,"global_effective_batch_size":64,"steps":100,"warmup_steps":5},"normalized_config":{"model":"transformer","gpu_number":4,"pod_mode":"single","replicas":1,"gpus_per_pod":4,"architecture":"bert-base-like-encoder","layers":12,"hidden_size":768,"attention_heads":12,"intermediate_size":3072,"sequence_length":512,"global_batch_size":64,"micro_batch_size_per_rank":4,"gradient_accumulation_steps":4,"optimizer_steps":100,"warmup_steps":5},"workload_implementation":"embedded-workload-entry-v1","workload_payload_sha256":"7ea3aaa8cc9a35a8e9d5731c68891552610955d27a046b84896cd2a0622091a3","config_semantics_version":"quantfm.scheduler-benchmark.v1","runtime_image":"registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574","scaling_fingerprint":"sha256:8595ce3331cf08ca3e9908926e1bea3ed458811c986607c8be8dfbaf4addaa91","scaling_fingerprint_semantics":"strong-scaling-global-work-image-resources.v3","scaling_fingerprint_config":{"fingerprint_semantics":"strong-scaling-global-work-image-resources.v3","workload_implementation":"embedded-workload-entry-v1","workload_payload_sha256":"7ea3aaa8cc9a35a8e9d5731c68891552610955d27a046b84896cd2a0622091a3","runtime_image":"registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574","config_semantics_version":"quantfm.scheduler-benchmark.v1","model":"transformer","seed":20260803,"aggregate_cpu":"16","aggregate_memory":"64Gi","architecture":"bert-base-like-encoder","layers":12,"hidden_size":768,"attention_heads":12,"intermediate_size":3072,"sequence_length":512,"global_batch_size":64,"optimizer_steps":100,"warmup_steps":5,"optimizer":"AdamW","learning_rate":0.0002,"precision":"bfloat16","loss":"squared-output-mean"},"storage_mode":"synthetic_ephemeral","synthetic_ephemeral_contract":{"input_mode":"deterministic_synthetic_in_memory","downloads_allowed":false,"checkpoints_allowed":false,"persistent_cache_allowed":false,"durable_output_allowed":false,"shm_mode":"shared_memory_emptydir"}}'
+        - name: BENCHMARK_CPU_COUNT
+          value: "16"
+        - name: GPU_METRIC_INTERVAL_SECONDS
+          value: "0.5"
+        - name: NCCL_DEBUG
+          value: INFO
+        - name: TORCH_NCCL_ASYNC_ERROR_HANDLING
+          value: "1"
+        - name: HOME
+          value: /benchmark-ephemeral/cache/home
+        - name: XDG_CACHE_HOME
+          value: /benchmark-ephemeral/cache/xdg
+        - name: TORCH_HOME
+          value: /benchmark-ephemeral/cache/torch
+        - name: TRITON_CACHE_DIR
+          value: /benchmark-ephemeral/cache/triton
+        - name: HF_HOME
+          value: /benchmark-ephemeral/cache/huggingface
+        - name: BENCHMARK_OUTPUT_DIR
+          value: /benchmark-ephemeral/output
+        - name: BENCHMARK_STORAGE_MODE
+          value: synthetic_ephemeral
+        - name: BENCHMARK_INPUT_MODE
+          value: deterministic_synthetic_in_memory
+        - name: BENCHMARK_DOWNLOADS_ALLOWED
+          value: "false"
+        - name: BENCHMARK_CHECKPOINTS_ALLOWED
+          value: "false"
+        - name: BENCHMARK_PERSISTENT_CACHE_ALLOWED
+          value: "false"
+        - name: BENCHMARK_DURABLE_OUTPUT_ALLOWED
+          value: "false"
+        - name: BENCHMARK_SHM_MODE
+          value: shared_memory_emptydir
+        - name: TMPDIR
+          value: /benchmark-ephemeral/tmp
+        - name: HF_HUB_OFFLINE
+          value: "1"
+        - name: HF_DATASETS_OFFLINE
+          value: "1"
+        - name: TRANSFORMERS_OFFLINE
+          value: "1"
+        - name: PIP_NO_INDEX
+          value: "1"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: CUDA_CACHE_DISABLE
+          value: "1"
+        - name: TORCHINDUCTOR_CACHE_DIR
+          value: /benchmark-ephemeral/cache/torchinductor
+        - name: NUMBA_CACHE_DIR
+          value: /benchmark-ephemeral/cache/numba
+        - name: MPLCONFIGDIR
+          value: /benchmark-ephemeral/cache/matplotlib
+        - name: XDG_CONFIG_HOME
+          value: /benchmark-ephemeral/cache/xdg-config
+        - name: WANDB_MODE
+          value: disabled
+        - name: WANDB_DISABLED
+          value: "true"
+        - name: BENCHMARK_JOB_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.labels['batch.kubernetes.io/job-name']
+        - name: JOB_COMPLETION_INDEX
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.annotations['batch.kubernetes.io/job-completion-index']
+        image: registry.zs/gpu-dev/dylan-trainer@sha256:9e7f7f8dc3c15c522408d1e8da38401ac224b99ddfba363078f40403eb456574
+        imagePullPolicy: IfNotPresent
+        name: trainer
+        resources:
+          limits:
+            cpu: "16"
+            memory: 64Gi
+            nvidia.com/gpu: "4"
+          requests:
+            cpu: "16"
+            memory: 64Gi
+            nvidia.com/gpu: "4"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /benchmark-ephemeral
+          name: benchmark-ephemeral
+        - mountPath: /dev/shm
+          name: benchmark-ephemeral
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        accelerator: nvidia
+      restartPolicy: Never
+      runtimeClassName: nvidia
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      tolerations:
+      - effect: NoSchedule
+        key: nvidia.com/gpu
+        operator: Exists
+      volumes:
+      - emptyDir:
+          medium: Memory
+          sizeLimit: 512Mi
+        name: benchmark-ephemeral
+  ttlSecondsAfterFinished: 3600
+status: {}
